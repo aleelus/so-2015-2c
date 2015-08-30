@@ -19,6 +19,7 @@
 #include <commons/log.h>
 #include <semaphore.h>
 #include <netdb.h>
+#include <signal.h>
 
 #define COLOR_VERDE   "\x1b[32m"
 #define DEFAULT   "\x1b[0m"
@@ -68,7 +69,7 @@ int cantHilos=0;
 int socket_Swap;
 
 // Definimos los hilos principales
-pthread_t hCrearHilos, hOrquestadorConexiones;
+pthread_t hCrearHilos, hOrquestadorConexiones,hSeniales;
 
 //METODOS MANEJO SOCKETS
 void HiloOrquestadorDeConexiones();
@@ -100,6 +101,9 @@ char* obtenerSubBuffer(char *nombre);
 int conexionASwap();
 void iniciarTLB();
 void iniciarListamProc();
+void iniciarMemoriaPrincipal();
+void Manejador(int signum);
+void Seniales();
 
 //Estructuras
 
@@ -107,7 +111,7 @@ void iniciarListamProc();
 typedef struct {
 	int pagina;
 	int marco;
-	int swap;
+	int bitMP;
 } t_pagina;
 
 //TLB
@@ -125,3 +129,13 @@ typedef struct {
 } t_mProc;
 
 t_list* lista_mProc;
+
+//Memoria Principal
+typedef struct {
+	int marco;
+	int bitModificado;
+	int bitUso;
+	char* contenido;
+} t_mp;
+
+t_mp * a_Memoria;

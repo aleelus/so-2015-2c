@@ -23,7 +23,15 @@ int main(void) {
 
 	iniciarListamProc();
 
-	//iniciarMemoriaPrincipal();
+	iniciarMemoriaPrincipal();
+
+	int iThreadSeniales = pthread_create(&hSeniales, NULL,
+				(void*) Seniales, NULL );
+	if (iThreadSeniales) {
+		fprintf(stderr,
+			"Error al crear hilo - pthread_create() return code: %d\n",
+			iThreadSeniales);
+	}
 
 	//Me Conecto a Swap
 	if(conexionASwap()){
@@ -37,6 +45,7 @@ int main(void) {
 			exit(EXIT_FAILURE);
 		}
 		pthread_join(hOrquestadorConexiones, NULL );
+		pthread_join(hSeniales, NULL );
 	} else {
 		printf("Error, no se pudo conectar a SWAP.\n");
 		return -1;
@@ -44,8 +53,57 @@ int main(void) {
 	return 0;
 }
 
+void Manejador(int signum){
+	switch (signum){
+	case SIGUSR1:
+	   	printf("He recibido la señal SIGUSR1\n");
+	   	//Vaciar la TLB
+	   	break;
+    case SIGUSR2:
+	    printf("He recibido la señal SIGUSR2\n");
+	    //Limpiar la MP y actualizar las tablas y bajar a swap los marcos modificados
+	    break;
+    case SIGPOLL:
+	    printf("He recibido la señal SIGPOLL");
+	    //Volcado de la memoria en un archivo
+	    break;
+    default:
+    	printf("Fin de ejecucion\n");
+    	exit(EXIT_SUCCESS);
+    }
+}
+
+void Seniales(){
+	if (signal(SIGUSR1, Manejador) == SIG_ERR) {
+		perror("error en la señal SIGUSR1");
+		exit(EXIT_FAILURE);
+	}
+	if (signal(SIGUSR2, Manejador) == SIG_ERR) {
+		perror("error en la señal SIGUSR2");
+		exit(EXIT_FAILURE);
+	}
+	if (signal(SIGPOLL, Manejador) == SIG_ERR) {
+		perror("error en SIGTERM");
+		exit(EXIT_FAILURE);
+	}
+	while (1)
+		pause();
+}
+
 void iniciarListamProc(){
 	lista_mProc = list_create();
+}
+
+void iniciarMemoriaPrincipal(){
+	int i;
+	printf("Cantidad Marcos Seteados en MP:%d\n",g_Cantidad_Marcos);
+	a_Memoria = malloc(sizeof(t_mp)*g_Cantidad_Marcos);
+	for(i=0;i<g_Cantidad_Marcos;i++){
+		a_Memoria[i].marco = i;
+		a_Memoria[i].bitModificado = 0;
+		a_Memoria[i].bitUso = 0;
+		a_Memoria[i].contenido = string_new();
+	}
 }
 
 void iniciarTLB(){
@@ -190,6 +248,7 @@ void implementoCPU(char* buffer,t_mProc* mProc){
 	int operacion = ObtenerComandoMSJ(buffer+1);
 	switch (operacion) {
 	case INICIAR:
+		list_add(lista_mProc,mProc);
 		//Reservar memoria en Swap
 		//Devolver un Ok a CPU
 		break;

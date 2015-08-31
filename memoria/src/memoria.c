@@ -244,15 +244,149 @@ void enviarArchivo2(int socket){
 
 }
 
-void implementoCPU(char* buffer,t_mProc* mProc){
+void envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
+
+	//Hay q verificar la respuesta de Swap para ver si pudo o no Reservar el espacio solicitado
+
+	char * bufferASwap=string_new();
+
+	string_append(&bufferASwap,"31");
+	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
+	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
+
+	printf("Buffer Enviado a SWAP: %s\n",bufferASwap);
+	//EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
+
+}
+
+void implementoIniciarCpu(char *buffer){
+
+	//2 1 111 112
+
+	int posActual=2,pid,cantidadPaginas=0,i=0;
+	char *bufferAux;
+	t_mProc *mProc = malloc (sizeof(t_mProc));
+	t_pagina *pagina;
+
+	//Id Proceso
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	pid = atoi(bufferAux);
+	mProc->pid=pid;
+	free(bufferAux);
+
+	//Cantidad de Paginas
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	cantidadPaginas=atoi(bufferAux);
+
+	mProc->paginas=list_create();
+	for(i=0;i<cantidadPaginas;i++){
+		pagina=malloc(sizeof(t_pagina));
+		pagina->bitMP=-1;
+		pagina->marco=-1;
+		pagina->pagina=-1;
+		list_add(mProc->paginas,pagina);
+
+	}
+
+	//Envio a Swap info necesaria para que reserve el espacio solicitado
+	envioDeInfoIniciarASwap(pid,cantidadPaginas);
+
+	//Agrego nuevo proceso a la lista
+	list_add(lista_mProc,mProc);
+
+
+
+
+
+
+}
+
+int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
+
+	t_tlb *telebe;
+	int j=0;
+
+	for(j=0;j<g_Entradas_TLB;j++){
+		telebe=list_get(lista_tlb,j);
+
+		if(telebe->pid == pid && telebe->pagina==nroPagina){
+			*marco = telebe->marco;
+			return 1;
+		}
+	}
+
+	return 0;
+
+
+}
+
+char* buscarEnMemoriaPrincipal(int marco){
+
+	//Aca falta mas cosas pero no me acuerdo que ajajj
+
+	a_Memoria[marco].bitUso=1;
+
+	return a_Memoria[marco].contenido;
+
+}
+
+void enviarContenidoACpu(int socket,int pid,int nroPagina,char* contenido){
+	// No se bien por ahora si hace falta el nroPagina pero por las dudas lo mando
+	//contenido = cicilianiYeta    pid = 4 nroPagina=3
+	//3 2 114 113 213cicilianiYeta
+
+	char *bufferACpu=string_new();
+
+	string_append(&bufferACpu,"32");
+	string_append(&bufferACpu,obtenerSubBuffer(string_itoa(pid)));
+	string_append(&bufferACpu,obtenerSubBuffer(string_itoa(nroPagina)));
+	string_append(&bufferACpu,obtenerSubBuffer(contenido));
+
+	printf("Buffer Enviado a CPU: %s",bufferACpu);
+
+	//EnviarDatos(socket,bufferACpu,strlen(bufferACpu));
+}
+
+void implementoLeerCpu(int socket,char *buffer){
+
+	//2 2 111 112
+
+	int posActual=2,pid,nroPagina=-1,marco=-1;
+	char *bufferAux,*contenido;
+
+
+	//Id Proceso
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	pid = atoi(bufferAux);
+	free(bufferAux);
+
+	//Numero de Pagina
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	nroPagina=atoi(bufferAux);
+
+	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
+		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
+		contenido=buscarEnMemoriaPrincipal(marco);
+		enviarContenidoACpu(socket,pid,nroPagina,contenido);
+
+	}
+
+
+
+}
+
+
+void implementoCPU(int socket,char* buffer){
 	int operacion = ObtenerComandoMSJ(buffer+1);
+
 	switch (operacion) {
 	case INICIAR:
-		list_add(lista_mProc,mProc);
+		implementoIniciarCpu(buffer);
 		//Reservar memoria en Swap
 		//Devolver un Ok a CPU
 		break;
 	case LEER:
+		implementoLeerCpu(socket,buffer);
 		//fijarse si la pagina esta en la TLB
 		//si esta, tomar el marco y devolver el contenido a la cpu
 		//si no esta, buscarla en la memoria principal y ver si esa pagina esta en swap
@@ -281,11 +415,6 @@ void implementoCPU(char* buffer,t_mProc* mProc){
 int AtiendeCliente(void * arg) {
 	int socket = (int) arg;
 
-	//Esctructura mProc
-	t_mProc* mProc = malloc(sizeof(t_mProc));
-
-	//Inicia Tabla de Pagina para el Proceso
-	mProc->paginas = list_create();
 
 	// Es el encabezado del mensaje. Nos dice quien envia el mensaje
 	int emisor = 0;
@@ -317,7 +446,7 @@ int AtiendeCliente(void * arg) {
 			//Evaluamos los comandos
 			switch (emisor) {
 			case ES_CPU:
-				implementoCPU(buffer,mProc);
+				implementoCPU(socket,buffer);
 				break;
 			case COMANDO:
 				printf("Ejecutado por telnet");
@@ -588,6 +717,7 @@ long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer)
 void LevantarConfig() {
 	t_config* config = config_create(PATH_CONFIG);
 	// Nos fijamos si el archivo de conf. pudo ser leido y si tiene los parametros
+
 	if (config->properties->table_current_size != 0) {
 
 		// Puerto de escucha

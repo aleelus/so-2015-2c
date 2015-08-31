@@ -118,6 +118,7 @@ typedef struct {
 typedef struct {
 	int pagina;
 	int marco;
+	int pid;
 } t_tlb;
 
 t_list* lista_tlb;

@@ -78,18 +78,8 @@ int g_Ejecutando = 1;
 #define TEXTO1 7
 
 //Funciones
-void CerrarSocket(int socket);
 int AtiendeCliente(void * arg);
-void ErrorFatal(const char* mensaje, ...);
-int ObtenerComandoMSJ(char* buffer);
-int PosicionDeBufferAInt(char* buffer, int posicion);
-int ChartToInt(char x);
-char* DigitosNombreArchivo(char *buffer,int *posicion);
-long unsigned RecibirDatos(int socket,char** buffer);
-long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer);
 void LevantarConfig();
-void Error(const char* mensaje, ...);
-char* obtenerSubBuffer(char *nombre);
 void CrearHilos();
 void ProcesoCPU();
 void ConectarPlanificador(int* socket_Planificador);

@@ -254,7 +254,7 @@ void envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
-	printf("Buffer Enviado a SWAP: %s\n",bufferASwap);
+	printf("Buffer Enviado a SWAP (Iniciar): %s\n",bufferASwap);
 	//EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
 }
@@ -347,6 +347,88 @@ void enviarContenidoACpu(int socket,int pid,int nroPagina,char* contenido){
 	//EnviarDatos(socket,bufferACpu,strlen(bufferACpu));
 }
 
+int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
+
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0,j=0;
+
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+
+		if(mProc->pid==pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina=list_get(mProc->paginas,j);
+
+				if(pagina->pagina==nroPagina && pagina->bitMP==1){
+					*marco = pagina->marco;
+					return 1;
+
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+
+	return 0;
+
+}
+
+char * pedirContenidoASwap(int pid,int nroPagina){
+
+	//3 2 111 112
+
+	char * buffer=string_new();
+	char * bufferRespuesta=string_new();
+
+	string_append(&buffer,"32");
+	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
+	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
+
+	printf("Buffer a Swap (Leer): %s",buffer);
+	//EnviarDatos(socket_Swap,buffer,strlen(buffer));
+
+	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
+	//RecibirDatos(socket_Swap,&bufferRespuesta);
+
+	return bufferRespuesta;
+
+}
+
+
+void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
+
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0,j=0;
+
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+
+		if(mProc-> pid == pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+
+				if(pagina->pagina == nroPagina){
+
+					// Hay q ver q otras cosas actualizo
+					pagina->bitMP=1;
+					string_append(&a_Memoria[pagina->marco].contenido,contenido);
+
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+
+}
+
+
 void implementoLeerCpu(int socket,char *buffer){
 
 	//2 2 111 112
@@ -369,6 +451,21 @@ void implementoLeerCpu(int socket,char *buffer){
 		contenido=buscarEnMemoriaPrincipal(marco);
 		enviarContenidoACpu(socket,pid,nroPagina,contenido);
 
+	}else{
+
+		if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
+			//Encontro la pagina en la tabla de paginas
+			contenido=buscarEnMemoriaPrincipal(marco);
+			enviarContenidoACpu(socket,pid,nroPagina,contenido);
+
+		}else{
+			//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
+
+			contenido=pedirContenidoASwap(pid,nroPagina);
+			enviarContenidoACpu(socket,pid,nroPagina,contenido);
+			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
+
+		}
 	}
 
 
@@ -395,6 +492,9 @@ void implementoCPU(int socket,char* buffer){
 		//el algoritmo de reemplazo, luego devolverle el contenido a la cpu
 		break;
 	case ESCRIBIR:
+
+
+
 		//Fijarse si la pagina a escribir esta en la TLB, si esta ir a la memoria principal y reemplazar el marco
 		//dejar marcada esa pagina como modificada en la memoria principal
 		//si no esta en la tlb, ir a buscarla a la memoria principal y fijarse si ese marco esta en swap o no,

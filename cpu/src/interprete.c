@@ -13,12 +13,48 @@
 #include "cpu.h"
 
 extern int socket_Memoria;
-//char* instrucciones = {"iniciar", "leer", "escribir", "entrada-salida", "finalizar"};
+t_programa* programaEnEjecucion; //Es uno solo por procesador
+char* instrucciones[] = { "iniciar", "leer", "escribir", "entrada-salida",
+		"finalizar" };
+
+char* obtenerNombreDelArchivo(char* path) {
+	char** pathPartido = string_split(path, "/");
+	char* nombre;
+	int i;
+	int posDelNombre;
+
+	for (i = 0; pathPartido[i] != NULL; i++) {
+		posDelNombre = i;
+	}
+
+	nombre = calloc(strlen(pathPartido[posDelNombre]), sizeof(char));
+	nombre = pathPartido[posDelNombre];
+
+	return nombre;
+}
+
+t_programa* crearPrograma(char* pathDelArchivoDeInstrucciones) {
+	t_programa* programa = malloc(sizeof(t_programa));
+
+	programa->nombre = obtenerNombreDelArchivo(pathDelArchivoDeInstrucciones);
+	programa->instrucciones = list_create();
+
+	return programa;
+}
+
+t_instruccion* crearInstruccion(char* instruccion) {
+	t_instruccion* instr = malloc(sizeof(t_instruccion));
+	instr->instruccion = strdup(instruccion);
+	instr->parametros = calloc(3,sizeof(char*));
+	return instr;
+}
 
 void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones) {
 	char* contenidoAux;
 	char* contenidoDelArchivo;
 	FILE* archivoDeInstrucciones = fopen(pathDelArchivoDeInstrucciones, "r");
+
+	programaEnEjecucion = crearPrograma(pathDelArchivoDeInstrucciones);
 
 	contenidoDelArchivo = calloc(ftell(archivoDeInstrucciones) + 1,
 			sizeof(char));
@@ -27,9 +63,10 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones) {
 
 		fscanf(archivoDeInstrucciones, " %[^\n]", contenidoDelArchivo);
 
-		contenidoAux = calloc(strlen(contenidoDelArchivo) + 1,sizeof(char));
+		contenidoAux = calloc(strlen(contenidoDelArchivo) + 1, sizeof(char));
 
-		contenidoAux = string_substring_until(contenidoDelArchivo,strlen(contenidoDelArchivo) - 1);
+		contenidoAux = string_substring_until(contenidoDelArchivo,
+				strlen(contenidoDelArchivo) - 1);
 
 		contenidoAux[strlen(contenidoDelArchivo)] = '\0';
 
@@ -43,13 +80,44 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones) {
 
 void separarInstruccionDeParametros(char* instruccionMasParametros) {
 	//{"iniciar", "leer", "escribir", "entrada-salida", "finalizar"}
-	//TODO grabar en lista, crear la estructura...
+	int existeInstruccion = 0;
+	int i = 0;
+	int posicionEnElArray = -1;
+	int cantInstrucciones = sizeof(instrucciones) / 4;
+	;
 	int k;
+	char* parametro;
+	t_instruccion* instruccion;
 	char** instruccionSpliteada = string_split(instruccionMasParametros, " ");
 
 	for (k = 0; instruccionSpliteada[k] != NULL; k++) {
-		printf("contenido: %s \n", instruccionSpliteada[k]);
+		if (k == 0) { //la instruccion siempre va a estar primero
+			for (i = 0; i < cantInstrucciones && !existeInstruccion; i++) {
+				//esto en teoria no hace falta ya que "no van a ver instrucciones que no correspondan", pero por las dudas...
+				existeInstruccion = strcmp(instruccionSpliteada[k],
+						instrucciones[i]) == 0;
+				posicionEnElArray = i;
+			}
+
+			if (!existeInstruccion) {
+				//TODO la instruccion no existe, romper todo (?, mandar error al planificador de una?
+				puts("Instruccion no valida");
+			} else {
+				switch (posicionEnElArray) {
+				case (0):
+					instruccion = crearInstruccion(instrucciones[0]);
+					instruccion ->parametros[0] = parametro;
+					break;
+				}
+			}
+		} else {
+			//es un parametro
+			parametro = strdup(instruccionSpliteada[k]);
+			instruccion ->parametros[k-1] = parametro;//k>0
+		}
 	}
+
+	list_add(programaEnEjecucion->instrucciones,instruccion);
 }
 
 void ejecutarMProc(char* pathDelArchivoDeInstrucciones) {

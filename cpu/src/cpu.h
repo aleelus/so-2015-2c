@@ -35,41 +35,17 @@ sem_t semDormilon;
 //Tamaño del buffer
 #define BUFFERSIZE 50
 
-//Socket de la Memoria
-int socket_Memoria;
-
-//Parametros del archivo de configuracion
-char* g_Ip_Planificador;
-char* g_Puerto_Planificador;
-char* g_Ip_Memoria;
-char* g_Puerto_Memoria;
-int g_Cantidad_Hilos;
-int g_Retardo;
-int g_Puerto;
-
 // METODOS CONFIGURACION //
 void LevantarConfig();
 
 // METODOS MANEJO DE ERRORES //
 void Error(const char* mensaje, ...);
 
-// Logger del commons
-t_log* logger;
-
-//Contador de Hilos
-int cantHilos=0;
-
-// Definimos los hilos principales
-pthread_t hCrearHilos;
-
 //METODOS MANEJO SOCKETS
 void HiloOrquestadorDeConexiones();
 
 char* obtenerSubBuffer(char *);
 int cuentaDigitos(int );
-
-// - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
-int g_Ejecutando = 1;
 
 //Tipos de operaciones
 #define ES_PLANIFICADOR	1

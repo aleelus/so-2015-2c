@@ -244,11 +244,12 @@ void enviarArchivo2(int socket){
 
 }
 
-void envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
+int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 
 	//Hay q verificar la respuesta de Swap para ver si pudo o no Reservar el espacio solicitado
 
 	char * bufferASwap=string_new();
+	char * bufferRespuesta=string_new();
 
 	string_append(&bufferASwap,"31");
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
@@ -257,14 +258,27 @@ void envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	printf("Buffer Enviado a SWAP (Iniciar): %s\n",bufferASwap);
 	//EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
+
+	////RecibirDatos(socket_Swap,&bufferRespuesta);
+
+	if(strcmp(bufferRespuesta,"Ok")==0){
+
+		//El swap pudo reserver el pedido de Inicio de la Cpu
+		return 1;
+
+	}else{
+
+		return 0;
+	}
+
 }
 
-void implementoIniciarCpu(char *buffer){
+void implementoIniciarCpu(int socket,char *buffer){
 
 	//2 1 111 112
 
 	int posActual=2,pid,cantidadPaginas=0,i=0;
-	char *bufferAux;
+	char *bufferAux,*bufferRespuestaCPU=string_new();
 	t_mProc *mProc = malloc (sizeof(t_mProc));
 	t_pagina *pagina;
 
@@ -289,14 +303,20 @@ void implementoIniciarCpu(char *buffer){
 	}
 
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
-	envioDeInfoIniciarASwap(pid,cantidadPaginas);
-
-	//Agrego nuevo proceso a la lista
-	list_add(lista_mProc,mProc);
-
-
+	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
+		//Agrego nuevo proceso a la lista
+		list_add(lista_mProc,mProc);
+		string_append(&bufferRespuestaCPU,"HAY Q VER Q LE MANDO A CPU COMO CONFIRMACION DEL INICIO DEL PROCESO");
 
 
+	}else{
+
+		//NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA PODER INICIAR ESE PROCESO
+		string_append(&bufferRespuestaCPU,"HAY Q VER Q LE MANDO A CPU CUANDO SWAP NO TIENE ESPACIO");
+
+	}
+
+	//EnviarDatos(socket,bufferRespuestaCPU,strlen(bufferRespuestaCPU));
 
 
 }
@@ -417,6 +437,8 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
 
 					// Hay q ver q otras cosas actualizo
 					pagina->bitMP=1;
+					free(a_Memoria[pagina->marco].contenido);
+					a_Memoria[pagina->marco].contenido = string_new();
 					string_append(&a_Memoria[pagina->marco].contenido,contenido);
 
 				}
@@ -431,15 +453,55 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
 void actualizarTLB(int pid,int nroPagina){
 
 
-	//FALTA TRAER ANTES LAS PAGINAS Q TENGA EN MEM PRINCIPAL CORRESPONDIENTE AL PROCESO
-
+	t_mProc *mProc;
+	t_pagina *pagina;
 	t_tlb *telebe;
+	int i=0,j=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
+	int mitad=0,contAgrego=0,posActual=nroPagina,bandera=0;
 
 
-	telebe=list_get(lista_tlb,0);
 
-	telebe->pid = pid;
-	telebe->pagina=nroPagina;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+
+		if(mProc->pid == pid){
+
+			totalPaginas=list_size(mProc->paginas);
+
+			while(bandera==0){
+
+				if(posActual<totalPaginas){
+					pagina=list_get(mProc->paginas,posActual);
+
+					if(contAgrego<entradasTLB){
+
+						telebe = list_get(lista_tlb,contAgrego);
+
+						telebe->pid=pid;
+						telebe->pagina=posActual;
+						telebe->marco=pagina->marco;
+
+						contAgrego++;
+
+					}
+
+				}else{
+					posActual=-1;
+				}
+
+				if(contAgrego == entradasTLB || contAgrego == totalPaginas)
+					bandera =1;
+
+
+				posActual++;
+
+			}
+
+		}
+
+
+		i++;
+	}
 
 
 
@@ -497,7 +559,7 @@ void implementoCPU(int socket,char* buffer){
 
 	switch (operacion) {
 	case INICIAR:
-		implementoIniciarCpu(buffer);
+		implementoIniciarCpu(socket,buffer);
 		//Reservar memoria en Swap
 		//Devolver un Ok a CPU
 		break;

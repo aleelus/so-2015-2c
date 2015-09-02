@@ -456,8 +456,8 @@ void actualizarTLB(int pid,int nroPagina){
 	t_mProc *mProc;
 	t_pagina *pagina;
 	t_tlb *telebe;
-	int i=0,j=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
-	int mitad=0,contAgrego=0,posActual=nroPagina,bandera=0;
+	int i=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
+	int contAgrego=0,posActual=nroPagina,bandera=0,contPag=0;
 
 
 
@@ -473,7 +473,8 @@ void actualizarTLB(int pid,int nroPagina){
 				if(posActual<totalPaginas){
 					pagina=list_get(mProc->paginas,posActual);
 
-					if(contAgrego<entradasTLB){
+
+					if(pagina->bitMP==1 && contAgrego<entradasTLB){
 
 						telebe = list_get(lista_tlb,contAgrego);
 
@@ -484,12 +485,13 @@ void actualizarTLB(int pid,int nroPagina){
 						contAgrego++;
 
 					}
+					contPag++;
 
 				}else{
 					posActual=-1;
 				}
 
-				if(contAgrego == entradasTLB || contAgrego == totalPaginas)
+				if(contAgrego == entradasTLB || contAgrego == totalPaginas || contPag ==totalPaginas)
 					bandera =1;
 
 

@@ -428,6 +428,24 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
 
 }
 
+void actualizarTLB(int pid,int nroPagina){
+
+
+	//FALTA TRAER ANTES LAS PAGINAS Q TENGA EN MEM PRINCIPAL CORRESPONDIENTE AL PROCESO
+
+	t_tlb *telebe;
+
+
+	telebe=list_get(lista_tlb,0);
+
+	telebe->pid = pid;
+	telebe->pagina=nroPagina;
+
+
+
+
+}
+
 
 void implementoLeerCpu(int socket,char *buffer){
 
@@ -464,6 +482,7 @@ void implementoLeerCpu(int socket,char *buffer){
 			contenido=pedirContenidoASwap(pid,nroPagina);
 			enviarContenidoACpu(socket,pid,nroPagina,contenido);
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
+			actualizarTLB(pid,nroPagina);
 
 		}
 	}

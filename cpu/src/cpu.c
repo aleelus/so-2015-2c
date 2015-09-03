@@ -12,6 +12,36 @@
 #include <api.h>
 #include "cpu.h"
 
+//TODO int id;//lo pide el enunciado, es para diferenciar entre CPU en los logs
+
+//Socket de la Memoria
+int socket_Memoria;
+
+//Parametros del archivo de configuracion
+char* g_Ip_Planificador;
+char* g_Puerto_Planificador;
+char* g_Ip_Memoria;
+char* g_Puerto_Memoria;
+int g_Cantidad_Hilos;
+int g_Retardo;
+int g_Puerto;
+
+//Contador de Hilos
+int cantHilos=0;
+
+// Logger del commons
+t_log* logger;
+
+//Contador de Hilos
+//int cantHilos=0;
+
+// Definimos los hilos principales
+pthread_t hCrearHilos;
+
+// - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
+int g_Ejecutando = 1;
+
+
 int main(void) {
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", false, LOG_LEVEL_TRACE);

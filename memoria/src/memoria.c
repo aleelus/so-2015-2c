@@ -344,7 +344,7 @@ char* buscarEnMemoriaPrincipal(int marco){
 
 	//Aca falta mas cosas pero no me acuerdo que ajajj
 
-	a_Memoria[marco].bitUso=1;
+	a_Memoria[marco].marcoEnUso=1;
 
 	return a_Memoria[marco].contenido;
 
@@ -435,8 +435,9 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
 
 				if(pagina->pagina == nroPagina){
 
-					// Hay q ver q otras cosas actualizo
+					// Implementar algoritmo, esta mal lo de abajo
 					pagina->bitMP=1;
+					a_Memoria[pagina->marco].marcoEnUso=1;
 					free(a_Memoria[pagina->marco].contenido);
 					a_Memoria[pagina->marco].contenido = string_new();
 					string_append(&a_Memoria[pagina->marco].contenido,contenido);
@@ -555,6 +556,115 @@ void implementoLeerCpu(int socket,char *buffer){
 
 }
 
+int eliminarDeSwap(int pid){
+
+	char* bufferASwap=string_new();
+	char* bufferRespuesta= string_new();
+
+
+	string_append(&bufferASwap,"34");
+	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
+
+	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
+
+	////RecibirDatos(socket_Swap,&bufferRespuesta);
+
+	if(strcmp(bufferRespuesta,"Ok")==0){
+
+		//Swap pudo eliminar todO  sobre ese proceso
+		return 1;
+
+	}else {
+		//Swap se puso la gorra y no elimino nada
+
+		return 0;
+
+	}
+
+
+
+}
+
+int eliminarProceso(int pid){
+
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0;
+
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+
+		if(mProc->pid  == pid){
+
+
+			while(list_size(mProc->paginas)>0){
+
+				pagina = list_remove(mProc->paginas,0);
+
+				if(pagina->bitMP == 1){
+
+					a_Memoria[pagina->marco].marcoEnUso=0;
+					free(a_Memoria[pagina->marco].contenido);
+					a_Memoria[pagina->marco].contenido = string_new();
+
+				}
+
+			}
+
+			if(eliminarDeSwap(pid)){
+
+				//Se elimino con exito
+				return 1;
+
+			}else{
+
+				//No se elimino un carajo
+				return 0;
+
+			}
+
+		}
+
+		i++;
+	}
+
+	return 0;
+
+}
+
+void implementoFinalizarCpu(int socket,char *buffer){
+
+	//2 4 111
+
+	int posActual=2,pid=-1;
+	char *bufferAux;
+	char *bufferACPU=string_new();
+
+
+	//Id Proceso
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	pid = atoi(bufferAux);
+	free(bufferAux);
+
+	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
+	//
+
+	if(eliminarProceso(pid)){
+		//Envio a CPU el OK de q se borro
+
+		string_append(&bufferACPU,"HAY Q VER QUE LE ENVIO A CPU COMO OK");
+
+
+	}else{
+
+		string_append(&bufferACPU,"HAY Q VER QUE LE ENVIO A CPU COMO NO AL PEDIDO DE ELIMINAR(finalizar)");
+
+	}
+
+	EnviarDatos(socket,bufferACPU,strlen(bufferACPU));
+
+}
+
 
 void implementoCPU(int socket,char* buffer){
 	int operacion = ObtenerComandoMSJ(buffer+1);
@@ -587,6 +697,8 @@ void implementoCPU(int socket,char* buffer){
 		//decidir si le devolvemos un ok o el contenido grabado a la cpu
 		break;
 	case FINALIZAR:
+
+		implementoFinalizarCpu(socket,buffer);
 		//limpiar los marcos reservados de swap del proceso y luego borrar la tabla de paginas y devolver
 		// un ok a la cpu
 		break;

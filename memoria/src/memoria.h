@@ -135,8 +135,9 @@ t_list* lista_mProc;
 //Memoria Principal
 typedef struct {
 	int marco;
-	int bitModificado;
-	int bitUso;
+	int bitModificado; //Algoritmo
+	int bitUso;	       //Algoritmo
+	int marcoEnUso;   // Interno Nuestro
 	int bitPuntero;
 	char* contenido;
 } t_mp;

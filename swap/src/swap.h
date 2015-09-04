@@ -19,6 +19,8 @@
 #include <commons/log.h>
 #include <semaphore.h>
 #include <netdb.h>
+#include <api.h>
+#include <protocolo.h>
 
 #define COLOR_VERDE   "\x1b[32m"
 #define DEFAULT   "\x1b[0m"
@@ -83,7 +85,6 @@ int PosicionDeBufferAInt(char* buffer, int posicion);
 int ChartToInt(char x);
 char* DigitosNombreArchivo(char *buffer,int *posicion);
 long unsigned RecibirDatos(int socket,char** buffer);
-long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer);
 void LevantarConfig();
 void Error(const char* mensaje, ...);
 char* obtenerSubBuffer(char *nombre);

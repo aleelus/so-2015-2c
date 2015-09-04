@@ -7,6 +7,10 @@
 
 #ifndef PROTOCOLO_H_
 #define PROTOCOLO_H_
+#define COD_PLANIFICADOR "1"
+#define COD_CPU "2"
+#define COD_ADM_MEMORIA "3"
+#define COD_ADM_SWAP "4"
 
 /******************
  * Cod remitente (ID)

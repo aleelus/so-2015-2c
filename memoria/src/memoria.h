@@ -52,6 +52,7 @@ int g_Tamanio_Marco;
 int g_Entradas_TLB;
 char* g_TLB_Habilitada;
 int g_Retardo_Memoria;
+char* g_Algoritmo;
 
 // METODOS CONFIGURACION //
 void LevantarConfig();
@@ -136,6 +137,7 @@ typedef struct {
 	int marco;
 	int bitModificado;
 	int bitUso;
+	int bitPuntero;
 	char* contenido;
 } t_mp;
 

@@ -350,6 +350,24 @@ char* buscarEnMemoriaPrincipal(int marco){
 
 }
 
+char* grabarEnMemoriaPrincipal(int marco, char* contenido){
+
+	//Aca falta mas cosas pero no me acuerdo que ajajj
+
+	a_Memoria[marco].bitUso=1;
+	a_Memoria[marco].bitModificado=1;
+
+	if(a_Memoria[marco].contenido!=NULL){
+		free(a_Memoria[marco].contenido);
+	}
+
+	a_Memoria[marco].contenido = contenido;
+
+	return a_Memoria[marco].contenido;
+
+}
+
+
 void enviarContenidoACpu(int socket,int pid,int nroPagina,char* contenido){
 	// No se bien por ahora si hace falta el nroPagina pero por las dudas lo mando
 	//contenido = cicilianiYeta    pid = 4 nroPagina=3
@@ -424,23 +442,21 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
 	t_mProc *mProc;
 	t_pagina *pagina;
 	int i=0,j=0;
+	int marco;
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 
 		if(mProc-> pid == pid){
-			j=0;
+		j=0;
 			while(j<list_size(mProc->paginas)){
 				pagina = list_get(mProc->paginas,j);
-
 				if(pagina->pagina == nroPagina){
-
 					// Hay q ver q otras cosas actualizo
 					pagina->bitMP=1;
 					free(a_Memoria[pagina->marco].contenido);
 					a_Memoria[pagina->marco].contenido = string_new();
 					string_append(&a_Memoria[pagina->marco].contenido,contenido);
-
 				}
 				j++;
 			}
@@ -503,10 +519,66 @@ void actualizarTLB(int pid,int nroPagina){
 		i++;
 	}
 
-
-
-
 }
+
+void hayLugarEnMPSinoLoHago(int* marco){
+	int i,bandera=0;
+	if(!strcmp(g_Algoritmo,"FIFO")){
+		i=0;
+		while(i<g_Cantidad_Marcos){
+			if(a_Memoria[i].bitPuntero == 1){
+				bandera=1;
+				*marco=i;
+			}
+		}
+		if(!bandera){
+			*marco=0;
+		}
+	} else if (!strcmp(g_Algoritmo,"CLOCK")){
+		//ESPERAMOS
+	}
+}
+
+void implementoEscribirCpu(int socket,char *buffer){
+
+	//2 3 111 112 14hola
+
+	int posActual=2,pid,nroPagina=-1,marco=-1;
+	char *bufferAux,*contenido;
+	contenido = malloc(g_Tamanio_Marco);
+	memset(contenido,0,g_Tamanio_Marco);
+
+	//Id Proceso
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	pid = atoi(bufferAux);
+	free(bufferAux);
+
+	//Numero de Pagina
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+	nroPagina=atoi(bufferAux);
+
+	//Contenido a grabar en la Pagina
+	bufferAux= DigitosNombreArchivo(buffer,&posActual);
+
+	string_append(&contenido,bufferAux);
+
+	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
+		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
+	}else{
+		if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
+			//Encontro la pagina en la tabla de paginas
+		}else{
+			//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
+			// hacemos boleta a alguien
+			hayLugarEnMPSinoLoHago(&marco);
+			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
+			actualizarTLB(pid,nroPagina);
+		}
+	}
+	grabarEnMemoriaPrincipal(marco,contenido);
+	enviarContenidoACpu(socket,pid,nroPagina,contenido);
+}
+
 
 
 void implementoLeerCpu(int socket,char *buffer){
@@ -573,6 +645,8 @@ void implementoCPU(int socket,char* buffer){
 		//el algoritmo de reemplazo, luego devolverle el contenido a la cpu
 		break;
 	case ESCRIBIR:
+		implementoEscribirCpu(socket,buffer);
+
 
 
 

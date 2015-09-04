@@ -41,6 +41,7 @@ pthread_t hCrearHilos;
 // - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
 int g_Ejecutando = 1;
 
+extern t_list* procesos;
 
 int main(void) {
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
@@ -50,6 +51,8 @@ int main(void) {
 
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
+
+	inicializarListaDeProcesos();
 
 	int iThreadCrearHilos = pthread_create(&hCrearHilos, NULL,(void*) CrearHilos, NULL );
 
@@ -81,6 +84,10 @@ void CrearCPU(){
 		fprintf(stderr,"Error al crear hilo - pthread_create() return code: %d\n",iThreadCPU);
 		exit(EXIT_FAILURE);
 	}
+}
+
+void inicializarListaDeProcesos(){
+	procesos = list_create();
 }
 
 void conectarMemoria() {

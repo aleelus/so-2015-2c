@@ -17,9 +17,10 @@ typedef struct{
 
 typedef struct{
 	char* nombre;
-	//TODO ver que mas datos poner aca
+	int instructionPointer;//es la pos en la lista de instrucciones de la proxima instruccion a ejecutar;
+	//TODO ver que mas datos poner aca, es necesario que la CPU sepa que paginas tiene asignadas o usadas cada proceso?
 	t_list* instrucciones;
-}t_programa;
+}t_proceso;
 
 /*
  * @NAME: ejecutarMProc
@@ -38,9 +39,9 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones);
 
 /*
  * @NAME: separarInstruccionDeParametros
- * @DESC: separa la instruccion de los parametros, los graba en una lista para despues ser ejecutados por ejecutarMProc... TODO re hacer ejecutarMProc
+ * @DESC: separa la instruccion de los parametros, los graba en una lista para despues ser ejecutados por ejecutarMProc...
  * */
-void separarInstruccionDeParametros(char* instruccionMasParametros);
+void separarInstruccionDeParametros(char* instruccionMasParametros, t_proceso* proceso);
 
 /*
  * @NAME: obtenerNombreDelArchivo
@@ -49,10 +50,10 @@ void separarInstruccionDeParametros(char* instruccionMasParametros);
 char* obtenerNombreDelArchivo(char* path);
 
 /*
- * @NAME: crearPrograma
- * @DESC: crea la estructura t_programa
+ * @NAME: crearproceso
+ * @DESC: crea la estructura t_proceso
  * */
-t_programa* crearPrograma(char* pathDelArchivoDeInstrucciones);
+t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones);
 
 /*
  * @NAME: crearInstruccion

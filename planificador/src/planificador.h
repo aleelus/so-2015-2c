@@ -22,6 +22,8 @@
 #include <termio.h>
 #include <sys/ioctl.h>
 
+/************ Cosas de la api **********************/
+
 #define STDINFD  0
 #undef getc
 
@@ -109,3 +111,23 @@ void Comenzar_Consola();
 int operaciones_consola();
 void CargarListaComandos();
 void procesarBuffer(char* buffer, long unsigned tamanioBuffer);
+
+/***************************************************************************************/
+
+typedef enum {
+	LISTO,
+	BLOQUEADO,
+	EJECUTANDO,
+	ERROR,
+	TERMINADO
+}t_estado;
+
+typedef struct {
+	int pid;
+	int nroLinea; // Ultima linea = -1
+	int quantum;
+	t_estado estado;
+	time_t horaCreacion;
+	char* path;
+} t_PCB;
+

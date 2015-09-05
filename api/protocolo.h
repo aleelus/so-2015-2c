@@ -66,7 +66,7 @@
  *
  * 	Planificador
  *	1-ejecutar el mensaje este va a tener: PID,
- *										   IP (numero de linea de la instruccion a ejecutar),
+ *										   IP (numero de linea de la instruccion a ejecutar), (Ultima linea = -1)
  *										   Cant instrucciones (FIFO = -1, RR = N (es el Quantum))
  *										   Path del archivo de instrucciones (/home/utnso/documentos/mCod)
  *

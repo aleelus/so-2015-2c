@@ -10,9 +10,17 @@
  */
 
 #include "planificador.h"
+#include <time.h>
+#include <commons/collections/list.h>
+
+#define __DEBUG__ 1
+
+
+t_list* PCBs, colaReady, colaBloqueados;
 
 
 int main(void) {
+
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "planificador", false, LOG_LEVEL_TRACE);
 

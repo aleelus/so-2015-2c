@@ -65,8 +65,6 @@ pthread_t hOrquestadorConexiones, hConsola;
 
 //METODOS MANEJO SOCKETS
 void HiloOrquestadorDeConexiones();
-
-char* obtenerSubBuffer(char *);
 int cuentaDigitos(int );
 
 // - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
@@ -79,14 +77,24 @@ int g_Ejecutando = 1;
 //Funciones
 void CerrarSocket(int socket);
 int AtiendeCliente(void * arg);
-void ErrorFatal(const char* mensaje, ...);
-int ObtenerComandoMSJ(char* buffer);
-int PosicionDeBufferAInt(char* buffer, int posicion);
-int ChartToInt(char x);
-char* DigitosNombreArchivo(char *buffer,int *posicion);
-long unsigned RecibirDatos(int socket,char** buffer);
 void LevantarConfig();
 void Error(const char* mensaje, ...);
-char* obtenerSubBuffer(char *nombre);
 void Comenzar_Consola();
 int operaciones_consola();
+
+
+
+typedef struct t_block_used
+{
+	long pid;
+	int ptrComienzo;
+	int cantPag;
+	struct t_block_used* ptrNext;
+}t_block_used;
+
+typedef struct t_block_free
+{
+	int ptrComienzo; //Comienzo del espacio libre
+	int cantPag;
+	struct t_block_free* ptrNext;
+}t_block_free;

@@ -33,12 +33,13 @@ char* obtenerNombreDelArchivo(char* path) {
 	return nombre;
 }
 
-t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones) {
+t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones, int pid) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 
 	proceso->nombre = obtenerNombreDelArchivo(pathDelArchivoDeInstrucciones);
 	proceso->instrucciones = list_create();
 	proceso->instructionPointer = 0;//En las listas de las commons la pos 0 es la primera
+	proceso->pid = pid;
 
 	return proceso;
 }
@@ -50,12 +51,12 @@ t_instruccion* crearInstruccion(char* instruccion) {
 	return instr;
 }
 
-void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones) {
+void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 	char* contenidoAux;
 	char* contenidoDelArchivo;
 	FILE* archivoDeInstrucciones = fopen(pathDelArchivoDeInstrucciones, "r");
 
-	t_proceso* proceso = crearProceso(pathDelArchivoDeInstrucciones);
+	t_proceso* proceso = crearProceso(pathDelArchivoDeInstrucciones, pid);
 
 	list_add(procesos,proceso);
 
@@ -123,8 +124,8 @@ void separarInstruccionDeParametros(char* instruccionMasParametros, t_proceso* p
 	list_add(proceso->instrucciones,instruccion);
 }
 
-void ejecutarMProc(char* pathDelArchivoDeInstrucciones) {
+void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid) {
 	//TODO validar que el proceso no haya sido ejecutado antes
-	recolectarInstrucciones(pathDelArchivoDeInstrucciones);
+	recolectarInstrucciones(pathDelArchivoDeInstrucciones, pid);
 	//TODO settear el proceso en ejecucion o buscarlo en la lista para empezar a ejecutarlo
 }

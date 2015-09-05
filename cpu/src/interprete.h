@@ -13,11 +13,13 @@
 typedef struct{
 	char* instruccion;
 	char** parametros;//vector dinamico de parametros (vector de punteros a char)
+	char* resultado;//contatenar con barra n, para mandar todo en un char al planificador
 }t_instruccion;
 
 typedef struct{
 	char* nombre;
 	int instructionPointer;//es la pos en la lista de instrucciones de la proxima instruccion a ejecutar;
+	int pid;
 	//TODO ver que mas datos poner aca, es necesario que la CPU sepa que paginas tiene asignadas o usadas cada proceso?
 	t_list* instrucciones;
 }t_proceso;
@@ -28,14 +30,14 @@ typedef struct{
  * 		  TODO ver si hacer una funcion que lea todo el archivo de una,
  *  	  grabarlo en una estructura auxiliar y dsp "ejecutar las"
  * */
-void ejecutarMProc(char* pathDelArchivoDeInstrucciones);
+void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid);
 
 /*
  * @NAME: recolectarInstrucciones
  * @DESC: lee el archivo de instrucciones y separa cada instruccion con sus parametros
  * 		  para grabarlos en una lista
  * */
-void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones);
+void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid);
 
 /*
  * @NAME: separarInstruccionDeParametros
@@ -53,7 +55,7 @@ char* obtenerNombreDelArchivo(char* path);
  * @NAME: crearproceso
  * @DESC: crea la estructura t_proceso
  * */
-t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones);
+t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones, int pid);
 
 /*
  * @NAME: crearInstruccion

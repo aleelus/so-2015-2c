@@ -12,7 +12,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <commons/config.h>
 #include <string.h>
 #include <commons/string.h>
 #include <commons/collections/list.h>
@@ -21,11 +20,21 @@
 #include <netdb.h>
 #include <api.h>
 #include <protocolo.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <string.h>
+#include "configuracion.h"
+#include "conexion.h"
 
 #define COLOR_VERDE   "\x1b[32m"
 #define DEFAULT   "\x1b[0m"
 #define YO	"4"
-
+//**Define para mensajes recibidos de MEMORIA**/
+#define CREA_PROCESO 1
+#define SOLICITA_MARCO 2
+#define REEMPLAZA_MARCO 3
+#define FINALIZAR_PROCESO 4
+#define ENTREGA1 1 //Dejar en 1 hasta la entrega 1
 
 //sem_t semaforoListaNodos,semaforoListaArchivos,semaforoListaJobEnviados,semIdJob,semSocket;
 
@@ -48,9 +57,6 @@ int g_Cantidad_Paginas;
 int g_Tamanio_Pagina;
 int g_Retardo_Compactacion;
 
-// METODOS CONFIGURACION //
-void LevantarConfig();
-
 // METODOS MANEJO DE ERRORES //
 void Error(const char* mensaje, ...);
 
@@ -58,43 +64,18 @@ void Error(const char* mensaje, ...);
 t_log* logger;
 
 //Contador de Hilos
-int cantHilos=0;
+int cantHilos;
 
 // Definimos los hilos principales
 pthread_t hOrquestadorConexiones, hConsola;
 
-//METODOS MANEJO SOCKETS
-void HiloOrquestadorDeConexiones();
-int cuentaDigitos(int );
-
 // - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
-int g_Ejecutando = 1;
+int g_Ejecutando;
 
 //Tipos de operaciones
-#define ES_MEMORIA	3
 #define COMANDO 8
 
 //Funciones
-void CerrarSocket(int socket);
-int AtiendeCliente(void * arg);
-void LevantarConfig();
-void Error(const char* mensaje, ...);
 void Comenzar_Consola();
 int operaciones_consola();
-
-
-
-typedef struct t_block_used
-{
-	long pid;
-	int ptrComienzo;
-	int cantPag;
-	struct t_block_used* ptrNext;
-}t_block_used;
-
-typedef struct t_block_free
-{
-	int ptrComienzo; //Comienzo del espacio libre
-	int cantPag;
-	struct t_block_free* ptrNext;
-}t_block_free;
+int ejecutarOrden(int);

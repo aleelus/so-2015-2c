@@ -73,7 +73,9 @@ long unsigned RecibirDatos(int socket, char **buffer);
 
 /*
  * @NAME: DigitosNombreArchivo
- * @DESC: TODO
+ * @DESC: Posicionado al comienzo de la rafaga, devuelve el dato correspondiente al primer dato del mensaje. El puntero
+ * queda al comienzo del proximo dato del mensaje, por lo que al llamarla de nuevo devuelve el segundo dato(si corresponde)
+ *
  * */
 char* DigitosNombreArchivo(char *buffer,int *posicion);
 

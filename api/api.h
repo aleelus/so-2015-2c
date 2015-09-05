@@ -55,13 +55,13 @@ int ObtenerComandoMSJ(char* buffer);
 
 /*
  * @NAME: PosicionDeBufferAInt
- * @DESC: TODO
+ * @DESC: convierte un char (de la ubicacion buffer[posicion]), que representa un numero, a int
  * */
 int PosicionDeBufferAInt(char* buffer, int posicion);
 
 /*
- * @NAME: CartToInt
- * @DESC: TODO
+ * @NAME: ChartToInt
+ * @DESC: recibe un caracter que represente un numero y devuelve el int equivalente
  * */
 int ChartToInt(char x);
 

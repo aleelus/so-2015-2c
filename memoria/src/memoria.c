@@ -53,19 +53,90 @@ int main(void) {
 	return 0;
 }
 
+void vaciarTLB(){
+	t_tlb* tlb;
+
+	while(list_size(lista_tlb)>0){
+		tlb = list_remove(lista_tlb,0);
+		free(tlb);
+	}
+}
+
+void bajarMarcosASwapYLimpiarMP(){
+	int i=0,pid,pagina;
+	while(i<g_Cantidad_Marcos){
+		if(a_Memoria[i].bitModificado==1){
+			funcionBuscarPidPagina(a_Memoria[i].marco,&pid,&pagina);
+			grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+		}
+		memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+		a_Memoria[i].bitModificado=0;
+		a_Memoria[i].bitPuntero=0;
+		a_Memoria[i].bitUso=0;
+		a_Memoria[i].marcoEnUso=0;
+		i++;
+	}
+}
+/*
+int Dump()
+{
+
+	int a[2],status;
+
+    pipe(a);
+
+    if(!fork()) {
+
+    	int j=0;
+    	close(a[1]);
+
+    	dup2(a[0],STDIN_FILENO);
+
+    	close(STDOUT_FILENO);
+
+    	open(archNom, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+
+    	close(a[0]);
+        dup(STDOUT_FILENO);
+
+        exit(0);
+
+    } else {
+
+		close(a[0]);
+
+		int i=0;
+
+		while(i<g_Cantidad_Marcos){
+			write(a[1],a_Memoria[i].contenido,g_Tamanio_Marco);
+			i++;
+		}
+
+
+		close(a[1]);
+		wait(&status);
+
+
+    }
+
+    return 1;
+}
+*/
+
 void Manejador(int signum){
 	switch (signum){
 	case SIGUSR1:
 	   	printf("He recibido la señal SIGUSR1\n");
-	   	//Vaciar la TLB
+	   	vaciarTLB();
 	   	break;
     case SIGUSR2:
 	    printf("He recibido la señal SIGUSR2\n");
-	    //Limpiar la MP y actualizar las tablas y bajar a swap los marcos modificados
+	    bajarMarcosASwapYLimpiarMP();
+	    funcionLimpiarTablasPaginas();
 	    break;
     case SIGPOLL:
 	    printf("He recibido la señal SIGPOLL");
-	    //Volcado de la memoria en un archivo
+	    //Crear un hijo, pasarle por pipe al hijo la MP y el hijo guarda el contenido de toda la memoria a disco
 	    break;
     default:
     	printf("Fin de ejecucion\n");
@@ -102,7 +173,8 @@ void iniciarMemoriaPrincipal(){
 		a_Memoria[i].marco = i;
 		a_Memoria[i].bitModificado = 0;
 		a_Memoria[i].bitUso = 0;
-		a_Memoria[i].contenido = string_new();
+		a_Memoria[i].contenido = malloc(g_Tamanio_Marco);
+		memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 	}
 }
 
@@ -415,6 +487,29 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 
 }
 
+char * grabarContenidoASwap(int pid,int nroPagina,char* contenido){
+
+	//3 3 111 112 14hola
+
+	char * buffer=string_new();
+	char * bufferRespuesta=string_new();
+
+	string_append(&buffer,"33");
+	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
+	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
+	string_append(&buffer,obtenerSubBuffer(contenido));
+
+	printf("Buffer a Swap (Escribir): %s",buffer);
+	//EnviarDatos(socket_Swap,buffer,strlen(buffer));
+
+	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
+	//RecibirDatos(socket_Swap,&bufferRespuesta);
+
+	return bufferRespuesta;
+
+}
+
+
 char * pedirContenidoASwap(int pid,int nroPagina){
 
 	//3 2 111 112
@@ -524,21 +619,195 @@ void actualizarTLB(int pid,int nroPagina){
 
 }
 
-void hayLugarEnMPSinoLoHago(int* marco){
-	int i,bandera=0;
-	if(!strcmp(g_Algoritmo,"FIFO")){
-		i=0;
-		while(i<g_Cantidad_Marcos){
-			if(a_Memoria[i].bitPuntero == 1){
-				bandera=1;
+void funcionLimpiarTablasPaginas(){
+	t_mProc* mProc;
+	t_pagina* unaPagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		j=0;
+		while(j<list_size(mProc->paginas)){
+			unaPagina = list_get(mProc->paginas,j);
+			unaPagina->marco = -1;
+			unaPagina->bitMP = 0;
+			j++;
+		}
+		i++;
+	}
+}
+
+
+void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
+	t_mProc* mProc;
+	t_pagina* unaPagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		j=0;
+		while(j<list_size(mProc->paginas)){
+			unaPagina = list_get(mProc->paginas,j);
+			if(unaPagina->marco==marco){
+				*pid = mProc->pid;
+				*pagina = unaPagina->pagina;
+				j = list_size(mProc->paginas);
+				i = list_size(lista_mProc);
+			}
+			j++;
+		}
+		i++;
+	}
+}
+
+void FIFO(int *marco,int* pagina,int* pid,char** contenido){
+	int i=0;
+	while(i<g_Cantidad_Marcos){
+		if(a_Memoria[i].bitPuntero == 1){
+			funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+			*contenido = a_Memoria[i].contenido;
+			grabarContenidoASwap(*pid,*pagina,*contenido);
+			memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+			*marco=i;
+			a_Memoria[i].bitPuntero = 0;
+			if(i==g_Cantidad_Marcos-1){
+				a_Memoria[0].bitPuntero = 1;
+			} else {
+				a_Memoria[i+1].bitPuntero = 1;
+			}
+			i=g_Cantidad_Marcos;
+		}
+		i++;
+	}
+}
+
+void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
+	int i=0,bandera=0;
+	while(i<g_Cantidad_Marcos){
+		if(a_Memoria[i].bitPuntero == 1){
+			if(a_Memoria[i].bitUso == 1){
+				a_Memoria[i].bitUso = 0;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+			} else if(a_Memoria[i].bitUso == 0){
+				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				*contenido = a_Memoria[i].contenido;
+				grabarContenidoASwap(*pid,*pagina,*contenido);
+				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 				*marco=i;
+				a_Memoria[i].bitUso = 1;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+				i=g_Cantidad_Marcos;
+				bandera=1;
 			}
 		}
-		if(!bandera){
-			*marco=0;
+		if(bandera==0){
+			i=0;
+		} else {
+			i++;
 		}
+	}
+}
+
+void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
+	int i=0,bandera=0;
+	while(i<g_Cantidad_Marcos){
+		if(a_Memoria[i].bitPuntero == 1){
+			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 0){
+				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				*contenido = a_Memoria[i].contenido;
+				grabarContenidoASwap(*pid,*pagina,*contenido);
+				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+				*marco=i;
+				a_Memoria[i].bitUso = 1;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+				i=g_Cantidad_Marcos;
+				bandera=1;
+			} else {
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+			}
+			i++;
+		}
+	}
+	i=0;
+	while(i<g_Cantidad_Marcos&&!bandera){
+		if(a_Memoria[i].bitPuntero == 1){
+			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 1){
+				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				*contenido = a_Memoria[i].contenido;
+				grabarContenidoASwap(*pid,*pagina,*contenido);
+				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+				*marco=i;
+				a_Memoria[i].bitUso = 1;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+				i=g_Cantidad_Marcos;
+				bandera=1;
+			} else {
+				a_Memoria[i].bitUso = 0;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+			}
+			i++;
+		}
+	}
+
+	while(i<g_Cantidad_Marcos&&!bandera){
+		if(a_Memoria[i].bitPuntero == 1){
+			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 0){
+				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				*contenido = a_Memoria[i].contenido;
+				grabarContenidoASwap(*pid,*pagina,*contenido);
+				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+				*marco=i;
+				a_Memoria[i].bitUso = 1;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+				i=g_Cantidad_Marcos;
+				bandera=1;
+			} else {
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+			}
+			i++;
+		}
+	}
+}
+
+void hayLugarEnMPSinoLoHago(int* marco){
+	int pid,pagina;
+	char* contenido;
+	if(!strcmp(g_Algoritmo,"FIFO")){
+		FIFO(marco,&pagina,&pid,&contenido);
 	} else if (!strcmp(g_Algoritmo,"CLOCK")){
-		//ESPERAMOS
+		CLOCK(marco,&pagina,&pid,&contenido);
+	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+		CLOCKMEJORADO(marco,&pagina,&pid,&contenido);
 	}
 }
 
@@ -577,6 +846,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
 			actualizarTLB(pid,nroPagina);
 		}
+		sleep(g_Retardo_Memoria);
 	}
 	grabarEnMemoriaPrincipal(marco,contenido);
 	enviarContenidoACpu(socket,pid,nroPagina,contenido);
@@ -611,12 +881,14 @@ void implementoLeerCpu(int socket,char *buffer){
 		if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 			//Encontro la pagina en la tabla de paginas
 			contenido=buscarEnMemoriaPrincipal(marco);
+			sleep(g_Retardo_Memoria);
 			enviarContenidoACpu(socket,pid,nroPagina,contenido);
 
 		}else{
 			//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 
 			contenido=pedirContenidoASwap(pid,nroPagina);
+			sleep(g_Retardo_Memoria);
 			enviarContenidoACpu(socket,pid,nroPagina,contenido);
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
 			actualizarTLB(pid,nroPagina);

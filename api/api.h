@@ -55,13 +55,13 @@ int ObtenerComandoMSJ(char* buffer);
 
 /*
  * @NAME: PosicionDeBufferAInt
- * @DESC: TODO
+ * @DESC: convierte un char (de la ubicacion buffer[posicion]), que representa un numero, a int
  * */
 int PosicionDeBufferAInt(char* buffer, int posicion);
 
 /*
- * @NAME: CartToInt
- * @DESC: TODO
+ * @NAME: ChartToInt
+ * @DESC: recibe un caracter que represente un numero y devuelve el int equivalente
  * */
 int ChartToInt(char x);
 
@@ -73,7 +73,9 @@ long unsigned RecibirDatos(int socket, char **buffer);
 
 /*
  * @NAME: DigitosNombreArchivo
- * @DESC: TODO
+ * @DESC: Posicionado al comienzo de la rafaga, devuelve el dato correspondiente al primer dato del mensaje. El puntero
+ * queda al comienzo del proximo dato del mensaje, por lo que al llamarla de nuevo devuelve el segundo dato(si corresponde)
+ *
  * */
 char* DigitosNombreArchivo(char *buffer,int *posicion);
 

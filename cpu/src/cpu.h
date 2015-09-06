@@ -60,3 +60,4 @@ void CrearHilos();
 void ProcesoCPU();
 void ConectarPlanificador(int* socket_Planificador);
 void CrearCPU();
+void inicializarListaDeProcesos();

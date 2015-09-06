@@ -59,4 +59,25 @@
 
 //TODO hacer lo mismo con los otros procesos...
 
+/*
+ * CPU
+ *
+ * Remitente
+ *
+ * 	Planificador
+ *	1-ejecutar el mensaje este va a tener: PID,
+ *										   IP (numero de linea de la instruccion a ejecutar), (Ultima linea = -1)
+ *										   Cant instrucciones (FIFO = -1, RR = N (es el Quantum))
+ *										   Path del archivo de instrucciones (/home/utnso/documentos/mCod)
+ *
+ * Destinatario
+ *
+ * 	Planificador
+ *
+ * 	1- Enstrada Salida (Tiempo de E/S, Resultados con barra n)
+ * 	2- Finalizar (Resultados con barra n)
+ * 	3- Quantum (Resultados con barra n)
+ * 	4- Fallo (Resultados con barra n ("fallo"))
+ * */
+
 #endif /* PROTOCOLO_H_ */

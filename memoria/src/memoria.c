@@ -704,6 +704,28 @@ int eliminarProceso(int pid){
 
 }
 
+
+void eliminarDeLaTlbEnFinalizar(int pid){
+
+	t_tlb *tlb;
+	int i=0;
+
+	while(i<list_size(lista_tlb)){
+
+		tlb = list_get(lista_tlb,i);
+
+		if(tlb->pid == pid){
+
+			tlb->marco=-1;
+			tlb->pagina=-1;
+		}
+		i++;
+	}
+
+}
+
+
+
 void implementoFinalizarCpu(int socket,char *buffer){
 
 	//2 4 111
@@ -719,6 +741,7 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	free(bufferAux);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
+	eliminarDeLaTlbEnFinalizar(pid);
 	//
 
 	if(eliminarProceso(pid)){

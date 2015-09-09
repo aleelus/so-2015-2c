@@ -182,8 +182,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 		char* buffer = string_new();
 		//TODO preguntarle a Ale o a Seba si appendear esto asi esta bien, o si estoy haciendo cosas de mas o de menos :P
 		string_append(&buffer,"1");//Tipo de operacion (1-Nuevo proceso)
-		string_append(&buffer,"1");//Cant de datos a mandar
-		string_append(&buffer, instruccion->parametros[0]);
+		string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));//Cant de datos a mandar
 
 		conectarMemoria();
 

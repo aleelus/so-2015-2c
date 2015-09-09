@@ -118,19 +118,19 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 			} else {
 				switch (posicionEnElArray) {
 				case (0):
-					instruccion = crearInstruccion(instrucciones[0],1);
+					instruccion = crearInstruccion(instrucciones[0], 1);
 					break;
 				case (1):
-					instruccion = crearInstruccion(instrucciones[1],1);
+					instruccion = crearInstruccion(instrucciones[1], 1);
 					break;
 				case (2):
-					instruccion = crearInstruccion(instrucciones[2],2);
+					instruccion = crearInstruccion(instrucciones[2], 2);
 					break;
 				case (3):
-					instruccion = crearInstruccion(instrucciones[3],1);
+					instruccion = crearInstruccion(instrucciones[3], 1);
 					break;
 				case (4):
-					instruccion = crearInstruccion(instrucciones[4],0);
+					instruccion = crearInstruccion(instrucciones[4], 0);
 					break;
 				}
 
@@ -172,51 +172,85 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 	char* bufferRespuesta = string_new();
 
 	for (i = ip; i < procesoAEjecutar->instrucciones->elements_count; i++) { //ejecuta todas las instrucciones, corta con una entrada-salida o finalizar
-		t_instruccion* instruccion = list_get(procesoAEjecutar->instrucciones,
-				i);
+		t_instruccion* instruccion = list_get(procesoAEjecutar->instrucciones,i);
 
-		existeInstruccion = instruccionValida(instruccion->instruccion, &posicionEnElArray);
+		existeInstruccion = instruccionValida(instruccion->instruccion,&posicionEnElArray);
 
 		if (0 == posicionEnElArray) { //iniciar
 
-		char* buffer = string_new();
-		//TODO preguntarle a Ale o a Seba si appendear esto asi esta bien, o si estoy haciendo cosas de mas o de menos :P
-		string_append(&buffer,"1");//Tipo de operacion (1-Nuevo proceso)
-		string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));//Cant de datos a mandar
+			char* buffer = string_new();
+			//TODO preguntarle a Ale o a Seba si appendear esto asi esta bien, o si estoy haciendo cosas de mas o de menos :P
+			string_append(&buffer, "1"); //Tipo de operacion (1-Nuevo proceso)
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
 
-		conectarMemoria();
+			conectarMemoria();
 
-		long unsigned size = strlen(instruccion->parametros[0]);
+			long unsigned size = strlen(buffer);
 
-		EnviarDatos(socket_Memoria, buffer, size, YO);
-		RecibirDatos(socket_Memoria, &bufferRespuesta);
+			EnviarDatos(socket_Memoria, buffer, size, YO);
+			RecibirDatos(socket_Memoria, &bufferRespuesta);
 
-		//TODO avisar al planificador mProc iniciado o fallo
+			//TODO Guardar respuesta para dsp avisar al planificador mProc iniciado o fallo
+			free(buffer);
 
 		}
 
 		if (1 == posicionEnElArray) { //leer
-		//TODO mandar a la memoria
-		//TODO avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
 
+			char* buffer = string_new();
+
+			string_append(&buffer,"2");//Tipo de operacion 2-Leer memoria
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+
+			conectarMemoria();
+
+			long unsigned size = strlen(buffer);
+			EnviarDatos(socket_Memoria, buffer, size, YO);
+			RecibirDatos(socket_Memoria, &bufferRespuesta);
+
+			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
+			free(buffer);
 		}
 
 		if (2 == posicionEnElArray) { //escribir
-		//TODO mandar a la memoria
-		//TODO avisar al planificador mProc	X	-	Pagina	N	escrita:	 	junto	al	nuevo	contenido	de	esa	página	concatenado.
-		//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido	 .
 
+			char* buffer = string_new();
+
+			string_append(&buffer,"3");//Tipo de operacion 3-Escribir memoria
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[1]));
+
+			conectarMemoria();
+
+			long unsigned size = strlen(buffer);
+			EnviarDatos(socket_Memoria, buffer, size, YO);
+			RecibirDatos(socket_Memoria, &bufferRespuesta);
+
+			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N escrita: junto	al	nuevo	contenido	de	esa	página	concatenado.
+			//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido	 .
+			free(buffer);
 		}
 
 		if (3 == posicionEnElArray) { //entrada-salida
-		//TODO avisar al planificador (mProc X en entrada-salida de tiempo T) + mandar el resumen de todo lo que paso (la CPU se libera para ejecutar otra cosa)
-			break;
+			//TODO avisar al planificador (mProc X en entrada-salida de tiempo T) + mandar el resumen de todo lo que paso (la CPU se libera para ejecutar otra cosa)
+			break;//Para de ejecutar!!!!!!!! xD
 		}
 
-		if (4 == posicionEnElArray) {//finalizar
-		//TODO mandar a la memoria
-		//TODO avisar al planificador (mProc X finalizado) + mandar el resumen de todo lo que paso
-			break;
+		if (4 == posicionEnElArray) {		//finalizar
+
+			char* buffer = string_new();
+
+			string_append(&buffer,"4");//Tipo de operacion 4-Finalizar proceso
+			string_append(&buffer,obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));//PID del proceso que va a morir
+
+			conectarMemoria();
+
+			long unsigned size = strlen(buffer);
+			EnviarDatos(socket_Memoria, buffer, size, YO);
+			RecibirDatos(socket_Memoria, &bufferRespuesta);
+
+			//TODO avisar al planificador (mProc X finalizado) + mandar el resumen de todo lo que paso
+			break;//Harakiri
 		}
 
 	}

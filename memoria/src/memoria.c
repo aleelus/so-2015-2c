@@ -14,7 +14,7 @@
 
 int main(void) {
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
-	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", false, LOG_LEVEL_TRACE);
+	logger = log_create(NOMBRE_ARCHIVO_LOG, "Adm de Mem", false, LOG_LEVEL_TRACE);
 
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
@@ -77,43 +77,47 @@ void bajarMarcosASwapYLimpiarMP(){
 		i++;
 	}
 }
-/*
+
 int Dump()
 {
 
-	int a[2],status;
+	int status;
 
-    pipe(a);
+
 
     if(!fork()) {
 
+    	//TENGO Q PONER EL LOG ACA
+    	FILE * arch = fopen("hola.txt","w");
+
     	int j=0;
-    	close(a[1]);
+    	char *contenido = string_new();
 
-    	dup2(a[0],STDIN_FILENO);
+    	for(j=0;j<g_Cantidad_Marcos;j++){
 
-    	close(STDOUT_FILENO);
+    		string_append(&contenido,"Marco: ");
+    		string_append(&contenido,string_itoa(j));
+    		string_append(&contenido," Contendio: ");
+    		string_append(&contenido,a_Memoria[j].contenido);
+    		string_append(&contenido,"\n");
 
-    	open(archNom, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    		fwrite(contenido,1,strlen(contenido),arch);
 
-    	close(a[0]);
-        dup(STDOUT_FILENO);
+    		free(contenido);
+    		contenido = string_new();
+
+    	}
+
+
 
         exit(0);
 
     } else {
 
-		close(a[0]);
 
 		int i=0;
 
-		while(i<g_Cantidad_Marcos){
-			write(a[1],a_Memoria[i].contenido,g_Tamanio_Marco);
-			i++;
-		}
-
-
-		close(a[1]);
+		// ESPERO A Q TERMINE EL HIJO POR AHORA
 		wait(&status);
 
 
@@ -121,7 +125,7 @@ int Dump()
 
     return 1;
 }
-*/
+
 
 void Manejador(int signum){
 	switch (signum){

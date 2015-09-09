@@ -70,4 +70,10 @@ t_instruccion* crearInstruccion(char* instruccion, int cantidadDeParametros);
  * */
 void ejecutarMCod(t_proceso* procesoAEjecutar, int ip);
 
+/*
+ * @NAME: instruccionValida
+ * @DESC: retorna si es valida una instruccion, modifica el contenido de posicionEnElArray de instrucciones
+ * */
+int instruccionValida(char* instruccion, int* posicionEnElArray);
+
 #endif /* INTERPRETE_H_ */

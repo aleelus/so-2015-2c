@@ -167,36 +167,54 @@ void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid,
 
 void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 	int i = ip;
+	int posicionEnElArray = -1;
+	int existeInstruccion = 0;
+	char* bufferRespuesta = string_new();
 
 	for (i = ip; i < procesoAEjecutar->instrucciones->elements_count; i++) { //ejecuta todas las instrucciones, corta con una entrada-salida o finalizar
 		t_instruccion* instruccion = list_get(procesoAEjecutar->instrucciones,
 				i);
 
-		if (0 == strcmp(instruccion->instruccion, instrucciones[0])) { //iniciar
-		//TODO mandar a la memoria
+		existeInstruccion = instruccionValida(instruccion->instruccion, &posicionEnElArray);
+
+		if (0 == posicionEnElArray) { //iniciar
+
+		char* buffer = string_new();
+		//TODO preguntarle a Ale o a Seba si appendear esto asi esta bien, o si estoy haciendo cosas de mas o de menos :P
+		string_append(&buffer,"1");//Tipo de operacion (1-Nuevo proceso)
+		string_append(&buffer,"1");//Cant de datos a mandar
+		string_append(&buffer, instruccion->parametros[0]);
+
+		conectarMemoria();
+
+		long unsigned size = strlen(instruccion->parametros[0]);
+
+		EnviarDatos(socket_Memoria, buffer, size, YO);
+		RecibirDatos(socket_Memoria, &bufferRespuesta);
+
 		//TODO avisar al planificador mProc iniciado o fallo
 
 		}
 
-		if (0 == strcmp(instruccion->instruccion, instrucciones[1])) { //leer
+		if (1 == posicionEnElArray) { //leer
 		//TODO mandar a la memoria
 		//TODO avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
 
 		}
 
-		if (0 == strcmp(instruccion->instruccion, instrucciones[2])) { //escribir
+		if (2 == posicionEnElArray) { //escribir
 		//TODO mandar a la memoria
 		//TODO avisar al planificador mProc	X	-	Pagina	N	escrita:	 	junto	al	nuevo	contenido	de	esa	página	concatenado.
 		//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido	 .
 
 		}
 
-		if (0 == strcmp(instruccion->instruccion, instrucciones[3])) { //entrada-salida
+		if (3 == posicionEnElArray) { //entrada-salida
 		//TODO avisar al planificador (mProc X en entrada-salida de tiempo T) + mandar el resumen de todo lo que paso (la CPU se libera para ejecutar otra cosa)
 			break;
 		}
 
-		if (0 == strcmp(instruccion->instruccion, instrucciones[4])) {//finalizar
+		if (4 == posicionEnElArray) {//finalizar
 		//TODO mandar a la memoria
 		//TODO avisar al planificador (mProc X finalizado) + mandar el resumen de todo lo que paso
 			break;

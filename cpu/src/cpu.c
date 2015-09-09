@@ -192,7 +192,7 @@ void enviarArchivo2(int socket){
 }
 
 void ProcesoCPU() {
-	//ejecutarMProc("/home/utnso/Documentos/mProg.txt",1,0);//esto lo uso para hacer pruebas
+	ejecutarMProc("/home/utnso/Documentos/mProg.txt",1,0);//esto lo uso para hacer pruebas
 
 	int idHiloCPU = idCPU;//TODO para hacer los logs
 

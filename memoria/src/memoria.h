@@ -32,12 +32,12 @@
 #define FINALIZAR 4
 
 
-//sem_t semaforoListaNodos,semaforoListaArchivos,semaforoListaJobEnviados,semIdJob,semSocket;
+sem_t semTLB,semMP,semSwap,semLog;
 
 // CONSTANTES //
 //Ruta del config
 #define PATH_CONFIG "config.cfg"
-#define NOMBRE_ARCHIVO_LOG	"cpu.log"
+#define NOMBRE_ARCHIVO_LOG	"memoria.log"
 
 //Tamaño del buffer
 #define BUFFERSIZE 50

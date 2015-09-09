@@ -16,6 +16,13 @@ int main(void) {
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "Adm de Mem", false, LOG_LEVEL_TRACE);
 
+	//Semaforos
+	sem_init(&semTLB,0,1);
+	sem_init(&semMP,0,1);
+	sem_init(&semSwap,0,1);
+	sem_init(&semLog,0,1);
+
+
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
 
@@ -56,10 +63,13 @@ int main(void) {
 void vaciarTLB(){
 	t_tlb* tlb;
 
+	sem_wait(&semTLB);
 	while(list_size(lista_tlb)>0){
 		tlb = list_remove(lista_tlb,0);
 		free(tlb);
 	}
+	sem_post(&semTLB);
+
 }
 
 void bajarMarcosASwapYLimpiarMP(){
@@ -83,39 +93,37 @@ int Dump()
 
 	int status;
 
+	char* cabecera = "-----------Volcado de memoria INICIO-----------\n";
+	char* pie = "-----------Volcado de memoria FIN-----------\n";
 
 
     if(!fork()) {
 
-    	//TENGO Q PONER EL LOG ACA
-    	FILE * arch = fopen("hola.txt","w");
-
     	int j=0;
     	char *contenido = string_new();
+
+    	string_append(&contenido,cabecera);
 
     	for(j=0;j<g_Cantidad_Marcos;j++){
 
     		string_append(&contenido,"Marco: ");
     		string_append(&contenido,string_itoa(j));
-    		string_append(&contenido," Contendio: ");
+    		string_append(&contenido," Contenido: ");
     		string_append(&contenido,a_Memoria[j].contenido);
     		string_append(&contenido,"\n");
-
-    		fwrite(contenido,1,strlen(contenido),arch);
-
-    		free(contenido);
-    		contenido = string_new();
-
     	}
 
+    	string_append(&contenido,pie);
 
+    	sem_wait(&semLog);
+    	log_info(logger,contenido);
+    	sem_post(&semLog);
+
+    	free(contenido);
 
         exit(0);
 
     } else {
-
-
-		int i=0;
 
 		// ESPERO A Q TERMINE EL HIJO POR AHORA
 		wait(&status);
@@ -229,9 +237,11 @@ void HiloOrquestadorDeConexiones() {
 				"Error al hacer el Listen. No se pudo escuchar en el puerto especificado");
 
 	//Traza("El socket está listo para recibir conexiones. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
+	sem_wait(&semLog);
 	log_trace(logger,
 			"SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: %d, puerto: %d",
 			socket_host, g_Puerto);
+	sem_post(&semLog);
 
 	while (g_Ejecutando) {
 		int socket_client;
@@ -240,10 +250,12 @@ void HiloOrquestadorDeConexiones() {
 
 		if ((socket_client = accept(socket_host,(struct sockaddr *) &client_addr, &size_addr)) != -1) {
 			//Traza("Se ha conectado el cliente (%s) por el puerto (%d). El número de socket del cliente es: %d", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, socket_client);
+			sem_wait(&semLog);
 			log_trace(logger,
 					"NUEVA CONEXION ENTRANTE. Se ha conectado el cliente (%s) por el puerto (%d). El número de socket del cliente es: %d",
 					inet_ntoa(client_addr.sin_addr), client_addr.sin_port,
 					socket_client);
+			sem_post(&semLog);
 			// Aca hay que crear un nuevo hilo, que será el encargado de atender al cliente
 			pthread_t hNuevoCliente;
 			pthread_create(&hNuevoCliente, NULL, (void*) AtiendeCliente,
@@ -1141,10 +1153,10 @@ int AtiendeCliente(void * arg) {
 
 
 int conectarSWAP() {
+	sem_wait(&semLog);
+	log_info(logger, "Intentando conectar a Swap\n");
+	sem_post(&semLog);
 
-	//ESTRUCTURA DE SOCKETS; EN ESTE CASO CONECTA CON NODO
-	//log_info(logger, "Intentando conectar a nodo\n");
-	//conectar con Nodo
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
 	int conexionOk = 0;
@@ -1155,17 +1167,23 @@ int conectarSWAP() {
 
 
 	if (getaddrinfo(g_Ip_Swap, g_Puerto_Swap, &hints, &serverInfo) != 0) {// Carga en serverInfo los datos de la conexion
+		sem_wait(&semLog);
 		log_info(logger,
 				"ERROR: cargando datos de conexion socket_FS");
+		sem_post(&semLog);
 	}
 
 	if ((socket_Swap = socket(serverInfo->ai_family, serverInfo->ai_socktype,
 			serverInfo->ai_protocol)) < 0) {
+		sem_wait(&semLog);
 		log_info(logger, "ERROR: crear socket_FS");
+		sem_post(&semLog);
 	}
 	if (connect(socket_Swap, serverInfo->ai_addr, serverInfo->ai_addrlen)
 			< 0) {
+		sem_wait(&semLog);
 		log_info(logger, "ERROR: conectar socket_FS");
+		sem_post(&semLog);
 	} else {
 		conexionOk = 1;
 	}
@@ -1226,8 +1244,9 @@ int conexionASwap(){
 
 void CerrarSocket(int socket) {
 	close(socket);
-	//Traza("SOCKET SE CIERRA: (%d).", socket);
+	sem_wait(&semLog);
 	log_trace(logger, "SOCKET SE CIERRA: (%d).", socket);
+	sem_post(&semLog);
 }
 
 void ErrorFatal(const char* mensaje, ...) {
@@ -1236,7 +1255,9 @@ void ErrorFatal(const char* mensaje, ...) {
 	va_start(arguments, mensaje);
 	nuevo = string_from_vformat(mensaje, arguments);
 	printf("\nERROR FATAL--> %s \n", nuevo);
+	sem_wait(&semLog);
 	log_error(logger, "\nERROR FATAL--> %s \n", nuevo);
+	sem_post(&semLog);
 	char fin;
 
 	printf(
@@ -1319,7 +1340,9 @@ long unsigned RecibirDatos(int socket, char **buffer) {
 		pos = pos + numBytesRecv;
 	}while (pos < tamanioBuffer);
 
+	sem_wait(&semLog);
 	log_trace(logger, "RECIBO DATOS. socket: %d. tamanio buffer:%lu", socket,tamanioBuffer);
+	sem_post(&semLog);
 	return tamanioBuffer;
 }
 
@@ -1377,7 +1400,9 @@ long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer)
 		//printf("Cantidad Enviada :%lu\n",n);
 	}
 	if(cantEnviados!=tamanioBuffer) return 0;
+	sem_wait(&semLog);
 	log_info(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ",socket,tamanioBuffer);
+	sem_post(&semLog);
 	return tamanioBuffer;
 }
 
@@ -1443,8 +1468,9 @@ void Error(const char* mensaje, ...) {
 	nuevo = string_from_vformat(mensaje, arguments);
 
 	fprintf(stderr, "\nERROR: %s\n", nuevo);
+	sem_wait(&semLog);
 	log_error(logger, "%s", nuevo);
-
+	sem_post(&semLog);
 	va_end(arguments);
 	if (nuevo != NULL )
 		free(nuevo);

@@ -45,10 +45,11 @@ t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones, int pid) {
 	return proceso;
 }
 
-t_instruccion* crearInstruccion(char* instruccion) {
+t_instruccion* crearInstruccion(char* instruccion, int cantParam) {
 	t_instruccion* instr = malloc(sizeof(t_instruccion));
 	instr->instruccion = strdup(instruccion);
 	instr->parametros = calloc(3, sizeof(char*));
+	instr->cantDeParametros = cantParam;
 	return instr;
 }
 
@@ -102,7 +103,6 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 	int existeInstruccion = 0;
 	int posicionEnElArray = -1;
 	int k;
-	int cantParam = 0;
 	char* parametro;
 	t_instruccion* instruccion;
 	char** instruccionSpliteada = string_split(instruccionMasParametros, " ");
@@ -118,19 +118,19 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 			} else {
 				switch (posicionEnElArray) {
 				case (0):
-					instruccion = crearInstruccion(instrucciones[0]);
+					instruccion = crearInstruccion(instrucciones[0],1);
 					break;
 				case (1):
-					instruccion = crearInstruccion(instrucciones[1]);
+					instruccion = crearInstruccion(instrucciones[1],1);
 					break;
 				case (2):
-					instruccion = crearInstruccion(instrucciones[2]);
+					instruccion = crearInstruccion(instrucciones[2],2);
 					break;
 				case (3):
-					instruccion = crearInstruccion(instrucciones[3]);
+					instruccion = crearInstruccion(instrucciones[3],1);
 					break;
 				case (4):
-					instruccion = crearInstruccion(instrucciones[4]);
+					instruccion = crearInstruccion(instrucciones[4],0);
 					break;
 				}
 
@@ -138,12 +138,9 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 		}
 
 		//es un parametro
-		cantParam++;
 		parametro = strdup(instruccionSpliteada[k]);
 		instruccion->parametros[k - 1] = parametro; //k>0
 	}
-
-	instruccion->cantDeParametros = cantParam++;
 
 	list_add(proceso->instrucciones, instruccion);
 }

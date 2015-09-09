@@ -11,6 +11,7 @@
 
 #include <api.h>
 #include "cpu.h"
+#include "interprete.h"
 
 //TODO int id;//lo pide el enunciado, es para diferenciar entre CPU en los logs
 
@@ -82,7 +83,7 @@ void CrearCPU(){
 	//HiloCPU
 	pthread_t hHiloCPU;
 	printf("Creacion de CPU\n");
-	//TODO variable globalID++, creo una local para cada hilo y se la voy asignando para que cada uno tenga su ID
+
 	int iThreadCPU = pthread_create(&hHiloCPU, NULL,(void*) ProcesoCPU, NULL );
 	if (iThreadCPU) {
 		fprintf(stderr,"Error al crear hilo - pthread_create() return code: %d\n",iThreadCPU);
@@ -191,6 +192,8 @@ void enviarArchivo2(int socket){
 }
 
 void ProcesoCPU() {
+	//ejecutarMProc("/home/utnso/Documentos/mProg.txt",1,0);//esto lo uso para hacer pruebas
+
 	int idHiloCPU = idCPU;//TODO para hacer los logs
 
 	int socket_Planificador;

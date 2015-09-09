@@ -62,7 +62,7 @@ t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones, int pid);
  * @NAME: crearInstruccion
  * @DESC: crea la estructura t_instruccion
  * */
-t_instruccion* crearInstruccion(char* instruccion);
+t_instruccion* crearInstruccion(char* instruccion, int cantidadDeParametros);
 
 /*
  * @NAME: ejecutarMCod

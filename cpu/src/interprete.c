@@ -178,20 +178,20 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 		if (0 == strcmp(instruccion->instruccion, instrucciones[0])) { //iniciar
 		//TODO mandar a la memoria
 		//TODO avisar al planificador mProc iniciado o fallo
-			break;
+
 		}
 
 		if (0 == strcmp(instruccion->instruccion, instrucciones[1])) { //leer
 		//TODO mandar a la memoria
 		//TODO avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
-			break;
+
 		}
 
 		if (0 == strcmp(instruccion->instruccion, instrucciones[2])) { //escribir
 		//TODO mandar a la memoria
 		//TODO avisar al planificador mProc	X	-	Pagina	N	escrita:	 	junto	al	nuevo	contenido	de	esa	página	concatenado.
 		//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido	 .
-			break;
+
 		}
 
 		if (0 == strcmp(instruccion->instruccion, instrucciones[3])) { //entrada-salida

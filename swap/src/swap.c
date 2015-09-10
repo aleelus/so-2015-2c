@@ -26,10 +26,12 @@ int main(void) {
 	{
 		if(!crearParticionSwap())
 			ErrorFatal("Error al crear la particion de swap");
-		else
-			crearEstructuras();
+		else{
+			crearEstructuraBloquesLibres();
+			ejecutarOrden(1, " 311225114");
+		}
 	}
-
+	if(1 == 0){
 	//Hilo orquestador conexiones
 	int iThreadOrquestador = pthread_create(&hOrquestadorConexiones, NULL,
 			(void*) HiloOrquestadorDeConexiones, NULL );
@@ -40,7 +42,7 @@ int main(void) {
 		exit(EXIT_FAILURE);
 	}
 	pthread_join(hOrquestadorConexiones, NULL );
-
+	}
 	return 0;
 }
 
@@ -85,30 +87,16 @@ void enviarArchivo(){
 }
 
 
-
-
-void Comenzar_Consola() {
-
-	int corte_consola = -1;
-	printf("Consola para ingresar Comandos al planificador\n");
-	while (corte_consola != 0) {
-		corte_consola = operaciones_consola();
-	}
-	printf("Se termino la ejecucion de la consola del filesystem\n");
-}
-
-int operaciones_consola() {
-
-	int variable_seleccion;
-	scanf("%d", &variable_seleccion);
-	printf("Comando incorrecto.\n");
-	return 0;
-}
-
-
-int ejecutarOrden(orden){
+int ejecutarOrden(int orden, char* buffer){
 	switch(orden){
 	case CREA_PROCESO:
+	{
+		int posActual = 3; //con = 2 obtengo errores.
+		char* pid = DigitosNombreArchivo(buffer,&posActual);
+		//posActual = posActual +1;
+		char* paginasSolicitadas = DigitosNombreArchivo(buffer, &posActual);
+		crearProceso(atoi(pid), atoi(paginasSolicitadas));
+	}
 		break;
 	case SOLICITA_MARCO:
 		break;
@@ -119,6 +107,79 @@ int ejecutarOrden(orden){
 	}
 }
 
-int crearEstructuras(){
 
+int crearProceso(int pid, int paginasSolicitadas){
+	/*1.Verificar cantidad de paginas libres si son suficientes
+	 *2. Verificar si hay espacio contiguo para cantidad de paginas necesarias  */
+	int totalPaginasLibres = getCantidadPaginasLibres();
+	if(paginasSolicitadas > totalPaginasLibres)
+	{
+		/*Aca deberia devolver al admin de memoria que no se pudo crear el proceso*/
+	}
+	else
+	{
+		if(existeEspacioContiguo(paginasSolicitadas))
+		{
+			/*Aca busco donde garcha meter el proceso*/
+		}
+		else{}
+			/*desfragmentar*/
+
+
+
+	}
+	return 1;
+
+};
+
+int existeEspacioContiguo(int paginasSolicitadas){
+
+    bool _bloque_espacio_contiguo(void *bloque) {
+        return ((t_block_free*)bloque)->cantPag >= paginasSolicitadas;
+    }
+    int b = list_any_satisfy(listaBloquesLibres, (void*)_bloque_espacio_contiguo);
+    return b;
+}
+
+int getCantidadPaginasLibres()
+{
+	int totalPaginasLibres, i;
+	totalPaginasLibres = 0;
+	char* _get_cantidad_paginas_libres(t_block_free* bloque) {
+		return bloque->cantPag;
+	}
+	t_list* paginasLibres = list_map(listaBloquesLibres, (void*) _get_cantidad_paginas_libres);
+
+	for(i = 0; i< paginasLibres->elements_count; i++)
+	{
+		totalPaginasLibres += list_get(paginasLibres, i);
+	}
+
+	list_destroy(paginasLibres);
+
+	return totalPaginasLibres;
+
+};
+
+
+int crearEstructuraBloquesLibres(){
+	char * dir = string_new();
+	string_append(&dir, "/home/utnso/git/");
+	string_append(&dir, g_Nombre_Swap);
+	string_append(&dir, ".bin");
+	FILE* ptr = fopen(dir, "r");
+	if(ptr == NULL)
+		ErrorFatal("Error al crear la estructura de nodos libres.");
+	else{
+
+	listaBloquesLibres = list_create();
+	list_add(listaBloquesLibres, t_block_free_create((int*)ptr, g_Cantidad_Paginas));
+	int v = fclose(ptr);
+	if (v != 0){
+		Error("Error al cerrar particion de swap.");
+		return -1;
+	}
+	else
+		return 1;
+	}
 }

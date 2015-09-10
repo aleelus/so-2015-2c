@@ -107,7 +107,7 @@ int AtiendeCliente(void * arg) {
 				if(!ENTREGA1){
 					int orden;
 					orden = PosicionDeBufferAInt(buffer, 1);
-					ejecutarOrden(orden);
+					ejecutarOrden(orden, buffer);
 				}
 
 				printf("Hola Memoria\n");

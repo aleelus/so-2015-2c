@@ -197,6 +197,7 @@ void iniciarTLB(){
 		int i;
 		for(i=0;i<g_Entradas_TLB;i++){
 			t_tlb* tlb = malloc(sizeof(t_tlb));
+			tlb->pid = -1;
 			tlb->marco = -1;
 			tlb->pagina = -1;
 			list_add(lista_tlb,tlb);
@@ -348,7 +349,7 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 
 
 	////RecibirDatos(socket_Swap,&bufferRespuesta);
-
+	bufferRespuesta = "Ok";
 	if(strcmp(bufferRespuesta,"Ok")==0){
 
 		//El swap pudo reserver el pedido de Inicio de la Cpu
@@ -404,7 +405,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 
 	}
 
-	//EnviarDatos(socket,bufferRespuestaCPU,strlen(bufferRespuestaCPU));
+	EnviarDatos(socket,bufferRespuestaCPU,strlen(bufferRespuestaCPU));
 
 
 }
@@ -414,12 +415,14 @@ int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
 	t_tlb *telebe;
 	int j=0;
 
-	for(j=0;j<g_Entradas_TLB;j++){
-		telebe=list_get(lista_tlb,j);
-
-		if(telebe->pid == pid && telebe->pagina==nroPagina){
-			*marco = telebe->marco;
-			return 1;
+	if(list_size(lista_tlb)>0){
+		for(j=0;j<g_Entradas_TLB;j++){
+			telebe=list_get(lista_tlb,j);
+			printf("J:%d\n",j);
+			if(telebe->pid == pid && telebe->pagina==nroPagina){
+				*marco = telebe->marco;
+				return 1;
+			}
 		}
 	}
 
@@ -1133,7 +1136,7 @@ int AtiendeCliente(void * arg) {
 				EnviarDatos(socket,"Ok",strlen("Ok"));
 				break;
 			default:
-				procesarBuffer(buffer,bytesRecibidos);
+				/*procesarBuffer(buffer,bytesRecibidos);
 				enviarArchivo();
 				free(buffer);
 				buffer = string_new();
@@ -1141,7 +1144,7 @@ int AtiendeCliente(void * arg) {
 				bytesRecibidos = RecibirDatos(socket_Swap,&buffer2);
 				procesarBuffer2(buffer2,bytesRecibidos);
 				enviarArchivo2(socket);
-				free(buffer2);
+				free(buffer2);*/
 				break;
 			}
 		} else
@@ -1448,6 +1451,10 @@ void LevantarConfig() {
 			Error("No se pudo leer el parametro TLB_HABILITADA");
 		if (config_has_property(config, "RETARDO_MEMORIA")) {
 			g_Retardo_Memoria = config_get_int_value(config, "RETARDO_MEMORIA");
+		} else
+			Error("No se pudo leer el parametro RETARDO_MEMORIA");
+		if (config_has_property(config, "ALGORITMO_REEMPLAZO")) {
+			g_Algoritmo = config_get_string_value(config, "ALGORITMO_REEMPLAZO");
 		} else
 			Error("No se pudo leer el parametro RETARDO_MEMORIA");
 	} else {

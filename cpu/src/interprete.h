@@ -13,6 +13,7 @@
 typedef struct{
 	char* instruccion;
 	char** parametros;//vector dinamico de parametros (vector de punteros a char)
+	int cantDeParametros;
 	char* resultado;//contatenar con barra n, para mandar todo en un char al planificador
 }t_instruccion;
 
@@ -30,7 +31,7 @@ typedef struct{
  * 		  TODO ver si hacer una funcion que lea todo el archivo de una,
  *  	  grabarlo en una estructura auxiliar y dsp "ejecutar las"
  * */
-void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid);
+void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid, int ip);
 
 /*
  * @NAME: recolectarInstrucciones
@@ -61,6 +62,18 @@ t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones, int pid);
  * @NAME: crearInstruccion
  * @DESC: crea la estructura t_instruccion
  * */
-t_instruccion* crearInstruccion(char* instruccion);
+t_instruccion* crearInstruccion(char* instruccion, int cantidadDeParametros);
+
+/*
+ * @NAME: ejecutarMCod
+ * @DESC: ejecuta la linea de codigo que el ip "dice", manda la instruccion a la memoria y se queda esperando la respuesta para mandar al planificador
+ * */
+void ejecutarMCod(t_proceso* procesoAEjecutar, int ip);
+
+/*
+ * @NAME: instruccionValida
+ * @DESC: retorna si es valida una instruccion, modifica el contenido de posicionEnElArray de instrucciones
+ * */
+int instruccionValida(char* instruccion, int* posicionEnElArray);
 
 #endif /* INTERPRETE_H_ */

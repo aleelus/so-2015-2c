@@ -11,6 +11,7 @@
 
 #include <api.h>
 #include "cpu.h"
+#include "interprete.h"
 
 //TODO int id;//lo pide el enunciado, es para diferenciar entre CPU en los logs
 
@@ -40,6 +41,8 @@ pthread_t hCrearHilos;
 
 // - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
 int g_Ejecutando = 1;
+
+int idCPU = 0;
 
 extern t_list* procesos;
 
@@ -71,6 +74,7 @@ void CrearHilos(){
 	int i;
 	for(i=0;i<g_Cantidad_Hilos;i++){
 		CrearCPU();
+		idCPU++;
 	}
 	sem_wait(&semDormilon);
 }
@@ -79,6 +83,7 @@ void CrearCPU(){
 	//HiloCPU
 	pthread_t hHiloCPU;
 	printf("Creacion de CPU\n");
+
 	int iThreadCPU = pthread_create(&hHiloCPU, NULL,(void*) ProcesoCPU, NULL );
 	if (iThreadCPU) {
 		fprintf(stderr,"Error al crear hilo - pthread_create() return code: %d\n",iThreadCPU);
@@ -187,6 +192,10 @@ void enviarArchivo2(int socket){
 }
 
 void ProcesoCPU() {
+	ejecutarMProc("/home/utnso/Documentos/mProg.txt",1,0);//esto lo uso para hacer pruebas
+
+	int idHiloCPU = idCPU;//TODO para hacer los logs
+
 	int socket_Planificador;
 
 	//log_info(logger, "Intentando conectar a Planificador\n");

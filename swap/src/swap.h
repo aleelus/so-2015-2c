@@ -25,6 +25,7 @@
 #include <string.h>
 #include "configuracion.h"
 #include "conexion.h"
+#include "particionSwap.h"
 
 #define COLOR_VERDE   "\x1b[32m"
 #define DEFAULT   "\x1b[0m"
@@ -34,7 +35,11 @@
 #define SOLICITA_MARCO 2
 #define REEMPLAZA_MARCO 3
 #define FINALIZAR_PROCESO 4
-#define ENTREGA1 1 //Dejar en 1 hasta la entrega 1
+#define ENTREGA1 0 //Dejar en 1 hasta la entrega 1
+
+/*Lista de bloques globales*/
+t_list* listaBloquesLibres;
+t_list* listaBloquesOcupados;
 
 //sem_t semaforoListaNodos,semaforoListaArchivos,semaforoListaJobEnviados,semIdJob,semSocket;
 
@@ -76,6 +81,4 @@ int g_Ejecutando;
 #define COMANDO 8
 
 //Funciones
-void Comenzar_Consola();
-int operaciones_consola();
-int ejecutarOrden(int);
+int ejecutarOrden(int, char*);

@@ -36,6 +36,12 @@
 t_log* logger;
 
 /*
+ * @NAME: conectarCliente
+ * @DESC: conecta a cliente y retorna el socket
+ * */
+int conectarCliente (char* ip, char* puerto);
+
+/*
  * @NAME: CerrarSocket
  * @DESC: cierra el socket y escribe en el archivo log
  * */

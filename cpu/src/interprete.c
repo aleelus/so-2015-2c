@@ -12,11 +12,16 @@
 #include <api.h>
 #include "cpu.h"
 
-extern int socket_Memoria;
+
+extern char* g_Ip_Memoria;
+extern char* g_Puerto_Memoria;
+
 t_proceso* procesoEnEjecucion; //Es uno solo por procesador, TODO me parece que esto esta al pedo...
 t_list* procesos;
 char* instrucciones[] = { "iniciar", "leer", "escribir", "entrada-salida",
 		"finalizar" };
+
+sem_t semListaDeProcesos;
 
 char* obtenerNombreDelArchivo(char* path) {
 	char** pathPartido = string_split(path, "/");
@@ -60,10 +65,14 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 
 	t_proceso* proceso = crearProceso(pathDelArchivoDeInstrucciones, pid);
 
+	sem_wait(&semListaDeProcesos);
 	list_add(procesos, proceso);
+	sem_post(&semListaDeProcesos);
 
 	contenidoDelArchivo = calloc(ftell(archivoDeInstrucciones) + 1,
 			sizeof(char));
+
+
 
 	for (; feof(archivoDeInstrucciones) == 0;) {
 
@@ -136,7 +145,6 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 
 			}
 		}
-
 		//es un parametro
 		parametro = strdup(instruccionSpliteada[k]);
 		instruccion->parametros[k - 1] = parametro; //k>0
@@ -170,6 +178,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 	int posicionEnElArray = -1;
 	int existeInstruccion = 0;
 	char* bufferRespuesta = string_new();
+	int socket_Memoria_Local;
+
+	socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);
 
 	for (i = ip; i < procesoAEjecutar->instrucciones->elements_count; i++) { //ejecuta todas las instrucciones, corta con una entrada-salida o finalizar
 		t_instruccion* instruccion = list_get(procesoAEjecutar->instrucciones,i);
@@ -179,34 +190,43 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 		if (0 == posicionEnElArray) { //iniciar
 
 			char* buffer = string_new();
-			//TODO preguntarle a Ale o a Seba si appendear esto asi esta bien, o si estoy haciendo cosas de mas o de menos :P
+			string_append(&buffer, YO);//ID
 			string_append(&buffer, "1"); //Tipo de operacion (1-Nuevo proceso)
+			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
-
-			conectarMemoria();
 
 			long unsigned size = strlen(buffer);
 
-			EnviarDatos(socket_Memoria, buffer, size, YO);
-			RecibirDatos(socket_Memoria, &bufferRespuesta);
+			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
-			//TODO Guardar respuesta para dsp avisar al planificador mProc iniciado o fallo
+			if(0 == strcmp(bufferRespuesta,"1")){
+				//TODO mandar al planificador todo ok
+				puts("Todo ok");
+			}else{
+				//TODO mandar al planificador todo para la shit
+			}			socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);
+
 			free(buffer);
-
+			socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);
 		}
 
 		if (1 == posicionEnElArray) { //leer
 
 			char* buffer = string_new();
 
+			string_append(&buffer, YO);//ID
 			string_append(&buffer,"2");//Tipo de operacion 2-Leer memoria
+			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
 
-			conectarMemoria();
+
 
 			long unsigned size = strlen(buffer);
-			EnviarDatos(socket_Memoria, buffer, size, YO);
-			RecibirDatos(socket_Memoria, &bufferRespuesta);
+			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+
+
 
 			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
 			free(buffer);
@@ -216,15 +236,19 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			char* buffer = string_new();
 
+			string_append(&buffer, YO);//ID
 			string_append(&buffer,"3");//Tipo de operacion 3-Escribir memoria
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[1]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
 
-			conectarMemoria();
+
 
 			long unsigned size = strlen(buffer);
-			EnviarDatos(socket_Memoria, buffer, size, YO);
-			RecibirDatos(socket_Memoria, &bufferRespuesta);
+			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+
+			//Me llega solo el contenido
 
 			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N escrita: junto	al	nuevo	contenido	de	esa	página	concatenado.
 			//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido	 .
@@ -239,21 +263,21 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 		if (4 == posicionEnElArray) {		//finalizar
 
 			char* buffer = string_new();
-
+			string_append(&buffer,YO);
 			string_append(&buffer,"4");//Tipo de operacion 4-Finalizar proceso
 			string_append(&buffer,obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));//PID del proceso que va a morir
 
-			conectarMemoria();
+
 
 			long unsigned size = strlen(buffer);
-			EnviarDatos(socket_Memoria, buffer, size, YO);
-			RecibirDatos(socket_Memoria, &bufferRespuesta);
+			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
 			//TODO avisar al planificador (mProc X finalizado) + mandar el resumen de todo lo que paso
 			break;//Harakiri
 		}
 
 	}
-
+	close(socket_Memoria_Local);
 	//TODO agarrar parametros, mandar a la memoria y bloquearse esperando
 }

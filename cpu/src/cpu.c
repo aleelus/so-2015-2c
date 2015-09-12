@@ -44,9 +44,18 @@ int g_Ejecutando = 1;
 
 int idCPU = 0;
 
+sem_t semPid;
+int pid = 0;
+
 extern t_list* procesos;
 
+extern sem_t semListaDeProcesos;
+
 int main(void) {
+	sem_init(&semPid,0,1);//esto es para probar varias CPUs sin el planificador
+
+	sem_init(&semListaDeProcesos,0,1);
+
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", false, LOG_LEVEL_TRACE);
 
@@ -192,10 +201,13 @@ void enviarArchivo2(int socket){
 }
 
 void ProcesoCPU() {
-	ejecutarMProc("/home/utnso/Documentos/mProg.txt",1,0);//esto lo uso para hacer pruebas
+
+	sem_wait(&semPid);
+	ejecutarMProc("/home/utnso/Documentos/mProg.txt",pid++,0);//esto lo uso para hacer pruebas
+	sem_post(&semPid);
 
 	int idHiloCPU = idCPU;//TODO para hacer los logs
-
+	/*
 	int socket_Planificador;
 
 	//log_info(logger, "Intentando conectar a Planificador\n");
@@ -254,6 +266,7 @@ void ProcesoCPU() {
 	}
 	CerrarSocket(socket_Planificador);
 	pthread_exit(NULL);
+	*/
 }
 
 

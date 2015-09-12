@@ -7,6 +7,32 @@
 
 #include "api.h"
 
+int conectarCliente (char* ip, char* puerto) {
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	getaddrinfo(ip, puerto, &hints, &serverInfo);
+	int serverSocket;
+	serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+	if (serverSocket==-1){
+		//log_error(logs, "Error al crear el socket");
+		printf("Error al crear el socket");
+		return 0;
+	}
+	if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)){
+		//log_error(logs, "Error al conectar el socket");
+		printf("Error al conectar el socket");
+		close(serverSocket);
+		return 0;
+	}
+	freeaddrinfo(serverInfo);
+	return serverSocket;
+}
+
 void CerrarSocket(int socket) {
 	close(socket);
 	//Traza("SOCKET SE CIERRA: (%d).", socket);

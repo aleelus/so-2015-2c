@@ -182,12 +182,14 @@ void iniciarMemoriaPrincipal(){
 	printf("Cantidad Marcos Seteados en MP:%d\n",g_Cantidad_Marcos);
 	a_Memoria = malloc(sizeof(t_mp)*g_Cantidad_Marcos);
 	for(i=0;i<g_Cantidad_Marcos;i++){
-		a_Memoria[i].marco = i;
+		a_Memoria[i].marco = -1;
 		a_Memoria[i].bitModificado = 0;
 		a_Memoria[i].bitUso = 0;
 		a_Memoria[i].contenido = malloc(g_Tamanio_Marco);
+		a_Memoria[i].bitPuntero = 0;
 		memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 	}
+	a_Memoria[0].bitPuntero = 1;
 }
 
 void iniciarTLB(){
@@ -386,22 +388,22 @@ void implementoIniciarCpu(int socket,char *buffer){
 		pagina=malloc(sizeof(t_pagina));
 		pagina->bitMP=-1;
 		pagina->marco=-1;
-		pagina->pagina=-1;
+		pagina->pagina=i;
 		list_add(mProc->paginas,pagina);
-
 	}
 
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
 		//Agrego nuevo proceso a la lista
 		list_add(lista_mProc,mProc);
-		string_append(&bufferRespuestaCPU,"HAY Q VER Q LE MANDO A CPU COMO CONFIRMACION DEL INICIO DEL PROCESO");
-
+		string_append(&bufferRespuestaCPU,"1");
+		mProc = list_get(lista_mProc,0);
+		printf("PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
 
 	}else{
 
 		//NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA PODER INICIAR ESE PROCESO
-		string_append(&bufferRespuestaCPU,"HAY Q VER Q LE MANDO A CPU CUANDO SWAP NO TIENE ESPACIO");
+		string_append(&bufferRespuestaCPU,"0");
 
 	}
 
@@ -418,14 +420,14 @@ int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
 	if(list_size(lista_tlb)>0){
 		for(j=0;j<g_Entradas_TLB;j++){
 			telebe=list_get(lista_tlb,j);
-			printf("J:%d\n",j);
 			if(telebe->pid == pid && telebe->pagina==nroPagina){
 				*marco = telebe->marco;
+				printf("Pid:%d Pagina:%d se encuentra en TLB\n",pid,nroPagina);
 				return 1;
 			}
 		}
 	}
-
+	printf("Pid:%d Pagina:%d No se encuentra en TLB\n",pid,nroPagina);
 	return 0;
 
 
@@ -459,7 +461,7 @@ char* grabarEnMemoriaPrincipal(int marco, char* contenido){
 }
 
 
-void enviarContenidoACpu(int socket,int pid,int nroPagina,char* contenido){
+void enviarContenidoACpu(int socket,int pid,int nroPagina,char* contenido,int tamanioC){
 	// No se bien por ahora si hace falta el nroPagina pero por las dudas lo mando
 	//contenido = cicilianiYeta    pid = 4 nroPagina=3
 	//3 2 114 113 213cicilianiYeta
@@ -470,10 +472,9 @@ void enviarContenidoACpu(int socket,int pid,int nroPagina,char* contenido){
 	string_append(&bufferACpu,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferACpu,obtenerSubBuffer(string_itoa(nroPagina)));
 	string_append(&bufferACpu,obtenerSubBuffer(contenido));
+	printf("Buffer Enviado a CPU: %s\n",bufferACpu);
 
-	printf("Buffer Enviado a CPU: %s",bufferACpu);
-
-	//EnviarDatos(socket,bufferACpu,strlen(bufferACpu));
+	EnviarDatos(socket,bufferACpu,strlen(bufferACpu));
 }
 
 int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
@@ -514,6 +515,7 @@ char * grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 	char * bufferRespuesta=string_new();
 
 	string_append(&buffer,"33");
+	printf("EL PID:%d\n",pid);
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 	string_append(&buffer,obtenerSubBuffer(contenido));
@@ -551,7 +553,7 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 }
 
 
-void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
+void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamanioContenido,int marco){
 
 	t_mProc *mProc;
 	t_pagina *pagina;
@@ -565,13 +567,11 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido){
 			while(j<list_size(mProc->paginas)){
 				pagina = list_get(mProc->paginas,j);
 				if(pagina->pagina == nroPagina){
-
-					// Implementar algoritmo, esta mal lo de abajo
+					pagina->marco = marco;
 					pagina->bitMP=1;
 					a_Memoria[pagina->marco].marcoEnUso=1;
-					free(a_Memoria[pagina->marco].contenido);
-					a_Memoria[pagina->marco].contenido = string_new();
-					string_append(&a_Memoria[pagina->marco].contenido,contenido);
+					memcpy(a_Memoria[marco].contenido,contenido,tamanioContenido);
+					free(contenido);
 				}
 				j++;
 			}
@@ -660,6 +660,7 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 	t_mProc* mProc;
 	t_pagina* unaPagina;
 	int i=0,j;
+	*pid=-1;
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 		j=0;
@@ -675,17 +676,26 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 		}
 		i++;
 	}
+	if(*pid==-1){
+		printf("C:%d\n",*pid);
+		abort();
+	}
 }
 
-void FIFO(int *marco,int* pagina,int* pid,char** contenido){
+int FIFO(int *marco){
 	int i=0;
+	int pid, pagina;
 	while(i<g_Cantidad_Marcos){
 		if(a_Memoria[i].bitPuntero == 1){
-			funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
-			*contenido = a_Memoria[i].contenido;
-			grabarContenidoASwap(*pid,*pagina,*contenido);
-			memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-			*marco=i;
+			if(a_Memoria[i].marco >= 0){
+				funcionBuscarPidPagina(a_Memoria[i].marco,&pid,&pagina);
+				grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+				*marco=i;
+			} else {
+				//printf("la i:%d\n",i);
+				*marco = i;
+			}
 			a_Memoria[i].bitPuntero = 0;
 			if(i==g_Cantidad_Marcos-1){
 				a_Memoria[0].bitPuntero = 1;
@@ -694,8 +704,11 @@ void FIFO(int *marco,int* pagina,int* pid,char** contenido){
 			}
 			i=g_Cantidad_Marcos;
 		}
+		//printf("%d %d\n",i,g_Cantidad_Marcos);
 		i++;
 	}
+	//printf("SALIO\n");
+	return 0;
 }
 
 void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
@@ -822,12 +835,22 @@ void hayLugarEnMPSinoLoHago(int* marco){
 	int pid,pagina;
 	char* contenido;
 	if(!strcmp(g_Algoritmo,"FIFO")){
-		FIFO(marco,&pagina,&pid,&contenido);
+		FIFO(marco);
 	} else if (!strcmp(g_Algoritmo,"CLOCK")){
 		CLOCK(marco,&pagina,&pid,&contenido);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
 		CLOCKMEJORADO(marco,&pagina,&pid,&contenido);
 	}
+}
+
+int cuentaDigitos(int valor){
+	int cont = 0;
+	float tamDigArch=valor;
+	while(tamDigArch>=1){
+		tamDigArch=tamDigArch/10;
+		cont++;
+	}
+	return cont;
 }
 
 void implementoEscribirCpu(int socket,char *buffer){
@@ -847,11 +870,22 @@ void implementoEscribirCpu(int socket,char *buffer){
 	//Numero de Pagina
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	nroPagina=atoi(bufferAux);
+	int pos = posActual;
+
+	int cantDig = ChartToInt(buffer[pos]);
+
+	pos++;
+
+	int p,tamanioC=0,aux;
+	for(p=1;p<=cantDig;p++){
+		aux=ChartToInt(buffer[pos++]);
+		tamanioC=tamanioC*10+aux;
+	}
+
 
 	//Contenido a grabar en la Pagina
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
-
-	string_append(&contenido,bufferAux);
+	memcpy(contenido,bufferAux,tamanioC);
 
 	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
@@ -862,13 +896,16 @@ void implementoEscribirCpu(int socket,char *buffer){
 			//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
 			// hacemos boleta a alguien
 			hayLugarEnMPSinoLoHago(&marco);
-			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
-			actualizarTLB(pid,nroPagina);
+
 		}
-		sleep(g_Retardo_Memoria);
+		actualizarTLB(pid,nroPagina);
+		//sleep(g_Retardo_Memoria);
 	}
-	grabarEnMemoriaPrincipal(marco,contenido);
-	enviarContenidoACpu(socket,pid,nroPagina,contenido);
+	actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
+	//grabarEnMemoriaPrincipal(marco,contenido);
+	printf("Contenido:%s\n",a_Memoria[marco].contenido);
+	EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
+	//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 }
 
 
@@ -893,30 +930,22 @@ void implementoLeerCpu(int socket,char *buffer){
 	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 		contenido=buscarEnMemoriaPrincipal(marco);
-		enviarContenidoACpu(socket,pid,nroPagina,contenido);
-
 	}else{
 
 		if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 			//Encontro la pagina en la tabla de paginas
 			contenido=buscarEnMemoriaPrincipal(marco);
-			sleep(g_Retardo_Memoria);
-			enviarContenidoACpu(socket,pid,nroPagina,contenido);
-
 		}else{
 			//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
-
 			contenido=pedirContenidoASwap(pid,nroPagina);
-			sleep(g_Retardo_Memoria);
-			enviarContenidoACpu(socket,pid,nroPagina,contenido);
-			actualizarMemoriaPrincipal(pid,nroPagina,contenido);
-			actualizarTLB(pid,nroPagina);
-
+			actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 		}
+		actualizarTLB(pid,nroPagina);
+		//sleep(g_Retardo_Memoria);
 	}
-
-
-
+	printf("Contenido:%s\n",a_Memoria[marco].contenido);
+	EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
+	//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
 }
 
 int eliminarDeSwap(int pid){
@@ -925,10 +954,10 @@ int eliminarDeSwap(int pid){
 	char* bufferRespuesta= string_new();
 
 
-	string_append(&bufferASwap,"34");
-	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
+	string_append(&bufferASwap,"1");
+	//string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 
-	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
+	//EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
 	////RecibirDatos(socket_Swap,&bufferRespuesta);
 
@@ -1038,12 +1067,12 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	if(eliminarProceso(pid)){
 		//Envio a CPU el OK de q se borro
 
-		string_append(&bufferACPU,"HAY Q VER QUE LE ENVIO A CPU COMO OK");
+		string_append(&bufferACPU,"1");
 
 
 	}else{
 
-		string_append(&bufferACPU,"HAY Q VER QUE LE ENVIO A CPU COMO NO AL PEDIDO DE ELIMINAR(finalizar)");
+		string_append(&bufferACPU,"0");
 
 	}
 

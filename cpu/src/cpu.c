@@ -51,6 +51,9 @@ extern t_list* procesos;
 
 extern sem_t semListaDeProcesos;
 
+int* socketsDeLosHilosDeCpuDelPlanificador;//cada CPU se va a conectar con el planificador por un socket distinto,
+										   //la posicion del vector es = al idCPU
+
 int main(void) {
 	sem_init(&semPid,0,1);//esto es para probar varias CPUs sin el planificador
 
@@ -65,6 +68,8 @@ int main(void) {
 	LevantarConfig();
 
 	inicializarListaDeProcesos();
+
+	inicializarVectorDeSockets();
 
 	int iThreadCrearHilos = pthread_create(&hCrearHilos, NULL,(void*) CrearHilos, NULL );
 
@@ -102,6 +107,10 @@ void CrearCPU(){
 
 void inicializarListaDeProcesos(){
 	procesos = list_create();
+}
+
+void inicializarVectorDeSockets(){
+	socketsDeLosHilosDeCpuDelPlanificador = calloc(g_Cantidad_Hilos,sizeof(int));
 }
 
 void conectarMemoria() {

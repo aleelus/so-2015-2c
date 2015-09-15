@@ -121,16 +121,64 @@ int crearProceso(int pid, int paginasSolicitadas){
 		if(existeEspacioContiguo(paginasSolicitadas))
 		{
 			/*Aca busco donde garcha meter el proceso*/
+			bool _bloque_espacio_suficiente(void *bloque){
+				return((t_block_free*)bloque)->cantPag >= paginasSolicitadas;
+			}
+			t_block_free* bloqueLibre = list_remove_by_condition(listaBloquesLibres, (void*) _bloque_espacio_suficiente);
+			if(bloqueLibre != NULL){
+				t_block_free_create(bloqueLibre->ptrComienzo, paginasSolicitadas);
+				free(bloqueLibre);
+			/*Enviar respusta de ejecucion ok*/
+				char* rspOk;
+				string_append(&rspOk,"41");
+				string_append(&rspOk, INIT_OK);
+				EnviarDatos(socket_Memoria, rspOk, strlen(rspOk), COD_ADM_SWAP);
+				free(rspOk);
+			}
+		else{
+			char* rspFail;
+			string_append(&rspFail,"41");
+			string_append(&rspFail, INIT_OK);
+			EnviarDatos(socket_Memoria, rspFail, strlen(rspFail), COD_ADM_SWAP);
+			free(rspFail);
+			}
 		}
-		else{}
-			/*desfragmentar*/
-
-
+		else
+		{
+			desfragmentar();
+		}
 
 	}
 	return 1;
-
 };
+
+
+int desfragmentar(){
+	FILE* ptrBloque, *ptrAnt;
+	t_block_used *bloqueAct;
+	int i = 0;
+	getComienzoParticionSwap(&ptrBloque);
+	if(ptrBloque == NULL){
+		Error("Error al intentar desfragmentar");
+		return -1;
+	}
+	else{
+
+		for(i ; i < listaBloquesOcupados->elements_count; i++){
+			bloqueAct = (t_block_used*)list_get(listaBloquesOcupados, i);
+			ptrAnt = bloqueAct->ptrComienzo;
+			if(ptrBloque != ptrAnt){
+				memcpy(ptrBloque, ptrAnt, (size_t) g_Tamanio_Pagina);
+				bloqueAct->ptrComienzo = ptrBloque;
+				list_replace(listaBloquesOcupados, i, bloqueAct);
+			}
+			ptrBloque = ptrAnt + (size_t) g_Tamanio_Pagina ;
+
+		}
+
+		return 1;
+	}
+}
 
 int existeEspacioContiguo(int paginasSolicitadas){
 
@@ -161,13 +209,18 @@ int getCantidadPaginasLibres()
 
 };
 
+void getComienzoParticionSwap(FILE** ptr){
+	char * dir = string_new();
+		string_append(&dir, "/home/utnso/git/");
+		string_append(&dir, g_Nombre_Swap);
+		string_append(&dir, ".bin");
+		*ptr = fopen(dir, "r");
+		fclose(*ptr);
+}
 
 int crearEstructuraBloquesLibres(){
-	char * dir = string_new();
-	string_append(&dir, "/home/utnso/git/");
-	string_append(&dir, g_Nombre_Swap);
-	string_append(&dir, ".bin");
-	FILE* ptr = fopen(dir, "r");
+	FILE* ptr;
+	getComienzoParticionSwap(&ptr);
 	if(ptr == NULL)
 		ErrorFatal("Error al crear la estructura de nodos libres.");
 	else{

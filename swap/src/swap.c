@@ -138,7 +138,7 @@ int crearProceso(int pid, int paginasSolicitadas){
 		else{
 			char* rspFail;
 			string_append(&rspFail,"41");
-			string_append(&rspFail, INIT_OK);
+			string_append(&rspFail, INIT_FAIL);
 			EnviarDatos(socket_Memoria, rspFail, strlen(rspFail), COD_ADM_SWAP);
 			free(rspFail);
 			}

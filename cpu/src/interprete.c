@@ -109,6 +109,7 @@ int instruccionValida(char* instruccion, int* posicionEnElArray) {
 void separarInstruccionDeParametros(char* instruccionMasParametros,
 		t_proceso* proceso) {
 	//{"iniciar", "leer", "escribir", "entrada-salida", "finalizar"}
+	int laInstruccionEsEscribir = 0;
 	int existeInstruccion = 0;
 	int posicionEnElArray = -1;
 	int k;
@@ -134,6 +135,7 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 					break;
 				case (2):
 					instruccion = crearInstruccion(instrucciones[2], 2);
+					laInstruccionEsEscribir = 1;
 					break;
 				case (3):
 					instruccion = crearInstruccion(instrucciones[3], 1);
@@ -147,6 +149,12 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 		}
 		//es un parametro
 		parametro = strdup(instruccionSpliteada[k]);
+
+		if(laInstruccionEsEscribir && k == 2){//esto le saca las "" al texto y deja solo el texto
+			parametro = string_substring(parametro,1,strlen(parametro)-2);
+			laInstruccionEsEscribir = 0;
+		}
+
 		instruccion->parametros[k - 1] = parametro; //k>0
 	}
 
@@ -205,13 +213,12 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				puts("Todo ok");
 			}else{
 				//TODO mandar al planificador todo para la shit
-			}			socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);
+			}
 
 			free(buffer);
-			socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);
 		}
 
-		if (1 == posicionEnElArray) { //leer
+		if (1 == posicionEnElArray) {//leer
 
 			char* buffer = string_new();
 
@@ -226,21 +233,21 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
-
+			instruccion->resultado = strdup(bufferRespuesta);
 
 			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
 			free(buffer);
 		}
 
-		if (2 == posicionEnElArray) { //escribir
+		if (2 == posicionEnElArray) {//escribir
 
 			char* buffer = string_new();
 
 			string_append(&buffer, YO);//ID
 			string_append(&buffer,"3");//Tipo de operacion 3-Escribir memoria
 			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[1]));
 			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[1]));
 
 
 
@@ -251,16 +258,17 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			//Me llega solo el contenido
 
 			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N escrita: junto	al	nuevo	contenido	de	esa	página	concatenado.
-			//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido	 .
+			//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido.
 			free(buffer);
 		}
 
-		if (3 == posicionEnElArray) { //entrada-salida
+		if (3 == posicionEnElArray) {//entrada-salida
 			//TODO avisar al planificador (mProc X en entrada-salida de tiempo T) + mandar el resumen de todo lo que paso (la CPU se libera para ejecutar otra cosa)
+			//(tener en cuenta el valor de i para saber cuantos resultados hay que mandar)
 			break;//Para de ejecutar!!!!!!!! xD
 		}
 
-		if (4 == posicionEnElArray) {		//finalizar
+		if (4 == posicionEnElArray) {//finalizar
 
 			char* buffer = string_new();
 			string_append(&buffer,YO);
@@ -272,6 +280,12 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			long unsigned size = strlen(buffer);
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+
+			if(0 == strcmp(bufferRespuesta,"1")){//supuestamente no hay razon para que esta operacion falle, pero la memoria me va a mandar un 1 si se hizo todo bien
+				//TODO mandar al planificador todo ok
+			}else{
+				//TODO mandar al planificador todo para la shit
+			}
 
 			//TODO avisar al planificador (mProc X finalizado) + mandar el resumen de todo lo que paso
 			break;//Harakiri

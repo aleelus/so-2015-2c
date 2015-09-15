@@ -28,6 +28,7 @@ int main(void) {
 			ErrorFatal("Error al crear la particion de swap");
 		else{
 			crearEstructuraBloquesLibres();
+			crearEntornoParaTestDesfragmentacion();
 			ejecutarOrden(1, " 311225114");
 		}
 	}
@@ -43,6 +44,19 @@ int main(void) {
 	}
 	pthread_join(hOrquestadorConexiones, NULL );
 	}
+	return 0;
+}
+
+int crearEntornoParaTestDesfragmentacion(){
+	FILE *ptr;
+	getComienzoParticionSwap(&ptr);
+	if(ptr!=NULL){
+		list_add(listaBloquesLibres, t_block_free_create((int*)ptr, 1));
+		list_add(listaBloquesLibres, t_block_free_create((int*)ptr + 2*g_Tamanio_Pagina, 1));
+		list_remove(listaBloquesLibres, 0 );
+	}
+	else
+		Error("Error al crear test para desfragmentacion");
 	return 0;
 }
 

@@ -98,6 +98,26 @@ long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer,
 char* obtenerSubBuffer(char *nombre);
 
 /*
+ * @NAME: cuentaDigitos
+ * @DESC: Esta funcion recibe un valor y devuelve la cantidad de digitos de ese valor: cuentaDigitos(100) ==> 3
+ * Obs: Se podria convertir ese valor a un string y hacerle un strlen pero ya habiamos creado esta funcion para ese entonces xD.
+ * */
+int cuentaDigitos(int valor);
+
+
+
+/*
+ * @NAME: obtenerSubBufferDeContenido
+ * @DESC: Igual que obtenerSubBuffer pero esta soporta \0 en el medio del contenido pero hay q pasarle un parametro
+ * 		  Le tengo q pasar un string y un tamanio que seria el tamaño maximo de ese string,
+ *		  El nombre debe tener el resto del contenido con \0, Ej: nombre="hola\0\0\0....\0" la cantidad de \0 son (tamanio-strlen(hola))
+ *		  PD: Puse el strlen como ejemplo pero no se puede usar xDXDXDXDxXxXdXXdXDXd
+ *		  Ej: nombre= AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos  tamanio=256  ==> salida= 3256AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos\0\0\0\0...\0
+ * */
+char* obtenerSubBufferDeContenido(char *nombre,int tamanio);
+
+
+/*
  * @NAME: Error
  * @DESC: Hace un print del error (mensaje) y lo escribe en el archivo log
  * */

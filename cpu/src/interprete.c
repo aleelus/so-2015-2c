@@ -209,10 +209,29 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
 			if(0 == strcmp(bufferRespuesta,"1")){
-				//TODO mandar al planificador todo ok
-				puts("Todo ok");
+				//mProc iniciado
+				char* resultado = string_new();
+
+				string_append(&resultado,"mProc ");
+				string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+				string_append(&resultado," ");
+				string_append(&resultado,"iniciado");
+				string_append(&resultado,"\n");
+
+				instruccion->resultado = resultado;//Me guardo el resultado para despues mandar al planificador
 			}else{
-				//TODO mandar al planificador todo para la shit
+				//mProc fallo
+				char* resultado = string_new();
+
+				string_append(&resultado,"mProc ");
+				string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+				string_append(&resultado," ");
+				string_append(&resultado,"fallo");
+				string_append(&resultado,"\n");
+
+				instruccion->resultado = resultado;//TODO Me guardo el resultado para despues mandar al planificador?
+												   //si esta operacion falla, no puedo seguir con las otras.
+												   //Mandar acá el resultado al planificador y cortar la ejecucion?
 			}
 
 			free(buffer);
@@ -233,9 +252,21 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
-			instruccion->resultado = strdup(bufferRespuesta);
+			char* contenidoLeido = strdup(bufferRespuesta);
 
-			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N leida: junto al contenido de esa página concatenado. Ejemplo: mProc 10 - Pagina 2 leida: contenido
+			char* resultado = string_new();
+			string_append(&resultado,"mProc ");
+			string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+			string_append(&resultado," ");
+			string_append(&resultado,"pagina ");
+			string_append(&resultado,instruccion->parametros[0]);
+			string_append(&resultado," ");
+			string_append(&resultado,"leida: ");
+			string_append(&resultado,contenidoLeido);
+			string_append(&resultado,"\n");
+
+			instruccion->resultado = resultado;
+
 			free(buffer);
 		}
 
@@ -256,19 +287,50 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
 			//Me llega solo el contenido
+			char* contenidoEscrito = strdup(bufferRespuesta);
+			char* resultado = string_new();
 
-			//TODO Guardar respuesta para dsp avisar al planificador mProc	X - Pagina N escrita: junto	al	nuevo	contenido	de	esa	página	concatenado.
-			//Ejemplo: mProc 1 - Pagina	2 escrita: otro contenido.
+			string_append(&resultado,"mProc ");
+			string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+			string_append(&resultado," ");
+			string_append(&resultado,"pagina ");
+			string_append(&resultado,instruccion->parametros[0]);
+			string_append(&resultado," ");
+			string_append(&resultado,"leida: ");
+			string_append(&resultado,contenidoEscrito);//se supone que es lo mismo que el parametros[1]...
+			string_append(&resultado,"\n");
+
+			instruccion->resultado = resultado;
+
 			free(buffer);
 		}
 
 		if (3 == posicionEnElArray) {//entrada-salida
-			//TODO avisar al planificador (mProc X en entrada-salida de tiempo T) + mandar el resumen de todo lo que paso (la CPU se libera para ejecutar otra cosa)
-			//(tener en cuenta el valor de i para saber cuantos resultados hay que mandar)
+			int k = 0;
+			char* resultados = string_new();
+			char* respuestaParaElLogDelPlanificador = string_new();
+
+			string_append(&respuestaParaElLogDelPlanificador, YO);//ID
+			string_append(&respuestaParaElLogDelPlanificador,"1");//Tipo de operacion 1- Enstrada Salida (Tiempo de E/S, Resultados con barra n)
+			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(instruccion->parametros[0]));
+
+			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
+				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
+
+				string_append(&resultados,instruccionEjecutada->resultado);
+			}
+
+			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(resultados));
+
+			//TODO hacer el send al planificador, con el socket que le corresponde a este hilo de CPU + frees
 			break;//Para de ejecutar!!!!!!!! xD
 		}
 
 		if (4 == posicionEnElArray) {//finalizar
+			int k = 0;
+			char* resultados = string_new();
+			char* respuestaParaElLogDelPlanificador = string_new();
 
 			char* buffer = string_new();
 			string_append(&buffer,YO);
@@ -282,16 +344,33 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
 			if(0 == strcmp(bufferRespuesta,"1")){//supuestamente no hay razon para que esta operacion falle, pero la memoria me va a mandar un 1 si se hizo todo bien
-				//TODO mandar al planificador todo ok
+				char* resultado = string_new();
+
+				string_append(&resultado,"mProc ");
+				string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+				string_append(&resultado," ");
+				string_append(&resultado,"finalizado");
+
+				instruccion->resultado = resultado;
 			}else{
-				//TODO mandar al planificador todo para la shit
+				//TODO mandar al planificador todo para la shit?
 			}
 
-			//TODO avisar al planificador (mProc X finalizado) + mandar el resumen de todo lo que paso
+			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i finalizar
+				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
+
+				string_append(&resultados,instruccionEjecutada->resultado);
+			}
+
+			string_append(&respuestaParaElLogDelPlanificador, YO);//ID
+			string_append(&respuestaParaElLogDelPlanificador,"2");//Tipo de operacion 2- Finalizar (Resultados con barra n)
+			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(resultados));
+
+			//TODO hacer el send al planificador, con el socket que le corresponde a este hilo de CPU + frees
 			break;//Harakiri
 		}
 
 	}
 	close(socket_Memoria_Local);
-	//TODO agarrar parametros, mandar a la memoria y bloquearse esperando
 }

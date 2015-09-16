@@ -48,11 +48,11 @@
 #define COLOR_VERDE "\x1b[32m"
 #define DEFAULT "\x1b[0m"
 #define PLANIFICADOR "1"
-
+#define __DEBUG__ 1
 /***************GLOBALES************************/
 sem_t semListaCpu;
 
-t_list *lista_comandos; //Lista de comandos de la consola
+
 t_list *lista_cpu;
 
 t_log *logger; // Logger del commons
@@ -61,6 +61,8 @@ int g_Puerto; // Puerto de escucha del planificador
 int g_Quantum; // Quantum para RR
 //int g_Ejecutando = 1; // Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
 char *g_Algoritmo; // Algoritmo de planificacion FIFO o RR
+
+
 
 
 /*************************ESTRUCTURAS**************************/
@@ -85,11 +87,8 @@ typedef enum {
 
 /* @NAME: CargarListaComandos
  * @DESC: Carga la lista de comandos que acepta la CPU */
-void CargarListaComandos();
 int AtiendeCliente(void * arg);
 void LevantarConfig();
-void Comenzar_Consola();
-int operaciones_consola();
 void procesarBuffer(char* buffer, long unsigned tamanioBuffer);
 void HiloOrquestadorDeConexiones();
 int cuentaDigitos(int );

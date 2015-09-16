@@ -1,5 +1,9 @@
 // Bibliotecas //
-#include "Utilidades/Utils.h"
+
+#include "Consola.h"
+//#ifndef UTILIDADES_UTILS_H
+//#include "Utilidades/Utils.h"
+//#endif
 
 #undef getc
 

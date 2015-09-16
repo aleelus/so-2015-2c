@@ -82,3 +82,6 @@ int g_Ejecutando;
 
 //Funciones
 int ejecutarOrden(int, char*);
+int crearEstructuraBloquesOcupados();
+int crearEstructuraBloquesLibres();
+int crearEstructuraBloques();

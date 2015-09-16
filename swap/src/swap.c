@@ -27,9 +27,10 @@ int main(void) {
 		if(!crearParticionSwap())
 			ErrorFatal("Error al crear la particion de swap");
 		else{
-			crearEstructuraBloquesLibres();
+			if( crearEstructuraBloques() > 0){
 			crearEntornoParaTestDesfragmentacion();
-			ejecutarOrden(1, " 311225114");
+			ejecutarOrden(1, "311225112");
+			}
 		}
 	}
 	if(1 == 0){
@@ -51,9 +52,11 @@ int crearEntornoParaTestDesfragmentacion(){
 	FILE *ptr;
 	getComienzoParticionSwap(&ptr);
 	if(ptr!=NULL){
+		list_remove(listaBloquesLibres, 0);
 		list_add(listaBloquesLibres, t_block_free_create((int*)ptr, 1));
 		list_add(listaBloquesLibres, t_block_free_create((int*)ptr + 2*g_Tamanio_Pagina, 1));
-		list_remove(listaBloquesLibres, 0 );
+		list_add(listaBloquesOcupados, t_block_used_create(24, (int*)ptr + g_Tamanio_Pagina, 1));
+		list_add(listaBloquesOcupados, t_block_used_create(45, (int*)ptr + 3*g_Tamanio_Pagina,1));
 	}
 	else
 		Error("Error al crear test para desfragmentacion");
@@ -105,7 +108,7 @@ int ejecutarOrden(int orden, char* buffer){
 	switch(orden){
 	case CREA_PROCESO:
 	{
-		int posActual = 3; //con = 2 obtengo errores.
+		int posActual = 2;
 		char* pid = DigitosNombreArchivo(buffer,&posActual);
 		//posActual = posActual +1;
 		char* paginasSolicitadas = DigitosNombreArchivo(buffer, &posActual);
@@ -229,24 +232,33 @@ void getComienzoParticionSwap(FILE** ptr){
 		string_append(&dir, g_Nombre_Swap);
 		string_append(&dir, ".bin");
 		*ptr = fopen(dir, "r");
-		fclose(*ptr);
+		int v = fclose(*ptr);
+		if (v != 0){
+			Error("Error al cerrar particion de swap.");
+		}
 }
 
 int crearEstructuraBloquesLibres(){
 	FILE* ptr;
 	getComienzoParticionSwap(&ptr);
-	if(ptr == NULL)
+	if(ptr == NULL){
 		ErrorFatal("Error al crear la estructura de nodos libres.");
-	else{
+		return -1;
+	}
 
 	listaBloquesLibres = list_create();
 	list_add(listaBloquesLibres, t_block_free_create((int*)ptr, g_Cantidad_Paginas));
-	int v = fclose(ptr);
-	if (v != 0){
-		Error("Error al cerrar particion de swap.");
-		return -1;
-	}
-	else
-		return 1;
-	}
+	return 1;
+}
+
+int crearEstructuraBloques(){
+	int x = crearEstructuraBloquesLibres();
+	if (x>0)
+	x = crearEstructuraBloquesOcupados();
+	return x;
+}
+
+int crearEstructuraBloquesOcupados(){
+	listaBloquesOcupados = list_create();
+	return 1;
 }

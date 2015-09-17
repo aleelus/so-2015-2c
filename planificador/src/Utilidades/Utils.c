@@ -6,12 +6,7 @@
  */
 #include "Utils.h"
 
-void CargarListaComandos(){
-	list_add(lista_comandos,"correr");
-	list_add(lista_comandos,"finalizar");
-	list_add(lista_comandos,"ps");
-	list_add(lista_comandos,"cpu");
-}
+
 
 void HiloOrquestadorDeConexiones() {
 
@@ -22,6 +17,7 @@ void HiloOrquestadorDeConexiones() {
 	socklen_t size_addr = 0;
 
 	socket_host = socket(AF_INET, SOCK_STREAM, 0);
+
 	if (socket_host == -1) {
 		ErrorFatal("No se pudo inicializar el socket que escucha a los clientes");
 	}
@@ -52,11 +48,13 @@ void HiloOrquestadorDeConexiones() {
 		size_addr = sizeof(struct sockaddr_in);
 
 		if ((socket_client = accept(socket_host,(struct sockaddr *) &client_addr, &size_addr)) != -1) {
-			//Traza("Se ha conectado el cliente (%s) por el puerto (%d). El número de socket del cliente es: %d", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, socket_client);
+
 			log_trace(logger, "NUEVA CONEXION ENTRANTE. Se ha conectado el cliente (%s) por el puerto (%d). El número de socket del cliente es: %d", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, socket_client);
+
 			// Aca hay que crear un nuevo hilo, que será el encargado de atender al cliente
 			pthread_t hNuevoCliente;
 			pthread_create(&hNuevoCliente, NULL, (void*) AtiendeCliente, (void *) socket_client);
+
 		}
 		else {
 			Error("ERROR AL ACEPTAR LA CONEXIÓN DE UN CLIENTE");
@@ -137,18 +135,6 @@ void LevantarConfig() {
 
 #endif
 
-void Comenzar_Consola() {
-
-	int corte_consola = -1;
-	printf("Consola para ingresar Comandos al planificador\n");
-
-	while (corte_consola != 0) {
-		corte_consola = operaciones_consola();
-	}
-
-	printf("Se termino la ejecucion de la consola del planificador\n");
-}
-
 
 char inkey(void) {
   char c;
@@ -177,23 +163,6 @@ int esParecido(char* comando,char* com){
 	return parecido;
 }
 
-void imprimirComandos(char* comando){
-	int i=0;
-	char * com;
-	printf("\n");
-	for(i=0;i<list_size(lista_comandos); i++) {
-
-		com = list_get(lista_comandos,i);
-
-		if(esParecido(comando,com)){
-			printf(" %s ",com);
-		}
-
-	}
-
-	printf("\n%s",comando);
-}
-
 void enviarArchivo(){
 
 	FILE *archivo = fopen("texto.txt","r");
@@ -217,18 +186,6 @@ void enviarArchivo(){
 	free(contenido);
 
 	sem_post(&cpu->semaforo);
-}
-
-int procesarComando(comando){
-	enviarArchivo();
-	return 1;
-}
-
-int operaciones_consola() {
-	int c;
-	scanf("%d",&c);
-	procesarComando("prueba");
-	return 1;
 }
 
 void procesarBuffer(char* buffer, long unsigned tamanioBuffer){

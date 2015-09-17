@@ -27,8 +27,10 @@ int main(void) {
 		if(!crearParticionSwap())
 			ErrorFatal("Error al crear la particion de swap");
 		else{
-			crearEstructuraBloquesLibres();
-			ejecutarOrden(1, " 311225114");
+			if( crearEstructuraBloques() > 0){
+			crearEntornoParaTestDesfragmentacion();
+			ejecutarOrden(1, "311225112");
+			}
 		}
 	}
 	if(1 == 0){
@@ -43,6 +45,21 @@ int main(void) {
 	}
 	pthread_join(hOrquestadorConexiones, NULL );
 	}
+	return 0;
+}
+
+int crearEntornoParaTestDesfragmentacion(){
+	FILE *ptr;
+	getComienzoParticionSwap(&ptr);
+	if(ptr!=NULL){
+		list_remove(listaBloquesLibres, 0);
+		list_add(listaBloquesLibres, t_block_free_create((int*)ptr, 1));
+		list_add(listaBloquesLibres, t_block_free_create((int*)ptr + 2*g_Tamanio_Pagina, 1));
+		list_add(listaBloquesOcupados, t_block_used_create(24, (int*)ptr + g_Tamanio_Pagina, 1));
+		list_add(listaBloquesOcupados, t_block_used_create(45, (int*)ptr + 3*g_Tamanio_Pagina,1));
+	}
+	else
+		Error("Error al crear test para desfragmentacion");
 	return 0;
 }
 
@@ -91,7 +108,7 @@ int ejecutarOrden(int orden, char* buffer){
 	switch(orden){
 	case CREA_PROCESO:
 	{
-		int posActual = 3; //con = 2 obtengo errores.
+		int posActual = 2;
 		char* pid = DigitosNombreArchivo(buffer,&posActual);
 		//posActual = posActual +1;
 		char* paginasSolicitadas = DigitosNombreArchivo(buffer, &posActual);
@@ -121,16 +138,64 @@ int crearProceso(int pid, int paginasSolicitadas){
 		if(existeEspacioContiguo(paginasSolicitadas))
 		{
 			/*Aca busco donde garcha meter el proceso*/
+			bool _bloque_espacio_suficiente(void *bloque){
+				return((t_block_free*)bloque)->cantPag >= paginasSolicitadas;
+			}
+			t_block_free* bloqueLibre = list_remove_by_condition(listaBloquesLibres, (void*) _bloque_espacio_suficiente);
+			if(bloqueLibre != NULL){
+				t_block_free_create(bloqueLibre->ptrComienzo, paginasSolicitadas);
+				free(bloqueLibre);
+			/*Enviar respusta de ejecucion ok*/
+				char* rspOk;
+				string_append(&rspOk,"41");
+				string_append(&rspOk, INIT_OK);
+				EnviarDatos(socket_Memoria, rspOk, strlen(rspOk), COD_ADM_SWAP);
+				free(rspOk);
+			}
+		else{
+			char* rspFail;
+			string_append(&rspFail,"41");
+			string_append(&rspFail, INIT_FAIL);
+			EnviarDatos(socket_Memoria, rspFail, strlen(rspFail), COD_ADM_SWAP);
+			free(rspFail);
+			}
 		}
-		else{}
-			/*desfragmentar*/
-
-
+		else
+		{
+			desfragmentar();
+		}
 
 	}
 	return 1;
-
 };
+
+
+int desfragmentar(){
+	FILE* ptrBloque, *ptrAnt;
+	t_block_used *bloqueAct;
+	int i = 0;
+	getComienzoParticionSwap(&ptrBloque);
+	if(ptrBloque == NULL){
+		Error("Error al intentar desfragmentar");
+		return -1;
+	}
+	else{
+
+		for(i ; i < listaBloquesOcupados->elements_count; i++){
+			bloqueAct = (t_block_used*)list_get(listaBloquesOcupados, i);
+			ptrAnt = bloqueAct->ptrComienzo;
+			if(ptrBloque != ptrAnt){
+				memcpy(ptrBloque, ptrAnt, (size_t) g_Tamanio_Pagina);
+				bloqueAct->ptrComienzo = ptrBloque;
+				list_replace(listaBloquesOcupados, i, bloqueAct);
+			}
+			ptrBloque = ptrAnt + (size_t) g_Tamanio_Pagina ;
+
+		}
+
+		return 1;
+	}
+}
 
 int existeEspacioContiguo(int paginasSolicitadas){
 
@@ -161,25 +226,39 @@ int getCantidadPaginasLibres()
 
 };
 
+void getComienzoParticionSwap(FILE** ptr){
+	char * dir = string_new();
+		string_append(&dir, "/home/utnso/git/");
+		string_append(&dir, g_Nombre_Swap);
+		string_append(&dir, ".bin");
+		*ptr = fopen(dir, "r");
+		int v = fclose(*ptr);
+		if (v != 0){
+			Error("Error al cerrar particion de swap.");
+		}
+}
 
 int crearEstructuraBloquesLibres(){
-	char * dir = string_new();
-	string_append(&dir, "/home/utnso/git/");
-	string_append(&dir, g_Nombre_Swap);
-	string_append(&dir, ".bin");
-	FILE* ptr = fopen(dir, "r");
-	if(ptr == NULL)
+	FILE* ptr;
+	getComienzoParticionSwap(&ptr);
+	if(ptr == NULL){
 		ErrorFatal("Error al crear la estructura de nodos libres.");
-	else{
+		return -1;
+	}
 
 	listaBloquesLibres = list_create();
 	list_add(listaBloquesLibres, t_block_free_create((int*)ptr, g_Cantidad_Paginas));
-	int v = fclose(ptr);
-	if (v != 0){
-		Error("Error al cerrar particion de swap.");
-		return -1;
-	}
-	else
-		return 1;
-	}
+	return 1;
+}
+
+int crearEstructuraBloques(){
+	int x = crearEstructuraBloquesLibres();
+	if (x>0)
+	x = crearEstructuraBloquesOcupados();
+	return x;
+}
+
+int crearEstructuraBloquesOcupados(){
+	listaBloquesOcupados = list_create();
+	return 1;
 }

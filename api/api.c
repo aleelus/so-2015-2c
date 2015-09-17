@@ -7,6 +7,32 @@
 
 #include "api.h"
 
+int conectarCliente (char* ip, char* puerto) {
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	getaddrinfo(ip, puerto, &hints, &serverInfo);
+	int serverSocket;
+	serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+	if (serverSocket==-1){
+		//log_error(logs, "Error al crear el socket");
+		printf("Error al crear el socket");
+		return 0;
+	}
+	if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)){
+		//log_error(logs, "Error al conectar el socket");
+		printf("Error al conectar el socket");
+		close(serverSocket);
+		return 0;
+	}
+	freeaddrinfo(serverInfo);
+	return serverSocket;
+}
+
 void CerrarSocket(int socket) {
 	close(socket);
 	//Traza("SOCKET SE CIERRA: (%d).", socket);
@@ -198,6 +224,43 @@ char* obtenerSubBuffer(char *nombre){
 	string_append(&aux,string_itoa(cont));
 	string_append(&aux,string_itoa(tamanioNombre));
 	string_append(&aux,nombre);
+
+	return aux;
+}
+int cuentaDigitos(int valor){
+	int cont = 0;
+	float tamDigArch=valor;
+	while(tamDigArch>=1){
+		tamDigArch=tamDigArch/10;
+		cont++;
+	}
+	return cont;
+}
+
+char* obtenerSubBufferDeContenido(char *nombre,int tamanio){
+
+	//Le tengo q pasar un string y un tamanio,
+	//El nombre debe tener el resto del contenido con \0, Ej: nombre="hola\0\0\0....\0" la cantidad de \0 son (tamanio-strlen(hola)) PD: Puse el strlen como ejemplo pero no se puede usar xDXDXDXDxXxXdXXdXDXd
+	//Ej: nombre= AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos  tamanio=256  ==> salida= 3256AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos\0\0\0\0...\0
+
+	float tam=tamanio;
+	int cont=0;
+	char *aux;
+
+	while(tam>=1){
+		tam=tam/10;
+		cont++;
+	}
+
+	aux = malloc(tamanio+cuentaDigitos(cont)+cuentaDigitos(tamanio));
+	memset(aux,0,tamanio+cuentaDigitos(cont)+cuentaDigitos(tamanio));
+
+
+	memcpy(aux,string_itoa(cont),strlen(string_itoa(cont)));   // Son nros, puedo hacer stlren
+	memcpy(aux+strlen(string_itoa(cont)),string_itoa(tamanio),strlen(string_itoa(tamanio)));   // Son nros, puedo hacer stlren
+	memcpy(aux+strlen(string_itoa(cont))+strlen(string_itoa(tamanio)),nombre,tamanio);
+
+
 
 	return aux;
 }

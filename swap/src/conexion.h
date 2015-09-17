@@ -14,6 +14,8 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include "swap.h"
+#include <sys/mman.h>
+
 #define ADM_MEMORIA 3
 
 typedef enum {
@@ -33,14 +35,19 @@ typedef enum {
 
 typedef enum{
 	READ_FAIL,
-	READ_OK
+	READ_OK /*Esto no se usa, ya que si leyo bien tiene que devolver el contenido */
 }t_read_result;
 
 
 //METODOS MANEJO SOCKETS
 void HiloOrquestadorDeConexiones();
-int cuentaDigitos(int );
 int AtiendeCliente(void * arg);
+/*
+ * @NAME
+ * @DESC: por lo general PID no se usa, en cuyo caso se le envia NULL
+ * solo se usara en caso de que soliciten un marco donde fallo va a ser el numero de marco en vez de fallo
+ */
+int EnviarRespuesta(int operacion, int fallo, int pid);
 
 
 

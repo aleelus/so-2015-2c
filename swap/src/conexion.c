@@ -103,16 +103,14 @@ int AtiendeCliente(void * arg) {
 			//Evaluamos los comandos
 			switch (emisor) {
 			case ADM_MEMORIA:
-
-				if(!ENTREGA1){
+			{
 					int orden;
 					orden = PosicionDeBufferAInt(buffer, 1);
 					ejecutarOrden(orden, buffer);
-				}
-
-				printf("Hola Memoria\n");
-				EnviarDatos(socket_Memoria,"Ok",strlen("Ok"), COD_ADM_SWAP);
+//				printf("Hola Memoria\n");
+//				EnviarDatos(socket_Memoria,"Ok",strlen("Ok"), COD_ADM_SWAP);
 				break;
+			}
 			case COMANDO:
 				printf("Ejecutado por telnet");
 				EnviarDatos(socket_Memoria,"Ok",strlen("Ok"), COD_ADM_SWAP);
@@ -130,3 +128,71 @@ int AtiendeCliente(void * arg) {
 	CerrarSocket(socket_Memoria);
 	return code;
 }
+
+void procesarBuffer(char* buffer, long unsigned tamanioBuffer){
+	FILE * archivo = fopen("texto.txt","w");
+	fwrite(buffer,1,tamanioBuffer,archivo);
+	fclose(archivo);
+}
+
+void enviarArchivo(){
+	FILE * archivo = fopen("texto2.txt","r");
+	char * contenido;
+	fseek(archivo,0L,SEEK_END);
+	long unsigned tamanioA = ftell(archivo);
+
+	contenido = malloc(tamanioA+1);
+	memset(contenido,0,tamanioA+1);
+	rewind(archivo);
+	fread(contenido,1,tamanioA,archivo);
+
+	EnviarDatos(socket_Memoria,contenido,tamanioA, COD_ADM_SWAP);
+
+	free(contenido);
+	fclose(archivo);
+}
+
+
+int EnviarRespuesta(operacion, fallo, pid){
+	char* rsp = string_new();
+		switch(operacion){
+			case CREA_PROCESO:
+			{
+				string_append(&rsp,"4111");
+				string_append(&rsp, (fallo ? INIT_FAIL : INIT_OK));
+				break;
+			}
+			case SOLICITA_MARCO:
+			{//OJO. en este caso el "fallo" es en realidad el numero de pagina que quier
+				char* fail = string_new();
+				string_append(&fail, "11");
+				string_append(&fail, READ_FAIL);
+
+				string_append(&rsp,"42");
+				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
+				FILE* ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
+				char* contenido = getContenido(ptr);
+				string_append(&rsp, contenido != NULL ? obtenerSubBuffer( contenido ) : fail);
+
+				if(contenido != NULL)
+					munmap(contenido, (size_t) __sizePagina__);
+				break;
+			}
+			case REEMPLAZA_MARCO:
+			{
+				string_append(&rsp,"4311");
+				string_append(&rsp, fallo ?  WRITE_FAIL : WRITE_OK);
+				break;
+			}
+			case FINALIZAR_PROCESO:
+			{
+				string_append(&rsp,"4411");
+				string_append(&rsp, fallo ? FIN_FAIL : FIN_OK);
+				break;
+			}
+		}
+
+		EnviarDatos(socket_Memoria, rsp, strlen(rsp), COD_ADM_SWAP);
+		free(rsp);
+}
+

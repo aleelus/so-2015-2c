@@ -59,4 +59,9 @@ int main(void) {
 	return 0;
 }
 
+int crearProceso(char* path) {
+	t_PCB *nuevoPCB = malloc(sizeof(t_PCB));
+	list_add(PCBs, nuevoPCB);
 
+
+}

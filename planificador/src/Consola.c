@@ -85,10 +85,11 @@ t_operacion obtenerComandoCorrespondiente(char *comando, char *argumento, char *
 		pid = NULL;
 	}
 	else if (!strcasecmp(comando, "FINALIZAR")){
-		operacion = FINALIZAR;
 
-		//*pid = atoi(strchr(entrada, ' ')+1);
+
 		*pid = atoi(argumento);
+
+		operacion = (*pid) ? FINALIZAR : COMANDO_ERRONEO; // Si el argumento no es un numero el comando es erroneo
 
 		path = NULL;
 	}

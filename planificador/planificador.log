@@ -57,3 +57,12 @@ ERROR FATAL--> Error al hacer el Bind. El puerto está en uso
 
 [TRACE] 21:17:35:410 planificador/(10501:10503): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
 [TRACE] 21:19:51:807 planificador/(10647:10652): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 19:39:57:899 planificador/(15104:15105): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 19:41:48:572 planificador/(15173:15175): 
+ERROR FATAL--> Error al hacer el Bind. El puerto está en uso 
+
+[TRACE] 19:41:55:568 planificador/(15207:15212): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 19:48:38:538 planificador/(15332:15337): 
+ERROR FATAL--> Error al hacer el Bind. El puerto está en uso 
+
+[TRACE] 19:48:45:157 planificador/(15397:15399): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000

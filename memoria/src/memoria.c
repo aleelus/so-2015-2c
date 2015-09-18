@@ -937,6 +937,16 @@ void implementoEscribirCpu(int socket,char *buffer){
 }
 
 
+void imprimirTLB(){
+	int i=0;
+	t_tlb* tlb;
+	printf("Pos		Pid		Pag		Marco\n");
+	while(i<list_size(lista_tlb)){
+		tlb = list_get(lista_tlb,i);
+		printf("%d		%d		%d		%d\n",i,tlb->pid,tlb->pagina,tlb->marco);
+		i++;
+	}
+}
 
 void implementoLeerCpu(int socket,char *buffer){
 
@@ -969,6 +979,7 @@ void implementoLeerCpu(int socket,char *buffer){
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 		}
 		actualizarTLB(pid,nroPagina);
+		imprimirTLB();
 		//sleep(g_Retardo_Memoria);
 	}
 	printf("Contenido:%s\n",a_Memoria[marco].contenido);

@@ -26,7 +26,7 @@ void LevantarConfig() {
 		} else
 			Error("No se pudo leer el parametro CANTIDAD_PAGINAS");
 		if (config_has_property(config, "TAMANIO_PAGINA")) {
-			g_Tamanio_Pagina = config_get_int_value(config, "TAMANIO_PAGINA");
+			__sizePagina__ = config_get_int_value(config, "TAMANIO_PAGINA");
 		} else
 			Error("No se pudo leer el parametro TAMANIO_PAGINA");
 		if (config_has_property(config, "RETARDO_COMPACTACION")) {

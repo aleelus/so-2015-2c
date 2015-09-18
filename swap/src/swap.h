@@ -29,7 +29,6 @@
 
 #define COLOR_VERDE   "\x1b[32m"
 #define DEFAULT   "\x1b[0m"
-#define YO	"4"
 //**Define para mensajes recibidos de MEMORIA**/
 #define CREA_PROCESO 1
 #define SOLICITA_MARCO 2
@@ -59,7 +58,7 @@ int socket_Memoria;
 int g_Puerto;
 char* g_Nombre_Swap;
 int g_Cantidad_Paginas;
-int g_Tamanio_Pagina;
+int __sizePagina__;
 int g_Retardo_Compactacion;
 
 // METODOS MANEJO DE ERRORES //
@@ -85,3 +84,31 @@ int ejecutarOrden(int, char*);
 int crearEstructuraBloquesOcupados();
 int crearEstructuraBloquesLibres();
 int crearEstructuraBloques();
+/*
+ * @NAME getCantidadPaginasLibres
+ * @DESC Obtiene la cantidad de paginas libres QUE ESTEN en la estructura de bloquesLibres
+ */
+int getCantidadPaginasLibres();
+/*
+ * @NAME getCantidadPaginasOcupadas
+ * @DESC Obtiene la cantidad de paginas ocupadas QUE ESTEN en la estructura de bloquesOcupados
+ */
+int getCantidadPaginasOcupadas();
+
+/*
+ * @NAME guardarEnBloqueConEspacio
+ * @DESC Comprueba si hay un bloque con espacio conjunto suficiente, y si es asi lo reserva;
+ * Recibe la cantidad de paginas solicitadas,
+ * ATENCION!!! devuelve 1 si fallo!!!
+ */
+int guardarEnBloqueConEspacio(int paginasSolicitadas);
+/*
+ * @NAME getPtrPaginaProcesoSolic
+ * @DESC comprueba si la pagina del proceso solicitado existe y devuelve un puntero a esa pagina o -1 en caso de error
+ */
+FILE* getPtrPaginaProcesoSolic(int pid, int paginaSolicitada);
+/*
+ * @NAME getContenido
+ * @DESC devuelve el contenido del bloque apuntado por ptr;
+ */
+char* getContenido(FILE* ptr);

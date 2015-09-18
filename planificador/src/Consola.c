@@ -35,12 +35,18 @@ int procesarComando(char *comando, char *argumento){
 			if(__DEBUG__){
 				fprintf(stderr,"Entrando a la funcion CORRER, el PATH es %s\n", path);
 			}
+			pid = crearProceso(path);
+			fprintf(stdout, "Se creo el proceso %s con pid %d", path, pid);
 			break;
 
 		case FINALIZAR:
 			if(__DEBUG__){
 				fprintf(stderr, "Entrando a la funcion FINALIZAR, el PID es %d\n", pid);
 			}
+			if (!finalizarProceso(pid)){
+				fprintf(stdout, "El proceso %d, no existe\n", pid);
+			}
+			fprintf(stdout, "El proceso %d se ha finalizado con exito\n", pid);
 			break;
 
 		case CPU:
@@ -53,6 +59,7 @@ int procesarComando(char *comando, char *argumento){
 			if(__DEBUG__){
 				fprintf(stderr, "Entrando a la funcion PS\n");
 			}
+			mostrarProcesos();
 			break;
 
 		case HELP:
@@ -78,16 +85,14 @@ t_operacion obtenerComandoCorrespondiente(char *comando, char *argumento, char *
 	if(!strcasecmp(comando, "CORRER")){
 		operacion = CORRER;
 
-		/*path = (char*)malloc(strlen(strchr(entrada,'/')));
-		strcpy(path, strchr(entrada,'/'));*/
 		*path = argumento;
 
 		pid = NULL;
 	}
 	else if (!strcasecmp(comando, "FINALIZAR")){
 
-
-		*pid = atoi(argumento);
+		*pid = strtol(argumento, NULL, 10);
+		//*pid = atoi(argumento);
 
 		operacion = (*pid) ? FINALIZAR : COMANDO_ERRONEO; // Si el argumento no es un numero el comando es erroneo
 

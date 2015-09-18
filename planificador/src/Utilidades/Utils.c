@@ -6,7 +6,7 @@
  */
 #include "Utils.h"
 
-
+const char* estados[] = {"Listo", "Bloqueado", "Ejecutando", "Error", "Terminado"};
 
 void HiloOrquestadorDeConexiones() {
 

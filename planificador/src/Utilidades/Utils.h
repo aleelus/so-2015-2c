@@ -37,7 +37,9 @@
 /***********API*************/
 #include <api.h>
 
-#endif /* UTILIDADES_UTILS_H_ */
+
+
+
 
 
 
@@ -49,6 +51,9 @@
 #define DEFAULT "\x1b[0m"
 #define PLANIFICADOR "1"
 #define __DEBUG__ 1
+
+const char* estados[];
+
 /***************GLOBALES************************/
 sem_t semListaCpu;
 
@@ -83,6 +88,7 @@ typedef enum {
 }t_estado;
 
 
+
 /***********************METODOS*******************************/
 
 /* @NAME: CargarListaComandos
@@ -93,3 +99,4 @@ void procesarBuffer(char* buffer, long unsigned tamanioBuffer);
 void HiloOrquestadorDeConexiones();
 int cuentaDigitos(int );
 void LevantarConfig();
+#endif /* UTILIDADES_UTILS_H_ */

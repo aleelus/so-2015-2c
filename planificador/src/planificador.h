@@ -1,9 +1,9 @@
 // Bibliotecas //
 
 #include "Consola.h"
-//#ifndef UTILIDADES_UTILS_H
-//#include "Utilidades/Utils.h"
-//#endif
+#ifndef UTILIDADES_UTILS_H_
+#include "Utilidades/Utils.h"
+#endif
 
 #undef getc
 
@@ -19,7 +19,7 @@
 
 
 
-
+/*************************ESTRUCTURAS**************************/
 
 
 typedef struct {
@@ -31,3 +31,7 @@ typedef struct {
 	char* path;
 } t_PCB;
 
+typedef struct {
+	int pid;
+	sem_t sem;
+} t_pid;

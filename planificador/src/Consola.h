@@ -6,7 +6,9 @@
  */
 
 #ifndef CONSOLA_H_
+#ifndef UTILIDADES_UTILS_H_
 #include "Utilidades/Utils.h"
+#endif
 #define CONSOLA_H_
 
 /***********************GLOBALES************************/

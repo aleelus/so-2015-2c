@@ -37,6 +37,7 @@ int procesarComando(char *comando, char *argumento){
 			}
 			pid = crearProceso(path);
 			fprintf(stdout, "Se creo el proceso %s con pid %d", path, pid);
+			ejecutarDispatcher();
 			break;
 
 		case FINALIZAR:
@@ -47,6 +48,7 @@ int procesarComando(char *comando, char *argumento){
 				fprintf(stdout, "El proceso %d, no existe\n", pid);
 			}
 			fprintf(stdout, "El proceso %d se ha finalizado con exito\n", pid);
+			ejecutarDispatcher();
 			break;
 
 		case CPU:
@@ -85,7 +87,7 @@ t_operacion obtenerComandoCorrespondiente(char *comando, char *argumento, char *
 	if(!strcasecmp(comando, "CORRER")){
 		operacion = CORRER;
 
-		*path = argumento;
+		*path = argumento+1;//Para eliminarl el espacio en blanco que lee al principio
 
 		pid = NULL;
 	}

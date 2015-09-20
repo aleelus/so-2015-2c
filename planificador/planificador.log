@@ -98,3 +98,32 @@ ERROR FATAL--> Error al hacer el Bind. El puerto está en uso
 [TRACE] 17:53:05:145 planificador/(9956:9966): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
 [TRACE] 17:53:43:490 planificador/(10023:10028): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
 [TRACE] 17:55:46:906 planificador/(10093:10099): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 17:45:25:54 planificador/(5309:5310): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 19:50:34:273 planificador/(4479:4480): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 19:51:33:508 planificador/(4552:4554): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:09:02:324 planificador/(5034:5035): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 20:09:08:275 planificador/(5034:5042): 
+ERROR FATAL--> Algoritmo de planificacion no disponible 
+
+[TRACE] 20:09:41:457 planificador/(5076:5081): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 20:10:05:764 planificador/(5076:5085): 
+ERROR FATAL--> Algoritmo de planificacion no disponible 
+
+[TRACE] 20:10:26:164 planificador/(5122:5125): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:10:59:182 planificador/(5164:5193): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:23:26:457 planificador/(5356:5364): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 20:23:36:229 planificador/(5356:5366): 
+ERROR FATAL--> Algoritmo de planificacion no disponible 
+
+[TRACE] 20:28:49:540 planificador/(5537:5545): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:30:27:789 planificador/(5643:5652): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:35:02:903 planificador/(5769:5779): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 20:35:41:42 planificador/(5845:5850): 
+ERROR FATAL--> Error al hacer el Bind. El puerto está en uso 
+
+[TRACE] 20:44:40:952 planificador/(6138:6147): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:46:26:144 planificador/(6234:6243): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:48:12:429 planificador/(6347:6355): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:49:09:799 planificador/(6413:6422): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:49:56:35 planificador/(6481:6489): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 20:53:08:423 planificador/(6603:6610): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000

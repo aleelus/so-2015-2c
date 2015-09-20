@@ -1,12 +1,12 @@
 // Bibliotecas //
 
 #include "Consola.h"
+#include "Dispatcher.h"
 #ifndef UTILIDADES_UTILS_H_
 #include "Utilidades/Utils.h"
 #endif
 
 #undef getc
-
 
 
 #define PLANIFICADOR "1"
@@ -22,14 +22,7 @@
 /*************************ESTRUCTURAS**************************/
 
 
-typedef struct {
-	int pid;
-	int nroLinea; // Ultima linea = -1
-	int quantum;
-	t_estado estado;
-	time_t horaCreacion;
-	char* path;
-} t_PCB;
+
 
 typedef struct {
 	int pid;

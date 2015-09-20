@@ -42,6 +42,11 @@ void HiloOrquestadorDeConexiones() {
 	//Traza("El socket está listo para recibir conexiones. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
 	log_trace(logger, "SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
 
+	if (__DEBUG__){
+		AtiendeCliente(5);
+		AtiendeCliente(6);
+		AtiendeCliente(7);
+	}
 	while (/*g_Ejecutando*/1) {
 		int socket_client;
 
@@ -68,13 +73,18 @@ int AtiendeCliente(void * arg) {
 
 	t_cpu *cpu = malloc(sizeof(t_cpu));
 
+
+
 	cpu->socket_Cpu = (int) arg;
+	cpu->procesoAsignado = NULL;
 	sem_init(&cpu->semaforo,0,0);
 
 	sem_wait(&semListaCpu);
 	list_add(lista_cpu,cpu);
 	sem_post(&semListaCpu);
-
+	if (__DEBUG__){
+		return 1;
+	}
 	//Bloqueo a la CPU hasta que tenga alguna tarea
 	while(1){
 		printf("CPU BLOQUEADA\n");
@@ -108,7 +118,16 @@ void LevantarConfig() {
 
 
 		if (config_has_property(config, "ALGORITMO_PLANIFICACION")) {
-			g_Algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+			char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+			if (!strcasecmp(algoritmo, "FIFO")){
+				g_Algoritmo = FIFO;
+			}
+			else if(!strcasecmp(algoritmo, "RR")) {
+				g_Algoritmo = RR;
+			}
+			else {
+				ErrorFatal("El parametro ALGORITMO_PLANIFICACION no es valido");
+			}
 		}
 		else {
 			Error("No se pudo leer el parametro ALGORITMO_PLANIFICACION");
@@ -195,4 +214,17 @@ void procesarBuffer(char* buffer, long unsigned tamanioBuffer){
 	fwrite(buffer,sizeof(char),tamanioBuffer,archivo);
 
 	fclose(archivo);
+}
+
+int enviarMensajeEjecucion(t_cpu cpu) {
+	char *mensaje = malloc(3);
+	strcpy(mensaje, "11");// Remitente: Planificador, Operacion: Ejecutar proceso
+	string_append(mensaje, obtenerSubBuffer(string_itoa(cpu.procesoAsignado->pid)));
+	string_append(mensaje, obtenerSubBuffer(string_itoa(cpu.procesoAsignado->nroLinea)));
+	string_append(mensaje, obtenerSubBuffer(string_itoa(g_Algoritmo == RR ? g_Quantum : -1 )));
+	string_append(mensaje, obtenerSubBuffer(cpu.procesoAsignado->path));
+
+	int datosEnviados = EnviarDatos(cpu.socket_Cpu, mensaje, strlen(mensaje), PLANIFICADOR);
+	free(mensaje);
+	return datosEnviados;
 }

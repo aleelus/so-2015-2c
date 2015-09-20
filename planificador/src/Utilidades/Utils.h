@@ -54,6 +54,45 @@
 
 const char* estados[];
 
+
+/************************ENUMS********************************/
+
+typedef enum {
+	FIFO,
+	RR
+} t_algoritmo;
+
+typedef enum {
+	LISTO,
+	BLOQUEADO,
+	EJECUTANDO,
+	ERROR,
+	TERMINADO
+}t_estado;
+
+
+/*************************ESTRUCTURAS**************************/
+
+
+typedef struct {
+	int pid;
+	int nroLinea; // Ultima linea = -1
+	int quantum;
+	t_estado estado;
+	time_t horaCreacion;
+	char* path;
+} t_PCB;
+
+
+typedef struct {
+	int socket_Cpu;
+	sem_t semaforo;
+	t_PCB* procesoAsignado;
+} t_cpu;
+
+
+
+
 /***************GLOBALES************************/
 sem_t semListaCpu;
 
@@ -65,30 +104,13 @@ t_log *logger; // Logger del commons
 int g_Puerto; // Puerto de escucha del planificador
 int g_Quantum; // Quantum para RR
 //int g_Ejecutando = 1; // Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
-char *g_Algoritmo; // Algoritmo de planificacion FIFO o RR
 
 
 
 
-/*************************ESTRUCTURAS**************************/
-
-typedef struct {
-	int socket_Cpu;
-	sem_t semaforo;
-} t_cpu;
 
 
-/************************ENUMS********************************/
-typedef enum {
-	LISTO,
-	BLOQUEADO,
-	EJECUTANDO,
-	ERROR,
-	TERMINADO
-}t_estado;
-
-
-
+t_algoritmo g_Algoritmo; // Algoritmo de planificacion FIFO o RR
 /***********************METODOS*******************************/
 
 /* @NAME: CargarListaComandos
@@ -99,4 +121,5 @@ void procesarBuffer(char* buffer, long unsigned tamanioBuffer);
 void HiloOrquestadorDeConexiones();
 int cuentaDigitos(int );
 void LevantarConfig();
+int enviarMensajeEjecucion(t_cpu);
 #endif /* UTILIDADES_UTILS_H_ */

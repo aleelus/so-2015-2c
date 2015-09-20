@@ -17,7 +17,7 @@
 
 t_list *PCBs, *colaReady, *colaBloqueados;
 
-pthread_t hOrquestadorConexiones, hConsola;
+pthread_t hOrquestadorConexiones, hConsola, hDispatcher;
 
 int cantHilos=0;
 //int PID=0; // Contador de ID Procesos mProc (semaforo)
@@ -92,22 +92,20 @@ int finalizarProceso(int pid) {
 		return pcb->pid == pid;
 	}
 	sem_wait(&semPCB);
+	sem_wait(&semReady);
+	sem_wait(&semLock);
+
 	t_PCB *proceso = list_remove_by_condition(PCBs, (void*) _mismoPID );
-	sem_post(&semPCB);
 	t_PCB *aux = proceso;
 	if(proceso->estado == EJECUTANDO){
 		//TODO: Sacarlo de la CPU, matarlo y enterrar el cadaver donde nadie pueda verlo
-
 	}
 	if(proceso->estado == LISTO) {
-		sem_wait(&semReady);
 		aux = list_remove_by_condition(colaReady, (void*) _mismoPID);
-		sem_post(&semReady);
 	}
 	if(proceso->estado == BLOQUEADO){
-		sem_wait(&semLock);
+
 		aux = list_remove_by_condition(colaBloqueados, (void*) _mismoPID);
-		sem_post(&semLock);
 	}
 	if (aux != proceso){
 		fprintf(stderr, "Error irrecuperable al finalizar el proceso %d\n", pid);
@@ -116,6 +114,11 @@ int finalizarProceso(int pid) {
 		}
 		exit(0);
 	}
+
+	sem_post(&semLock);
+	sem_post(&semReady);
+	sem_post(&semPCB);
+
 	free(proceso->path);
 	free(proceso);
 	return proceso;
@@ -148,4 +151,18 @@ void inicializarListas() {
 	PCBs = list_create();
 	colaReady = list_create();
 	colaBloqueados = list_create();
+}
+
+void ejecutarDispatcher(){
+	int *algoritmo = malloc(sizeof(int*));
+	if (algoritmo == NULL){
+		Error("Error al crear hilo de dispatcher");
+		return;
+	}
+	*algoritmo = g_Algoritmo;
+	int iThreadDispatcher = pthread_create(&hDispatcher, NULL, (void*) Dispatcher, algoritmo );
+	if ( iThreadDispatcher != 0 ){
+		fprintf(stderr, "Error al crear hilo dispatcher - pthread_create() return code: %d\n", iThreadDispatcher);
+		exit(EXIT_FAILURE);
+	}
 }

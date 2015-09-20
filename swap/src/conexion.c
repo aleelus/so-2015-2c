@@ -158,21 +158,21 @@ int EnviarRespuesta(operacion, fallo, pid){
 		switch(operacion){
 			case CREA_PROCESO:
 			{
-				string_append(&rsp,"4111");
+				//string_append(&rsp,"4111");
 				string_append(&rsp, (fallo ? INIT_FAIL : INIT_OK));
 				break;
 			}
 			case SOLICITA_MARCO:
 			{//OJO. en este caso el "fallo" es en realidad el numero de pagina que quier
-				char* fail = string_new();
-				string_append(&fail, "11");
-				string_append(&fail, READ_FAIL);
+				//char* fail = string_new();
+				//string_append(&fail, "11");
+				//string_append(&fail,READ_FAIL );
 
-				string_append(&rsp,"42");
+				//string_append(&rsp,"42");
 				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
 				FILE* ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
 				char* contenido = getContenido(ptr);
-				string_append(&rsp, contenido != NULL ? obtenerSubBuffer( contenido ) : fail);
+				string_append(&rsp, contenido != NULL ? obtenerSubBuffer( contenido ) : READ_FAIL);
 
 				if(contenido != NULL)
 					munmap(contenido, (size_t) __sizePagina__);
@@ -180,13 +180,13 @@ int EnviarRespuesta(operacion, fallo, pid){
 			}
 			case REEMPLAZA_MARCO:
 			{
-				string_append(&rsp,"4311");
+			//	string_append(&rsp,"4311");
 				string_append(&rsp, fallo ?  WRITE_FAIL : WRITE_OK);
 				break;
 			}
 			case FINALIZAR_PROCESO:
 			{
-				string_append(&rsp,"4411");
+				//string_append(&rsp,"4411");
 				string_append(&rsp, fallo ? FIN_FAIL : FIN_OK);
 				break;
 			}

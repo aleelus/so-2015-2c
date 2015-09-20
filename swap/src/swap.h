@@ -34,7 +34,8 @@
 #define SOLICITA_MARCO 2
 #define REEMPLAZA_MARCO 3
 #define FINALIZAR_PROCESO 4
-#define ENTREGA1 0 //Dejar en 1 hasta la entrega 1
+#define __FALLO__ 1
+#define __PROC_OK__ 0
 
 /*Lista de bloques globales*/
 t_list* listaBloquesLibres;

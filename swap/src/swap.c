@@ -11,6 +11,7 @@
 
 #include "swap.h"
 #include <stdlib.h>
+#define __TEST_FRAGMENTACION__ 0
 
  g_Ejecutando = 1;
  cantHilos=0;
@@ -26,14 +27,13 @@ int main(void) {
 		if(!crearParticionSwap())
 			ErrorFatal("Error al crear la particion de swap");
 		else{
-			if( crearEstructuraBloques() > 0){
-			crearEntornoParaTestDesfragmentacion();
-			ejecutarOrden(1, "311225112");
+			if(__TEST_FRAGMENTACION__){
+				if( crearEstructuraBloques() > 0){
+				crearEntornoParaTestDesfragmentacion();
+				ejecutarOrden(1, "311225112");
+				}
 			}
 		}
-
-
-	if(1 == 0){
 	//Hilo orquestador conexiones
 	int iThreadOrquestador = pthread_create(&hOrquestadorConexiones, NULL,
 			(void*) HiloOrquestadorDeConexiones, NULL );
@@ -44,9 +44,6 @@ int main(void) {
 		exit(EXIT_FAILURE);
 	}
 	pthread_join(hOrquestadorConexiones, NULL );
-	}
-
-
 
 
 	return 0;
@@ -91,7 +88,9 @@ int ejecutarOrden(int orden, char* buffer){
 		int posActual = 2;
 		char* pid = DigitosNombreArchivo(buffer,&posActual);
 		char* paginasSolicitadas = DigitosNombreArchivo(buffer, &posActual);
-		crearProceso(atoi(pid), atoi(paginasSolicitadas));
+		int res = crearProceso(atoi(pid), atoi(paginasSolicitadas));
+			EnviarRespuesta(CREA_PROCESO, (res < 0) ? __FALLO__ : guardarEnBloque(paginasSolicitadas), NULL);
+
 	}
 		break;
 	case SOLICITA_MARCO:
@@ -103,9 +102,16 @@ int ejecutarOrden(int orden, char* buffer){
 		//devolverPagina(atoi(pid), atoi(paginaSolicitada));
 		break;
 	}
-	case REEMPLAZA_MARCO:
+	case REEMPLAZA_MARCO:{
+		int posActual = 2;
+		char* datos ;
+		datos = memcpy(datos, buffer[2], (size_t) __sizePagina__ );
+
+		EnviarRespuesta(REEMPLAZA_MARCO, __PROC_OK__, NULL);
 		break;
+	}
 	case FINALIZAR_PROCESO:
+		EnviarRespuesta(FINALIZAR_PROCESO, __PROC_OK__, NULL);
 		break;
 	}
 }
@@ -114,15 +120,14 @@ int ejecutarOrden(int orden, char* buffer){
 int crearProceso(int pid, int paginasSolicitadas){
 	int totalPaginasLibres = getCantidadPaginasLibres();
 	if(paginasSolicitadas > totalPaginasLibres)
-		EnviarRespuesta(CREA_PROCESO, 1, NULL);
+		return -1;
 	else
 	{
 		if(!existeEspacioContiguo(paginasSolicitadas))
 			desfragmentar();
 
-		EnviarRespuesta(CREA_PROCESO, guardarEnBloque(paginasSolicitadas), NULL);
+		return 1;
 	}
-	return 1;
 };
 
 FILE* getPtrPaginaProcesoSolic(pid, paginaSolicitada)

@@ -75,8 +75,10 @@ int crearParticionSwap(){
 			if((res = system(cmd))== -1)
 			{
 				perror("Error al intentar crear particion de swap");
+				free(cmd);
 				return -1;
 			}
+			free(cmd);
 			return 1;
 }
 
@@ -89,7 +91,9 @@ int ejecutarOrden(int orden, char* buffer){
 		char* pid = DigitosNombreArchivo(buffer,&posActual);
 		char* paginasSolicitadas = DigitosNombreArchivo(buffer, &posActual);
 		int res = crearProceso(atoi(pid), atoi(paginasSolicitadas));
-			EnviarRespuesta(CREA_PROCESO, (res < 0) ? __FALLO__ : guardarEnBloque(paginasSolicitadas), NULL);
+		EnviarRespuesta(CREA_PROCESO, (res < 0) ? __FALLO__ : guardarEnBloque(paginasSolicitadas), NULL);
+		free(pid);
+		free(paginasSolicitadas);
 
 	}
 		break;
@@ -99,22 +103,147 @@ int ejecutarOrden(int orden, char* buffer){
 		char* pid = DigitosNombreArchivo(buffer,&posActual);
 		char* paginaSolicitada = DigitosNombreArchivo(buffer, &posActual);
 		EnviarRespuesta(CREA_PROCESO, atoi(paginaSolicitada), pid);
-		//devolverPagina(atoi(pid), atoi(paginaSolicitada));
+		free(pid);
+		free(paginaSolicitada);
 		break;
 	}
 	case REEMPLAZA_MARCO:{
-		int posActual = 2;
-		char* datos ;
-		datos = memcpy(datos, buffer[2], (size_t) __sizePagina__ );
+		int res = reemplazarMarco(buffer) ;
+		EnviarRespuesta(REEMPLAZA_MARCO, (res < 0) ? __FALLO__ : __PROC_OK__, NULL);
 
-		EnviarRespuesta(REEMPLAZA_MARCO, __PROC_OK__, NULL);
 		break;
 	}
-	case FINALIZAR_PROCESO:
-		EnviarRespuesta(FINALIZAR_PROCESO, __PROC_OK__, NULL);
+	case FINALIZAR_PROCESO:{
+		int res = finalizarProceso(buffer);
+		EnviarRespuesta(FINALIZAR_PROCESO, (res < 0) ? __FALLO__ :__PROC_OK__, NULL);
 		break;
+		}
+	}
+	free(buffer);
+}
+
+int finalizarProceso(char* buffer){
+	int posActual = 2;
+	char* pid = DigitosNombreArchivo(buffer,&posActual);
+	long PID = atol(pid);
+	free(pid);
+
+	bool _es_bloque_a_reemplazar(t_block_used* bloque)
+		{
+			return(bloque->pid == pid);
+		}
+		//Obtengo el bloque que contiene el marco a reemplazar.
+		t_block_used *bloque = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar );
+
+		if (bloque != NULL){
+		//Obtengo la direccion del marco
+			FILE* ptrComienzoParticion;
+			int fd;
+			char * dir = string_new();
+			string_append(&dir, "/home/utnso/git/");
+			string_append(&dir, g_Nombre_Swap);
+			string_append(&dir, ".bin");
+			ptrComienzoParticion = fopen(dir, "r");
+			struct stat sbuf;
+
+			if ((fd = open(dir, O_RDONLY)) == -1) {
+				free(dir);
+				Error("Error al finalizar proceso %d: no fue posible abrir la particion de swap", PID);
+				return -1;
+			}
+			//Verifico el estado del archivo que estoy abriendo
+			if (stat(dir, &sbuf) == -1) {
+				free(dir);
+				Error("Error al finalizar proceso %d: Verificar estado de archivo particion de swap", PID);
+				return -1;
+			}
+			free(dir);
+
+			getComienzoParticionSwap(&ptrComienzoParticion);
+			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, ptrComienzoParticion - bloque->ptrComienzo );
+			close(fd);
+			memset(datos, '\0', __sizePagina__);
+
+			int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
+			if(ret < 0){
+				Error("Error al intentar sincronizar datos de pagina %d", PID);
+				return -1;
+			}
+			ret = munmap( datos , __sizePagina__ );
+			if (ret < 0){
+				ErrorFatal("Error al ejecutar munmap");
+			}
+			return 1;
+		}
+		else{
+			Error("Error al intentar finalizar proceso %d: No se encontro el bloque correspondiente al mismo", PID);
+			return -1;
+		}
+
+}
+
+
+int reemplazarMarco(char* buffer){
+	int posActual = 2;
+	char* pid = DigitosNombreArchivo(buffer,&posActual);
+	char* pagina = DigitosNombreArchivo(buffer, &posActual);
+	int pag = atoi(pagina);
+	long PID = atol(pid);
+	free (pagina);
+	free(pid);
+
+	bool _es_bloque_a_reemplazar(t_block_used* bloque)
+	{
+		return(bloque->pid == pid);
+	}
+	//Obtengo el bloque que contiene el marco a reemplazar.
+	t_block_used *bloque = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar );
+
+	if (bloque != NULL){
+	//Obtengo la direccion del marco
+		FILE* ptrComienzoParticion;
+		int fd;
+		FILE* ptrMarco = bloque->ptrComienzo + (pag * __sizePagina__);
+		char * dir = string_new();
+		string_append(&dir, "/home/utnso/git/");
+		string_append(&dir, g_Nombre_Swap);
+		string_append(&dir, ".bin");
+		ptrComienzoParticion = fopen(dir, "r");
+		struct stat sbuf;
+
+		if ((fd = open(dir, O_RDONLY)) == -1) {
+			Error("Error al reemplazar marco: no fue posible abrir la particion de swap");
+			return -1;
+		}
+		//Verifico el estado del archivo que estoy abriendo
+		if (stat(dir, &sbuf) == -1) {
+			Error("Error al reemplazar marco: Verificar estado de archivo particion de swap");
+			return -1;
+		}
+		free(dir);
+
+		getComienzoParticionSwap(&ptrComienzoParticion);
+		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd, ptrComienzoParticion - ptrMarco );
+		close(fd);
+		memcpy(datos, buffer[2], __sizePagina__);
+		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
+		if(ret < 0){
+			Error("Error al intentar sincronizar datos de pagina %d", PID);
+			return -1;
+		}
+		ret = munmap( datos , __sizePagina__ );
+		if (ret < 0){
+			ErrorFatal("Error al ejecutar munmap");
+		}
+		return 1;
+	}
+	else{
+		Error("No se encontro ningun bloque correspondiente al pid %d", PID);
+		return -1;
 	}
 }
+
+
 
 
 int crearProceso(int pid, int paginasSolicitadas){
@@ -128,7 +257,7 @@ int crearProceso(int pid, int paginasSolicitadas){
 
 		return 1;
 	}
-};
+}
 
 FILE* getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 {
@@ -225,7 +354,7 @@ int getCantidadPaginasLibres()
 
 	return totalPaginasLibres;
 
-};
+}
 
 
 int getCantidadPaginasOcupadas()
@@ -246,7 +375,7 @@ int getCantidadPaginasOcupadas()
 
 	return totalPaginasOcupadas;
 
-};
+}
 
 void getComienzoParticionSwap(FILE** ptr){
 	char * dir = string_new();
@@ -288,9 +417,8 @@ int crearEstructuraBloquesOcupados(){
 
 char* getContenido(FILE* ptr)
 {
-	char* dir;
+	char* dir = string_new();
 	int fd;
-
 	string_append(&dir, "/home/utnso/git/");
 	string_append(&dir, g_Nombre_Swap);
 	string_append(&dir, ".bin");
@@ -313,7 +441,7 @@ char* getContenido(FILE* ptr)
 			perror("mmap");
 			Error("Error al obtener datos contenidos en la pagina");
 			return NULL;
-		}
+	}
 	close(fd);
 	return datos;
 }

@@ -8,9 +8,12 @@
 #include "Dispatcher.h"
 
 t_PCB* algoritmoFIFO(){
+	sem_wait(&semPCB);
 	sem_wait(&semReady);
-	t_PCB* pcb = list_remove(colaReady, colaReady->elements_count);
+	t_PCB* pcb = list_remove(colaReady, 0);
+	pcb->estado = EJECUTANDO;
 	sem_post(&semReady);
+	sem_post(&semPCB);
 	return pcb;
 }
 
@@ -36,12 +39,12 @@ void Dispatcher(void *args){
 	t_algoritmo* algoritmo = args;
 	int mensajeEnviado;
 
-	void* algoritmoPlanificador;
+	t_PCB* (*algoritmoPlanificador)();
 	if ( *algoritmo == FIFO ) {
-		algoritmoPlanificador = (void*)algoritmoFIFO;
+		algoritmoPlanificador = &algoritmoFIFO;
 	}
 	else if ( *algoritmo == RR ) {
-		algoritmoPlanificador = (void*)algoritmoRoundRobin;
+		algoritmoPlanificador = &algoritmoRoundRobin;
 	}
 	else {
 		ErrorFatal("Algoritmo de planificacion no disponible");
@@ -49,9 +52,11 @@ void Dispatcher(void *args){
 	}
 
 	t_cpu* cpuLibre = cpuDisponible();
-
+	if (cpuLibre == NULL){
+		return;
+	}
 	sem_wait(&(cpuLibre->semaforo));
-	cpuLibre->procesoAsignado = (t_PCB*)algoritmoPlanificador;
+	cpuLibre->procesoAsignado = algoritmoPlanificador();
 	mensajeEnviado = enviarMensajeEjecucion(*cpuLibre);
 	sem_post(&(cpuLibre->semaforo));
 

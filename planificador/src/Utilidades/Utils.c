@@ -77,7 +77,7 @@ int AtiendeCliente(void * arg) {
 
 	cpu->socket_Cpu = (int) arg;
 	cpu->procesoAsignado = NULL;
-	sem_init(&cpu->semaforo,0,0);
+	sem_init(&cpu->semaforo,0,1);
 
 	sem_wait(&semListaCpu);
 	list_add(lista_cpu,cpu);
@@ -219,10 +219,20 @@ void procesarBuffer(char* buffer, long unsigned tamanioBuffer){
 int enviarMensajeEjecucion(t_cpu cpu) {
 	char *mensaje = malloc(3);
 	strcpy(mensaje, "11");// Remitente: Planificador, Operacion: Ejecutar proceso
-	string_append(mensaje, obtenerSubBuffer(string_itoa(cpu.procesoAsignado->pid)));
-	string_append(mensaje, obtenerSubBuffer(string_itoa(cpu.procesoAsignado->nroLinea)));
-	string_append(mensaje, obtenerSubBuffer(string_itoa(g_Algoritmo == RR ? g_Quantum : -1 )));
-	string_append(mensaje, obtenerSubBuffer(cpu.procesoAsignado->path));
+	if(__DEBUG__)
+		fprintf(stdout, "Proceso asignado: %d\n", cpu.procesoAsignado->pid);
+	string_append(&mensaje, obtenerSubBuffer(string_itoa(cpu.procesoAsignado->pid)));
+	if(__DEBUG__)
+		fprintf(stdout, "Linea: %d\n", cpu.procesoAsignado->nroLinea);
+	string_append(&mensaje, obtenerSubBuffer(string_itoa(cpu.procesoAsignado->nroLinea)));
+	if(__DEBUG__)
+		fprintf(stdout, "Quantum: %d\n", g_Algoritmo == RR ? g_Quantum : -1);
+	string_append(&mensaje, obtenerSubBuffer(string_itoa(g_Algoritmo == RR ? g_Quantum : -1 )));
+	if(__DEBUG__)
+		fprintf(stdout, "Path: %s\n", cpu.procesoAsignado->path);
+	string_append(&mensaje, obtenerSubBuffer(cpu.procesoAsignado->path));
+	if(__DEBUG__)
+		fprintf(stdout, "Mensaje para la cpu:\n%s\n", mensaje);
 
 	int datosEnviados = EnviarDatos(cpu.socket_Cpu, mensaje, strlen(mensaje), PLANIFICADOR);
 	free(mensaje);

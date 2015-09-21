@@ -127,3 +127,59 @@ ERROR FATAL--> Error al hacer el Bind. El puerto está en uso
 [TRACE] 20:49:09:799 planificador/(6413:6422): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
 [TRACE] 20:49:56:35 planificador/(6481:6489): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
 [TRACE] 20:53:08:423 planificador/(6603:6610): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:27:54:46 planificador/(18378:18379): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:28:29:608 planificador/(18424:18430): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:32:15:358 planificador/(18654:18659): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:36:13:841 planificador/(18972:18978): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:36:51:622 planificador/(19086:19092): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:37:45:219 planificador/(19177:19183): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:43:50:864 planificador/(19429:19434): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:45:00:706 planificador/(19521:19526): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[TRACE] 22:45:51:985 planificador/(19618:19623): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 22:46:24:737 planificador/(19618:19626): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 22:46:31:413 planificador/(19618:19626): No se pudo ejecutar el proceso &d
+[ERROR] 22:46:52:0 planificador/(19618:19673): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 22:46:52:0 planificador/(19618:19673): No se pudo ejecutar el proceso &d
+[TRACE] 22:49:06:610 planificador/(19782:19787): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 22:49:13:155 planificador/(19782:19790): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 22:49:17:26 planificador/(19782:19790): No se pudo ejecutar el proceso &d
+[ERROR] 22:49:35:967 planificador/(19782:19803): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 22:49:35:967 planificador/(19782:19803): No se pudo ejecutar el proceso &d
+[ERROR] 22:50:08:78 planificador/(19782:19806): No puedo enviar información a al cliente. Socket: 7
+[ERROR] 22:50:08:78 planificador/(19782:19806): No se pudo ejecutar el proceso &d
+[TRACE] 22:50:38:362 planificador/(19847:19853): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 22:50:47:581 planificador/(19847:19856): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 22:50:47:581 planificador/(19847:19856): No se pudo ejecutar el proceso &d
+[ERROR] 22:50:55:318 planificador/(19847:19859): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 22:50:55:319 planificador/(19847:19859): No se pudo ejecutar el proceso &d
+[ERROR] 22:51:05:272 planificador/(19847:19862): No puedo enviar información a al cliente. Socket: 7
+[ERROR] 22:51:05:272 planificador/(19847:19862): No se pudo ejecutar el proceso &d
+[TRACE] 22:52:11:694 planificador/(19947:19953): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 22:52:20:482 planificador/(19947:19956): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 22:52:20:482 planificador/(19947:19956): No se pudo ejecutar el proceso &d
+[ERROR] 22:52:28:144 planificador/(19947:19959): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 22:52:28:145 planificador/(19947:19959): No se pudo ejecutar el proceso &d
+[ERROR] 22:52:34:506 planificador/(19947:19962): No puedo enviar información a al cliente. Socket: 7
+[ERROR] 22:52:34:506 planificador/(19947:19962): No se pudo ejecutar el proceso &d
+[TRACE] 22:59:43:704 planificador/(20292:20297): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 22:59:48:494 planificador/(20292:20301): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 22:59:48:494 planificador/(20292:20301): No se pudo ejecutar el proceso &d
+[ERROR] 22:59:54:685 planificador/(20292:20304): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 22:59:54:685 planificador/(20292:20304): No se pudo ejecutar el proceso &d
+[ERROR] 23:00:01:624 planificador/(20292:20307): No puedo enviar información a al cliente. Socket: 7
+[ERROR] 23:00:01:624 planificador/(20292:20307): No se pudo ejecutar el proceso &d
+[ERROR] 23:00:26:997 planificador/(20292:20316): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 23:00:29:108 planificador/(20292:20316): No se pudo ejecutar el proceso &d
+[ERROR] 23:00:51:287 planificador/(20292:20334): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 23:00:51:287 planificador/(20292:20334): No se pudo ejecutar el proceso &d
+[ERROR] 23:01:26:981 planificador/(20292:20344): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 23:01:26:981 planificador/(20292:20344): No se pudo ejecutar el proceso &d
+[TRACE] 23:01:55:682 planificador/(20436:20441): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 4000
+[ERROR] 23:02:07:319 planificador/(20436:20444): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 23:02:07:319 planificador/(20436:20444): No se pudo ejecutar el proceso &d
+[ERROR] 23:02:12:772 planificador/(20436:20448): No puedo enviar información a al cliente. Socket: 6
+[ERROR] 23:02:12:772 planificador/(20436:20448): No se pudo ejecutar el proceso &d
+[ERROR] 23:02:18:703 planificador/(20436:20449): No puedo enviar información a al cliente. Socket: 7
+[ERROR] 23:02:18:703 planificador/(20436:20449): No se pudo ejecutar el proceso &d
+[ERROR] 23:02:35:323 planificador/(20436:20452): No puedo enviar información a al cliente. Socket: 5
+[ERROR] 23:02:35:324 planificador/(20436:20452): No se pudo ejecutar el proceso &d

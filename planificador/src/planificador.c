@@ -91,6 +91,10 @@ int finalizarProceso(int pid) {
 	bool _mismoPID(t_PCB *pcb){
 		return pcb->pid == pid;
 	}
+	bool _cpuEjecutando(t_cpu *cpu){
+		return _mismoPID(cpu->procesoAsignado);
+	}
+
 	sem_wait(&semPCB);
 	sem_wait(&semReady);
 	sem_wait(&semLock);
@@ -99,6 +103,12 @@ int finalizarProceso(int pid) {
 	t_PCB *aux = proceso;
 	if(proceso->estado == EJECUTANDO){
 		//TODO: Sacarlo de la CPU, matarlo y enterrar el cadaver donde nadie pueda verlo
+		sem_wait(&semListaCpu);
+		t_cpu *cpu = list_find(lista_cpu, (void*)_cpuEjecutando);
+		sem_wait(&cpu->semaforo);
+		cpu->procesoAsignado = NULL;
+		sem_post(&cpu->semaforo);
+		sem_post(&semListaCpu);
 	}
 	if(proceso->estado == LISTO) {
 		aux = list_remove_by_condition(colaReady, (void*) _mismoPID);

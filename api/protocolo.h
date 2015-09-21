@@ -74,10 +74,38 @@
  *
  * 	Planificador
  *
- * 	1- Enstrada Salida (Tiempo de E/S, Resultados con barra n)
+ *	Agus, si queres agregar la cantidad de instrucciones ejecutadas a todos los mensajes
+ *	no habria ningun problema, avisame asi lo tengo en cuenta. O si te resulta mas sencillo indicar
+ *	el numero de la ultima linea
+ *
+ * 	1- Enstrada Salida (Cantidad de instrucciones ejecutadas, Tiempo de E/S, Resultados con barra n)
  * 	2- Finalizar (Resultados con barra n)
  * 	3- Quantum (Resultados con barra n)
  * 	4- Fallo (Resultados con barra n ("fallo"))
  * */
+
+
+/*
+ * Planificador
+ *
+ * Remitente
+ *
+ * 	CPU
+ *	1- Enstrada Salida (Cantidad de instrucciones ejecutadas, Tiempo de E/S, Resultados con barra n)
+ * 	2- Finalizar (Resultados con barra n)
+ * 	3- Quantum (Resultados con barra n)
+ * 	4- Fallo (Resultados con barra n ("fallo"))
+ *
+ *
+ * Destinatario
+ *
+ * 	CPU
+ *
+ * 	1- Ejecutar proceso: PID,
+ * 						 InstructionPointer, (-1 Ultima linea)
+ * 						 CantInstr, (-1 para FIFO)
+ * 						 Path del archivo mCod
+ * */
+
 
 #endif /* PROTOCOLO_H_ */

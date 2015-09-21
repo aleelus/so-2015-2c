@@ -74,11 +74,8 @@
  *
  * 	Planificador
  *
- *	Agus, si queres agregar la cantidad de instrucciones ejecutadas a todos los mensajes
- *	no habria ningun problema, avisame asi lo tengo en cuenta. O si te resulta mas sencillo indicar
- *	el numero de la ultima linea
  *
- * 	1- Enstrada Salida (Cantidad de instrucciones ejecutadas, Tiempo de E/S, Resultados con barra n)
+ * 	1- Entrada Salida (Numero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
  * 	2- Finalizar (Resultados con barra n)
  * 	3- Quantum (Resultados con barra n)
  * 	4- Fallo (Resultados con barra n ("fallo"))
@@ -91,7 +88,7 @@
  * Remitente
  *
  * 	CPU
- *	1- Enstrada Salida (Cantidad de instrucciones ejecutadas, Tiempo de E/S, Resultados con barra n)
+ *	1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
  * 	2- Finalizar (Resultados con barra n)
  * 	3- Quantum (Resultados con barra n)
  * 	4- Fallo (Resultados con barra n ("fallo"))

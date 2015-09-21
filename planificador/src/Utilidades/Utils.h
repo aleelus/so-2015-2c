@@ -51,11 +51,19 @@
 #define DEFAULT "\x1b[0m"
 #define PLANIFICADOR "1"
 #define __DEBUG__ 1
+#define __TEST__ 1
 
 const char* estados[];
 
 
 /************************ENUMS********************************/
+typedef enum {
+	ENTRADA_SALIDA = 1,
+	FINALIZADO = 2,
+	FIN_QUANTUM = 3,
+	FALLO = 4
+} t_mensaje;
+
 
 typedef enum {
 	FIFO,
@@ -86,7 +94,8 @@ typedef struct {
 
 typedef struct {
 	int socket_Cpu;
-	sem_t semaforo;
+	sem_t semaforoMensaje; //Semaforo para esperar un mensaje de la cpu
+	sem_t semaforoProceso; // Semaforo para el proceso que esta ejecutando la cpu
 	t_PCB* procesoAsignado;
 } t_cpu;
 
@@ -117,7 +126,7 @@ t_algoritmo g_Algoritmo; // Algoritmo de planificacion FIFO o RR
  * @DESC: Carga la lista de comandos que acepta la CPU */
 int AtiendeCliente(void * arg);
 void LevantarConfig();
-void procesarBuffer(char* buffer, long unsigned tamanioBuffer);
+void procesarBuffer(t_cpu*, char* buffer, long unsigned tamanioBuffer);
 void HiloOrquestadorDeConexiones();
 int cuentaDigitos(int );
 void LevantarConfig();

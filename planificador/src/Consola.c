@@ -36,7 +36,7 @@ int procesarComando(char *comando, char *argumento){
 				fprintf(stderr,"Entrando a la funcion CORRER, el PATH es %s\n", path);
 			}
 			pid = crearProceso(path);
-			fprintf(stdout, "Se creo el proceso %s con pid %d", path, pid);
+			fprintf(stdout, "Se creo el proceso %s con pid %d\n", path, pid);
 			ejecutarDispatcher();
 			break;
 
@@ -44,8 +44,10 @@ int procesarComando(char *comando, char *argumento){
 			if(__DEBUG__){
 				fprintf(stderr, "Entrando a la funcion FINALIZAR, el PID es %d\n", pid);
 			}
-			if (!finalizarProceso(pid)){
+			if (finalizarProceso(pid) == NULL){
 				fprintf(stdout, "El proceso %d, no existe\n", pid);
+				return 1;
+				break;
 			}
 			fprintf(stdout, "El proceso %d se ha finalizado con exito\n", pid);
 			ejecutarDispatcher();

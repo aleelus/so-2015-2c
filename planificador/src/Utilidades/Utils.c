@@ -42,10 +42,15 @@ void HiloOrquestadorDeConexiones() {
 	//Traza("El socket está listo para recibir conexiones. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
 	log_trace(logger, "SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
 
-	if (__DEBUG__){
-		AtiendeCliente(5);
-		AtiendeCliente(6);
-		AtiendeCliente(7);
+	if (__TEST__){
+		int s[3];
+		s[0] = 5;
+		s[1] = 6;
+		s[3] = 7;
+		pthread_t hClienteTrucho;
+		pthread_create(&hClienteTrucho, NULL, (void*) AtiendeCliente, (void*)s[0]);
+		pthread_create(&hClienteTrucho, NULL, (void*) AtiendeCliente, (void*)s[1]);
+		pthread_create(&hClienteTrucho, NULL, (void*) AtiendeCliente, (void*)s[2]);
 	}
 	while (/*g_Ejecutando*/1) {
 		int socket_client;
@@ -77,23 +82,31 @@ int AtiendeCliente(void * arg) {
 
 	cpu->socket_Cpu = (int) arg;
 	cpu->procesoAsignado = NULL;
-	sem_init(&cpu->semaforo,0,1);
+	sem_init(&cpu->semaforoMensaje,0,0);
+	sem_init(&cpu->semaforoProceso,0,1);
 
 	sem_wait(&semListaCpu);
 	list_add(lista_cpu,cpu);
 	sem_post(&semListaCpu);
-	if (__DEBUG__){
-		return 1;
-	}
+
+
+
 	//Bloqueo a la CPU hasta que tenga alguna tarea
 	while(1){
-		printf("CPU BLOQUEADA\n");
-		sem_wait(&cpu->semaforo);
-		printf("CPU DESBLOQUEADA\n");
-
+		if (__DEBUG__)
+			printf("CPU BLOQUEADA\n");
+		sem_wait(&cpu->semaforoMensaje);
+		if (__DEBUG__)
+			printf("CPU DESBLOQUEADA\n");
 		char* bufferR = string_new();
+		if(__TEST__){
+			//	CPU	I/O	linea	tiempo	resultado
+			//	2	1	114		113		un\nresultado\n
+			procesarBuffer(cpu, "21114113213un\nresultado\n", 24 );
+			continue;
+		}
 		long unsigned bytesRecibidos = RecibirDatos(cpu->socket_Cpu,&bufferR);
-		procesarBuffer(bufferR,bytesRecibidos);
+		procesarBuffer(cpu, bufferR,bytesRecibidos);
 		free(bufferR);
 		//Aca se define el envio de mCod a la cpu para que la procese
 	}
@@ -204,16 +217,46 @@ void enviarArchivo(){
 
 	free(contenido);
 
-	sem_post(&cpu->semaforo);
+	sem_post(&cpu->semaforoMensaje);
 }
 
-void procesarBuffer(char* buffer, long unsigned tamanioBuffer){
+void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 
-	FILE * archivo = fopen("texto2.txt","w");
+	/*FILE * archivo = fopen("texto2.txt","w");
 
 	fwrite(buffer,sizeof(char),tamanioBuffer,archivo);
 
-	fclose(archivo);
+	fclose(archivo);*/
+	int posActual = 2;
+	char m = buffer[1];
+	t_mensaje mensaje = strtol(&m, NULL, 10);
+	int proximaInstruccion;
+	switch (mensaje){
+		case ENTRADA_SALIDA:
+			proximaInstruccion = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
+			int tiempo = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
+			pasarABloqueados(cpu, tiempo, proximaInstruccion);
+			break;
+		case FINALIZADO:
+			terminarProceso(cpu);
+			break;
+		case FIN_QUANTUM:
+			sem_wait(&cpu->semaforoProceso);
+			proximaInstruccion = cpu->procesoAsignado->nroLinea + g_Quantum;
+			sem_post(&cpu->semaforoProceso);
+			pasarAReady(cpu, proximaInstruccion);
+			break;
+		case FALLO:
+			// TODO: Ver que se hace en caso de fallo si es que existe
+			break;
+		default:
+			if(__DEBUG__)
+				ErrorFatal("El mensaje de la CPU no se puede interpretar. Buffer: %s", buffer);
+			break;
+	}
+	//loguearResultados(DigitosNombreArchivo(buffer, &posActual));
+	ejecutarDispatcher();
+
 }
 
 int enviarMensajeEjecucion(t_cpu cpu) {
@@ -233,8 +276,11 @@ int enviarMensajeEjecucion(t_cpu cpu) {
 	string_append(&mensaje, obtenerSubBuffer(cpu.procesoAsignado->path));
 	if(__DEBUG__)
 		fprintf(stdout, "Mensaje para la cpu:\n%s\n", mensaje);
-
-	int datosEnviados = EnviarDatos(cpu.socket_Cpu, mensaje, strlen(mensaje), PLANIFICADOR);
+	int datosEnviados;
+	if (!__TEST__)
+		datosEnviados = EnviarDatos(cpu.socket_Cpu, mensaje, strlen(mensaje), PLANIFICADOR);
+	else
+		datosEnviados = 1;
 	free(mensaje);
 	return datosEnviados;
 }

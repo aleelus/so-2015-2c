@@ -99,23 +99,24 @@ int finalizarProceso(int pid) {
 	sem_wait(&semReady);
 	sem_wait(&semLock);
 
-	t_PCB *proceso = list_remove_by_condition(PCBs, (void*) _mismoPID );
+	t_cpu *cpu = NULL;
+	t_PCB *proceso = list_find(PCBs, (void*) _mismoPID );
 	t_PCB *aux = proceso;
 	if(proceso->estado == EJECUTANDO){
 		//TODO: Sacarlo de la CPU, matarlo y enterrar el cadaver donde nadie pueda verlo
 		sem_wait(&semListaCpu);
-		t_cpu *cpu = list_find(lista_cpu, (void*)_cpuEjecutando);
-		sem_wait(&cpu->semaforo);
-		cpu->procesoAsignado = NULL;
-		sem_post(&cpu->semaforo);
+		cpu = list_find(lista_cpu, (void*)_cpuEjecutando);
 		sem_post(&semListaCpu);
+		sem_wait(&cpu->semaforoProceso); // TODO: Revisar, podria causar deadlock
+
+
 	}
 	if(proceso->estado == LISTO) {
-		aux = list_remove_by_condition(colaReady, (void*) _mismoPID);
+		aux = list_find(colaReady, (void*) _mismoPID);
 	}
 	if(proceso->estado == BLOQUEADO){
 
-		aux = list_remove_by_condition(colaBloqueados, (void*) _mismoPID);
+		aux = list_find(colaBloqueados, (void*) _mismoPID);
 	}
 	if (aux != proceso){
 		fprintf(stderr, "Error irrecuperable al finalizar el proceso %d\n", pid);
@@ -125,12 +126,13 @@ int finalizarProceso(int pid) {
 		exit(0);
 	}
 
+	proceso->nroLinea =-1;
+
+	if (cpu != NULL) sem_post(&cpu->semaforoProceso);
 	sem_post(&semLock);
 	sem_post(&semReady);
 	sem_post(&semPCB);
 
-	free(proceso->path);
-	free(proceso);
 	return proceso;
 }
 

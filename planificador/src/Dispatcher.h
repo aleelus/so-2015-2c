@@ -14,7 +14,16 @@
 extern sem_t semReady, semLock, semPCB;
 extern t_list *PCBs, *colaReady, *colaBloqueados;
 
+typedef struct {
+	int pid;
+	int tiempo;
+}t_noni;
+
+
 void Dispatcher(void *args);
+void pasarABloqueados(t_cpu* cpu, int tiempo, int proximaInstruccion);
+void pasarAReady(t_cpu* cpu, int proximaInstruccion);
+void dormirProceso(t_noni* noni);
 t_PCB* algorimoFIFO();
 t_PCB* algoritmoRoundRobin();
 #endif /* DISPATCHER_H_ */

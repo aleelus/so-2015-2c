@@ -11,7 +11,9 @@ t_PCB* algoritmoFIFO(){
 	sem_wait(&semPCB);
 	sem_wait(&semReady);
 	t_PCB* pcb = list_remove(colaReady, 0);
-	pcb->estado = EJECUTANDO;
+	if (pcb != NULL){
+		pcb->estado = EJECUTANDO;
+	}
 	sem_post(&semReady);
 	sem_post(&semPCB);
 	return pcb;
@@ -55,13 +57,98 @@ void Dispatcher(void *args){
 	if (cpuLibre == NULL){
 		return;
 	}
-	sem_wait(&(cpuLibre->semaforo));
+	sem_wait(&(cpuLibre->semaforoProceso));
 	cpuLibre->procesoAsignado = algoritmoPlanificador();
-	mensajeEnviado = enviarMensajeEjecucion(*cpuLibre);
-	sem_post(&(cpuLibre->semaforo));
+	if (cpuLibre->procesoAsignado != NULL){
+		mensajeEnviado = enviarMensajeEjecucion(*cpuLibre);
 
-	if (!mensajeEnviado){
-		Error("No se pudo ejecutar el proceso &d", cpuLibre->procesoAsignado->pid);
-		//TODO Devolver a la cola de ready
+
+		if (!mensajeEnviado){
+			Error("No se pudo ejecutar el proceso &d", cpuLibre->procesoAsignado->pid);
+			//TODO Devolver a la cola de ready
+		}
 	}
+	sem_post(&(cpuLibre->semaforoProceso));
+	sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
+}
+
+void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
+	bool _mismoProceso(t_PCB* pcb){
+		return cpu->procesoAsignado->pid == pcb->pid;
+	}
+	pthread_t hDormirProceso;
+	t_noni noni;
+	sem_wait(&cpu->semaforoProceso);
+	sem_wait(&semPCB);
+	sem_wait(&semLock);
+
+	t_PCB *pcb = list_find(PCBs, (void*)_mismoProceso);
+	pcb->estado = BLOQUEADO;
+	pcb->nroLinea = proximaInstruccion;
+	list_add(colaBloqueados, pcb);
+	noni.pid = cpu->procesoAsignado->pid;
+	noni.tiempo = tiempo;
+	cpu->procesoAsignado = NULL;
+	pthread_create(&hDormirProceso, NULL, (void*)dormirProceso, &noni);
+
+	sem_post(&cpu->semaforoProceso);
+	sem_post(&semPCB);
+	sem_post(&semLock);
+}
+
+void pasarAReady(t_cpu *cpu, int proximaInstruccion){
+	bool _mismoProceso(t_PCB* pcb){
+		return cpu->procesoAsignado->pid == pcb->pid;
+	}
+
+	sem_wait(&cpu->semaforoProceso);
+	sem_wait(&semPCB);
+	sem_wait(&semReady);
+
+	t_PCB* pcb = list_find(PCBs, (void*) _mismoProceso);
+	pcb->estado = LISTO;
+	pcb->nroLinea = proximaInstruccion;
+	list_add(colaReady, pcb);
+	cpu->procesoAsignado = NULL;
+
+	sem_post(&cpu->semaforoProceso);
+	sem_post(&semPCB);
+	sem_post(&semReady);
+}
+
+void dormirProceso(t_noni* noni){
+	bool _mismoProceso(t_PCB* pcb){
+		return noni->pid == pcb->pid;
+	}
+
+	sleep(noni->tiempo);
+
+	sem_wait(&semPCB);
+	sem_wait(&semReady);
+	sem_wait(&semLock);
+
+	t_PCB *pcb = list_remove_by_condition(colaBloqueados, (void*) _mismoProceso);
+	pcb->estado = LISTO;
+	list_add(colaReady, pcb);
+
+	sem_post(&semPCB);
+	sem_post(&semReady);
+	sem_post(&semLock);
+}
+
+void terminarProceso(t_cpu cpu){
+	bool _mismoProceso(t_PCB* pcb){
+		return cpu.procesoAsignado->pid == pcb->pid;
+	}
+
+	sem_wait(&cpu.semaforoProceso);
+	sem_wait(&semPCB);
+
+	t_PCB *pcb = list_remove_by_condition(PCBs, (void*) _mismoProceso);
+
+	sem_post(&cpu.semaforoProceso);
+	sem_post(&semPCB);
+
+	free(pcb->path);
+	free(pcb);
 }

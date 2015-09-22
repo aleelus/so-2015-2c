@@ -172,7 +172,7 @@ int EnviarRespuesta(operacion, fallo, pid){
 				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
 				FILE* ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
 				char* contenido = getContenido(ptr);
-				string_append(&rsp, contenido != NULL ? obtenerSubBuffer( contenido ) : READ_FAIL);
+				string_append(&rsp, contenido != NULL ? contenido : READ_FAIL);
 
 				if(contenido != NULL)
 					munmap(contenido, (size_t) __sizePagina__);

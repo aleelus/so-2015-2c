@@ -60,7 +60,8 @@ int g_Puerto;
 char* g_Nombre_Swap;
 int g_Cantidad_Paginas;
 int __sizePagina__;
-int g_Retardo_Compactacion;
+int __retardoCompactacion__;
+int __retardoSwap__;
 
 // METODOS MANEJO DE ERRORES //
 void Error(const char* mensaje, ...);

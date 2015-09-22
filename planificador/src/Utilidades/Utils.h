@@ -72,6 +72,7 @@ typedef enum {
 
 typedef enum {
 	LISTO,
+	ESPERANDO_IO,
 	BLOQUEADO,
 	EJECUTANDO,
 	ERROR,

@@ -23,7 +23,7 @@ int cantHilos=0;
 //int PID=0; // Contador de ID Procesos mProc (semaforo)
 t_pid PID; // Contador ID Procesos + semaforo ;)
 
-sem_t semPCB, semReady, semLock;
+sem_t semPCB, semReady, semLock, semIO;
 
 
 
@@ -117,7 +117,7 @@ int finalizarProceso(int pid) {
 	if(proceso->estado == LISTO) {
 		aux = list_find(colaReady, (void*) _mismoPID);
 	}
-	if(proceso->estado == BLOQUEADO){
+	if(proceso->estado == (BLOQUEADO|ESPERANDO_IO)){
 
 		aux = list_find(colaBloqueados, (void*) _mismoPID);
 	}
@@ -158,9 +158,10 @@ void mostrarProcesos(){
 
 void inicializarListas() {
 	sem_init(&PID.sem, 0, 1);
-	sem_init(&semPCB,0,1);
-	sem_init(&semReady,0,1);
-	sem_init(&semLock,0,1);
+	sem_init(&semPCB, 0, 1);
+	sem_init(&semReady, 0, 1);
+	sem_init(&semLock, 0, 1);
+	sem_init(&semIO, 0, 1);
 
 	PID.pid = 1;
 	PCBs = list_create();

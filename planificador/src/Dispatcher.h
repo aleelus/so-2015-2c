@@ -11,7 +11,7 @@
 #include "Utilidades/Utils.h"
 #endif
 
-extern sem_t semReady, semLock, semPCB;
+extern sem_t semReady, semLock, semPCB, semIO;
 extern t_list *PCBs, *colaReady, *colaBloqueados;
 
 typedef struct {

@@ -87,7 +87,7 @@ void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
 	sem_wait(&semLock);
 
 	t_PCB *pcb = list_find(PCBs, (void*)_mismoProceso);
-	pcb->estado = BLOQUEADO;
+	pcb->estado = ESPERANDO_IO;
 	pcb->nroLinea = proximaInstruccion;
 	list_add(colaBloqueados, pcb);
 	noni->pid = cpu->procesoAsignado->pid;
@@ -124,14 +124,23 @@ void dormirProceso(t_noni* noni){
 	bool _mismoProceso(t_PCB* pcb){
 		return noni->pid == pcb->pid;
 	}
+	t_PCB *pcb;
 
+	sem_wait(&semPCB);
+	sem_wait(&semLock);
+	sem_wait(&semIO);
+	pcb = list_find(colaBloqueados, (void*)_mismoProceso);
+	pcb->estado = BLOQUEADO;
+	sem_post(&semPCB);
+	sem_post(&semLock);
 	sleep(noni->tiempo);
+	sem_post(&semIO);
 
 	sem_wait(&semPCB);
 	sem_wait(&semReady);
 	sem_wait(&semLock);
 
-	t_PCB *pcb = list_remove_by_condition(colaBloqueados, (void*) _mismoProceso);
+	pcb = list_remove_by_condition(colaBloqueados, (void*) _mismoProceso);
 	pcb->estado = LISTO;
 	list_add(colaReady, pcb);
 

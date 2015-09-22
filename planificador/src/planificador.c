@@ -71,18 +71,17 @@ int crearProceso(char* path) {
 	nuevoPCB->estado = LISTO;
 	nuevoPCB->horaCreacion = time(NULL);
 	nuevoPCB->nroLinea = 0;
-	nuevoPCB->path = malloc(strlen(path));
+	nuevoPCB->path = malloc(strlen(path)+1);
 	strcpy(nuevoPCB->path, path);
 	nuevoPCB->pid = nuevoPid();
 	nuevoPCB->quantum = g_Quantum;
 
 	sem_wait(&semPCB);
-	list_add(PCBs, nuevoPCB);
-	sem_post(&semPCB);
 	sem_wait(&semReady);
+	list_add(PCBs, nuevoPCB);
 	list_add(colaReady, nuevoPCB);
 	sem_post(&semReady);
-
+	sem_post(&semPCB);
 	return nuevoPCB->pid;
 }
 
@@ -102,6 +101,10 @@ int finalizarProceso(int pid) {
 	t_cpu *cpu = NULL;
 	t_PCB *proceso = list_find(PCBs, (void*) _mismoPID );
 	t_PCB *aux = proceso;
+	if (proceso == NULL){
+		fprintf(stderr, "El proceso %d no existe", pid);
+		return 1;
+	}
 	if(proceso->estado == EJECUTANDO){
 		//TODO: Sacarlo de la CPU, matarlo y enterrar el cadaver donde nadie pueda verlo
 		sem_wait(&semListaCpu);

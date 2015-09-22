@@ -60,16 +60,20 @@ void Dispatcher(void *args){
 	sem_wait(&(cpuLibre->semaforoProceso));
 	cpuLibre->procesoAsignado = algoritmoPlanificador();
 	if (cpuLibre->procesoAsignado != NULL){
-		mensajeEnviado = enviarMensajeEjecucion(*cpuLibre);
+		if(__TEST__)
+			mensajeEnviado = 1;
+		else
+			mensajeEnviado = enviarMensajeEjecucion(*cpuLibre);
 
 
 		if (!mensajeEnviado){
 			Error("No se pudo ejecutar el proceso &d", cpuLibre->procesoAsignado->pid);
 			//TODO Devolver a la cola de ready
 		}
+		sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
 	}
 	sem_post(&(cpuLibre->semaforoProceso));
-	sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
+
 }
 
 void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
@@ -77,7 +81,7 @@ void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
 		return cpu->procesoAsignado->pid == pcb->pid;
 	}
 	pthread_t hDormirProceso;
-	t_noni noni;
+	t_noni *noni = malloc(sizeof(t_noni));
 	sem_wait(&cpu->semaforoProceso);
 	sem_wait(&semPCB);
 	sem_wait(&semLock);
@@ -86,10 +90,10 @@ void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
 	pcb->estado = BLOQUEADO;
 	pcb->nroLinea = proximaInstruccion;
 	list_add(colaBloqueados, pcb);
-	noni.pid = cpu->procesoAsignado->pid;
-	noni.tiempo = tiempo;
+	noni->pid = cpu->procesoAsignado->pid;
+	noni->tiempo = tiempo;
 	cpu->procesoAsignado = NULL;
-	pthread_create(&hDormirProceso, NULL, (void*)dormirProceso, &noni);
+	pthread_create(&hDormirProceso, NULL, (void*)dormirProceso, noni);
 
 	sem_post(&cpu->semaforoProceso);
 	sem_post(&semPCB);
@@ -134,6 +138,8 @@ void dormirProceso(t_noni* noni){
 	sem_post(&semPCB);
 	sem_post(&semReady);
 	sem_post(&semLock);
+	free(noni);
+	ejecutarDispatcher();
 }
 
 void terminarProceso(t_cpu cpu){

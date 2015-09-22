@@ -12,17 +12,19 @@
 
 void *ComenzarConsola(){
 
-	char *entrada = (char*)malloc(10); // Comando que ingreso el usuario
-	char *argumento = (char*)malloc(200); // Argumento si hubiese
+
 
 	for(;;) {
-
+		char *entrada = (char*)malloc(50); // Comando que ingreso el usuario
+		char *argumento = (char*)malloc(200); // Argumento si hubiese
 		scanf("%s%[^\n]s", entrada, argumento);
 
 		if (!procesarComando(entrada, argumento)){
 			printf("El comando ingresado no es válido, para mostrar los comandos ingrese 'help'\n");
 		}
 
+		free(entrada);
+		free(argumento);
 	}
 }
 

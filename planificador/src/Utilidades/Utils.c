@@ -100,6 +100,7 @@ int AtiendeCliente(void * arg) {
 			printf("CPU DESBLOQUEADA\n");
 		char* bufferR = string_new();
 		if(__TEST__){
+			sleep(10);
 			//	CPU	I/O	linea	tiempo	resultado
 			//	2	1	114		113		un\nresultado\n
 			procesarBuffer(cpu, "21114113213un\nresultado\n", 24 );
@@ -161,7 +162,8 @@ void LevantarConfig() {
 	}
 
 	if (config != NULL ) {
-		free(config);
+		config_destroy(config);
+		//free(config);
 	}
 }
 

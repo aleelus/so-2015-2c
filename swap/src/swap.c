@@ -102,7 +102,7 @@ int ejecutarOrden(int orden, char* buffer){
 		int posActual = 2;
 		char* pid = DigitosNombreArchivo(buffer,&posActual);
 		char* paginaSolicitada = DigitosNombreArchivo(buffer, &posActual);
-		EnviarRespuesta(CREA_PROCESO, atoi(paginaSolicitada), pid);
+		EnviarRespuesta(SOLICITA_MARCO, atoi(paginaSolicitada), pid);
 		free(pid);
 		free(paginaSolicitada);
 		break;
@@ -173,6 +173,11 @@ int finalizarProceso(char* buffer){
 			if (ret < 0){
 				ErrorFatal("Error al ejecutar munmap");
 			}
+
+			list_add(listaBloquesLibres, t_block_free_create(bloque->ptrComienzo, bloque->cantPag));
+
+			list_remove_and_destroy_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar, (void*) t_block_used_destroy );
+
 			return 1;
 		}
 		else{
@@ -235,6 +240,7 @@ int reemplazarMarco(char* buffer){
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
 		}
+		sleep(__retardoSwap__);
 		return 1;
 	}
 	else{
@@ -322,7 +328,7 @@ int desfragmentar(){
 		cantPaginasLibres =  g_Cantidad_Paginas - cantPaginasLibres;
 		if(cantPaginasLibres > 0)
 			list_add(listaBloquesLibres, t_block_free_create((int*)ptrBloque, cantPaginasLibres));
-
+		sleep(__retardoCompactacion__);
 		return 1;
 	}
 }
@@ -443,5 +449,6 @@ char* getContenido(FILE* ptr)
 			return NULL;
 	}
 	close(fd);
+	sleep(__retardoSwap__);
 	return datos;
 }

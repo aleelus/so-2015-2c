@@ -30,9 +30,13 @@ void LevantarConfig() {
 		} else
 			Error("No se pudo leer el parametro TAMANIO_PAGINA");
 		if (config_has_property(config, "RETARDO_COMPACTACION")) {
-			g_Retardo_Compactacion = config_get_int_value(config, "RETARDO_COMPACTACION");
+			__retardoCompactacion__ = config_get_int_value(config, "RETARDO_COMPACTACION");
 		} else
 		Error("No se pudo leer el parametro RETARDO_COMPACTACION");
+		if (config_has_property(config, "RETARDO_SWAP")) {
+					__retardoSwap__ = config_get_int_value(config, "RETARDO_SWAP");
+				} else
+				Error("No se pudo leer el parametro RETARDO_COMPACTACION");
 	} else {
 		ErrorFatal("No se pudo abrir el archivo de configuracion");
 	}

@@ -144,4 +144,12 @@ typedef struct {
 	char* contenido;
 } t_mp;
 
+typedef struct {
+	int pagina;
+	int pid;
+} t_lru;
+
+t_list *lista_lru;
+
 t_mp * a_Memoria;
+

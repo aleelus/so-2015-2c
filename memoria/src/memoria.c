@@ -557,19 +557,27 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 
 	t_mProc *mProc;
 	t_pagina *pagina;
+	t_lru *lru;
 	int i=0,j=0;
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 
 		if(mProc-> pid == pid){
-		j=0;
+			j=0;
 			while(j<list_size(mProc->paginas)){
 				pagina = list_get(mProc->paginas,j);
 				if(pagina->pagina == nroPagina){
 					pagina->marco = marco;
 					pagina->bitMP=1;
 					a_Memoria[pagina->marco].marcoEnUso=1;
+					a_Memoria[pagina->marco].marco=nroPagina;// HAY Q VER ESTA LINEA
+					if(!strcmp(g_Algoritmo,"LRU")){
+						lru = malloc(sizeof(t_lru));
+						lru->pagina=nroPagina;
+						lru->pid=pid;
+						list_add(lista_lru,lru);
+					}
 					memcpy(a_Memoria[marco].contenido,contenido,tamanioContenido);
 					free(contenido);
 				}
@@ -831,15 +839,112 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	}
 }
 
-void hayLugarEnMPSinoLoHago(int* marco){
-	int pid,pagina;
+int primeraPasada(){
+
+	int i=0;
+
+	while(i<g_Cantidad_Marcos){
+
+		if(a_Memoria[i].marco<0){
+			return i;
+		}
+
+		i++;
+	}
+
+
+	return -1;
+
+}
+
+
+
+void LRU(int *marco, int pid){
+
+
+	//ASIGNACION FIJA Y REEMPLAZO LOCAL
+
+	int i=0,j=0,k=0,contLRU=0;
+	int cont=0,maximo=-1;
+	int marquito;
+	t_lru *lru;
+	t_mProc *mProc;
+	t_pagina *pagina;
+
+	marquito=primeraPasada();
+	if(marquito==-1){
+
+		while(i<list_size(lista_mProc)){
+			mProc = list_get(lista_mProc,i);
+
+			if(mProc-> pid == pid){
+				j=0;
+				while(j<list_size(mProc->paginas)){
+					pagina = list_get(mProc->paginas,j);
+
+					cont=0;
+					contLRU=0;
+					for(k=list_size(lista_lru)-1;k>=0;k--){
+
+						if(contLRU<g_Cantidad_Marcos){
+							lru=list_get(lista_lru,k);
+							if(lru-> pid == pid){
+
+								if(lru->pagina!=a_Memoria[pagina->marco].marco){
+									cont++;
+								}
+
+							}
+						}else{
+
+							while(list_size(lista_lru)>g_Cantidad_Marcos){
+								lru=list_remove(lista_lru,0);
+								free(lru);
+							}
+
+
+						}
+						contLRU++;
+
+					}
+					if(cont>maximo){
+
+						maximo=cont;
+						*marco=pagina->marco;
+
+					}
+					j++;
+				}
+
+			}
+			i++;
+		}
+
+	}else{
+
+		*marco=marquito;
+
+	}
+
+
+
+
+
+}
+
+
+
+void hayLugarEnMPSinoLoHago(int* marco,int pid){
+	int pidi,pagina;
 	char* contenido;
 	if(!strcmp(g_Algoritmo,"FIFO")){
 		FIFO(marco);
-	} else if (!strcmp(g_Algoritmo,"CLOCK")){
-		CLOCK(marco,&pagina,&pid,&contenido);
+	}else if(!strcmp(g_Algoritmo,"LRU")){
+		LRU(marco,pid);
+	}else if (!strcmp(g_Algoritmo,"CLOCK")){
+		CLOCK(marco,&pagina,&pidi,&contenido);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
-		CLOCKMEJORADO(marco,&pagina,&pid,&contenido);
+		CLOCKMEJORADO(marco,&pagina,&pidi,&contenido);
 	}
 }
 
@@ -923,7 +1028,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 		}else{
 			//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
 			// hacemos boleta a alguien
-			hayLugarEnMPSinoLoHago(&marco);
+			hayLugarEnMPSinoLoHago(&marco,pid);
 
 		}
 		actualizarTLB(pid,nroPagina);

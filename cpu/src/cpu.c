@@ -44,6 +44,8 @@ int g_Ejecutando = 1;
 
 /**********************************************Hariables Globales Para Cada Hilo***********************************************/
 sem_t semId;
+int id = 0;//para ir asignandole a idCPU
+
 static __thread int idCPU = 0;//Esta es una variable global visible solo por un hilo (para cada hilo tiene un valor distinto)
 static __thread int socketPlanificador;
 /******************************************************************************************************************************/
@@ -217,15 +219,46 @@ void enviarArchivo2(int socket){
 
 void ProcesoCPU() {
 
+	char* buffer = string_new();
+	int posActual = 2;//para desarmar el mensaje
+	int pId;
+	int ip;
+	int cantInstr;
+	char* path;//No hay que hacer malloc aca, lo hace el strdup
+
 	sem_wait(&semId);
-	idCPU++;
-	//socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
+	idCPU = id;
+	socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
 	sem_post(&semId);
 
-	//TODO , dejar el hilo de CPU escuchando, esperando la respuesta del planificador con el mensaje que luego se usa para llamar a ejecutarMProc
-	sem_wait(&semPid);
-	ejecutarMProc("/home/utnso/Documentos/mProg.txt",pid++,0);//esto lo uso para hacer pruebas
-	sem_post(&semPid);
+	//TODO delegar todo esto en otra funcion :P
+	RecibirDatos(socketPlanificador,&buffer);
+
+	buffer = DigitosNombreArchivo(buffer,&posActual);
+	pId = atoi(buffer);
+
+	buffer = DigitosNombreArchivo(buffer,&posActual);
+	ip = atoi(buffer);
+
+	buffer = DigitosNombreArchivo(buffer,&posActual);
+	cantInstr = atoi(buffer);
+
+	buffer = DigitosNombreArchivo(buffer,&posActual);
+	path = strdup(buffer);
+
+	if(cantInstr == -1){
+		//es FIFO!
+		ejecutarMProc(path,pId,ip);
+	}else{
+		//es RR!
+		//TODO, es agregar un flag, y contar el quantum para cortar (ejecutar hasta que cantInstr == i (del for de instrucciones ejecutadas))
+	}
+
+
+	//Esto de aca abajo es para probar la CPU sola  (comentando las lineas de arriba :P)
+	//sem_wait(&semPid);
+	//ejecutarMProc("/home/utnso/Documentos/mProg.txt",pid++,0);//esto lo uso para hacer pruebas
+	//sem_post(&semPid);
 
 }
 

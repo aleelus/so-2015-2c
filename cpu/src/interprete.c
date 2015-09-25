@@ -178,8 +178,13 @@ void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid,
 
 	t_proceso* procesoAEjecutar = list_find(procesos, (void*) _esElProceso);
 
+	if(ip == -1){
+		//Es la ultima linea
+		ip = procesoAEjecutar->instrucciones->elements_count - 1;//le setteo la ultima linea
+	}
+
 	ejecutarMCod(procesoAEjecutar, ip);
-	//TODO enviar a la memoria segun corresponda y ¿bloquerse esperando respuesta para settear la respuesta para dsp darle el mensaje al planificador?
+
 }
 
 void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
@@ -255,7 +260,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
-			char* contenidoLeido = strdup(bufferRespuesta);
+			char* contenidoLeido = strdup(bufferRespuesta);//TODO tenemos que hacer que retorne un 1 o un 0 por las dudas de que manden un leer sin escribir? (ver pruebas)
 
 			char* resultado = string_new();
 			string_append(&resultado,"mProc ");
@@ -316,8 +321,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			char* respuestaParaElLogDelPlanificador = string_new();
 
 			string_append(&respuestaParaElLogDelPlanificador, YO);//ID
-			string_append(&respuestaParaElLogDelPlanificador,"1");//Tipo de operacion 1- Enstrada Salida (Tiempo de E/S, Resultados con barra n)
+			string_append(&respuestaParaElLogDelPlanificador,"1");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(i)));//Ultima linea ejecutada
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(instruccion->parametros[0]));
 
 			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="

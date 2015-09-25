@@ -12,9 +12,10 @@
 #include <api.h>
 #include "cpu.h"
 
-
+extern int g_Retardo;//Despues de ejecutar cada instruccion hay que ponerle el retardo
 extern char* g_Ip_Memoria;
 extern char* g_Puerto_Memoria;
+extern __thread int socketPlanificador;
 
 t_proceso* procesoEnEjecucion; //Es uno solo por procesador, TODO me parece que esto esta al pedo...
 t_list* procesos;
@@ -234,7 +235,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 												   //Mandar acá el resultado al planificador y cortar la ejecucion?
 			}
 
+
 			free(buffer);
+			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
 
 		if (1 == posicionEnElArray) {//leer
@@ -268,6 +271,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			instruccion->resultado = resultado;
 
 			free(buffer);
+			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
 
 		if (2 == posicionEnElArray) {//escribir
@@ -277,7 +281,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&buffer, YO);//ID
 			string_append(&buffer,"3");//Tipo de operacion 3-Escribir memoria
 			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));//TODO dar vuelta otra ves???
 			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[1]));
 
 
@@ -287,7 +291,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
 			//Me llega solo el contenido
-			char* contenidoEscrito = strdup(bufferRespuesta);
+			char* contenidoEscrito = strdup(bufferRespuesta);//TODO algo se cambio del lado de la memoria?, ahora la memoria esta retornando el "1" en lugar del "hola" :S
 			char* resultado = string_new();
 
 			string_append(&resultado,"mProc ");
@@ -303,6 +307,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			instruccion->resultado = resultado;
 
 			free(buffer);
+			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
 
 		if (3 == posicionEnElArray) {//entrada-salida
@@ -324,6 +329,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(resultados));
 
 			//TODO hacer el send al planificador, con el socket que le corresponde a este hilo de CPU + frees
+			sleep(g_Retardo);//lo pide el enunciado u_u
 			break;//Para de ejecutar!!!!!!!! xD
 		}
 
@@ -368,6 +374,8 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(resultados));
 
 			//TODO hacer el send al planificador, con el socket que le corresponde a este hilo de CPU + frees
+
+			sleep(g_Retardo);//lo pide el enunciado u_u
 			break;//Harakiri
 		}
 

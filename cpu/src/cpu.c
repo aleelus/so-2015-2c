@@ -42,7 +42,11 @@ pthread_t hCrearHilos;
 // - Bandera que controla la ejecución o no del programa. Si está en 0 el programa se cierra.
 int g_Ejecutando = 1;
 
-int idCPU = 0;
+/**********************************************Hariables Globales Para Cada Hilo***********************************************/
+sem_t semId;
+static __thread int idCPU = 0;//Esta es una variable global visible solo por un hilo (para cada hilo tiene un valor distinto)
+static __thread int socketPlanificador;
+/******************************************************************************************************************************/
 
 sem_t semPid;
 int pid = 0;
@@ -56,6 +60,8 @@ int* socketsDeLosHilosDeCpuDelPlanificador;//cada CPU se va a conectar con el pl
 
 int main(void) {
 	sem_init(&semPid,0,1);//esto es para probar varias CPUs sin el planificador
+
+	sem_init(&semId,0,1);
 
 	sem_init(&semListaDeProcesos,0,1);
 
@@ -211,71 +217,16 @@ void enviarArchivo2(int socket){
 
 void ProcesoCPU() {
 
+	sem_wait(&semId);
+	idCPU++;
+	//socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
+	sem_post(&semId);
+
+	//TODO , dejar el hilo de CPU escuchando, esperando la respuesta del planificador con el mensaje que luego se usa para llamar a ejecutarMProc
 	sem_wait(&semPid);
 	ejecutarMProc("/home/utnso/Documentos/mProg.txt",pid++,0);//esto lo uso para hacer pruebas
 	sem_post(&semPid);
 
-	int idHiloCPU = idCPU;//TODO para hacer los logs
-	/*
-	int socket_Planificador;
-
-	//log_info(logger, "Intentando conectar a Planificador\n");
-	ConectarPlanificador(&socket_Planificador);
-
-	// Es el encabezado del mensaje. Nos dice quien envia el mensaje
-	int emisor = 0;
-
-	// Dentro del buffer se guarda el mensaje recibido por el cliente.
-	char* buffer;
-	buffer = malloc(BUFFERSIZE * sizeof(char)); //-> de entrada lo instanciamos en 1 byte, el tamaño será dinamico y dependerá del tamaño del mensaje.
-
-	// Cantidad de bytes recibidos.
-	long unsigned bytesRecibidos;
-
-	// La variable fin se usa cuando el cliente quiere cerrar la conexion: chau chau!
-	int desconexionPlanificador = 0;
-
-	// Código de salida por defecto
-	while ((!desconexionPlanificador) && g_Ejecutando) {
-		if (buffer != NULL )
-			free(buffer);
-		buffer = string_new();
-
-		//Recibimos los datos del cliente
-		bytesRecibidos = RecibirDatos(socket_Planificador,&buffer);
-
-		if (bytesRecibidos > 0) {
-			//Analisamos que peticion nos está haciendo (obtenemos el comando)
-			emisor = ObtenerComandoMSJ(buffer);
-
-			//Evaluamos los comandos
-			switch (emisor) {
-			case ES_PLANIFICADOR:
-				printf("Hola Planificador\n");
-				EnviarDatos(socket_Planificador,"Ok",strlen("Ok"),YO);
-				break;
-			case COMANDO:
-				printf("Ejecutado por telnet");
-				EnviarDatos(socket_Planificador,"Ok",strlen("Ok"),YO);
-				break;
-			default:
-				procesarBuffer(buffer,bytesRecibidos);
-				enviarArchivo();
-				free(buffer);
-				buffer=string_new();
-				char *  buffer2 = string_new();
-				bytesRecibidos = RecibirDatos(socket_Memoria,&buffer2);
-				procesarBuffer2(buffer2,bytesRecibidos);
-				enviarArchivo2(socket_Planificador);
-				free(buffer2);
-				break;
-			}
-		} else
-			desconexionPlanificador = 1;
-	}
-	CerrarSocket(socket_Planificador);
-	pthread_exit(NULL);
-	*/
 }
 
 

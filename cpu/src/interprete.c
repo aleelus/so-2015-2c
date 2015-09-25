@@ -15,7 +15,8 @@
 extern int g_Retardo;//Despues de ejecutar cada instruccion hay que ponerle el retardo
 extern char* g_Ip_Memoria;
 extern char* g_Puerto_Memoria;
-extern __thread int socketPlanificador;
+
+
 
 t_proceso* procesoEnEjecucion; //Es uno solo por procesador, TODO me parece que esto esta al pedo...
 t_list* procesos;
@@ -393,4 +394,5 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 	}
 	close(socket_Memoria_Local);
+	escucharPlanificador();
 }

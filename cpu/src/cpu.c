@@ -219,6 +219,23 @@ void enviarArchivo2(int socket){
 
 void ProcesoCPU() {
 
+	sem_wait(&semId);
+	idCPU = id;
+	socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
+	sem_post(&semId);
+
+
+	escucharPlanificador();
+
+	//Esto de aca abajo es para probar la CPU sola  (comentando las lineas de arriba :P)
+	//sem_wait(&semPid);
+	//ejecutarMProc("/home/utnso/Documentos/mProg.txt",pid++,0);//esto lo uso para hacer pruebas
+	//sem_post(&semPid);
+
+}
+
+void escucharPlanificador(){
+
 	char* buffer = string_new();
 	int posActual = 2;//para desarmar el mensaje
 	int pId;
@@ -226,13 +243,7 @@ void ProcesoCPU() {
 	int cantInstr;
 	char* path;//No hay que hacer malloc aca, lo hace el strdup
 
-	sem_wait(&semId);
-	idCPU = id;
-	socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
-	sem_post(&semId);
-
-	//TODO delegar todo esto en otra funcion :P
-	RecibirDatos(socketPlanificador,&buffer);
+	RecibirDatos(socketPlanificador,&buffer);//lalalalalala, esperoooo esperoooo, wiiiiiiiiiiiiiiiiiiii :PPPPP
 
 	buffer = DigitosNombreArchivo(buffer,&posActual);
 	pId = atoi(buffer);
@@ -253,12 +264,6 @@ void ProcesoCPU() {
 		//es RR!
 		//TODO, es agregar un flag, y contar el quantum para cortar (ejecutar hasta que cantInstr == i (del for de instrucciones ejecutadas))
 	}
-
-
-	//Esto de aca abajo es para probar la CPU sola  (comentando las lineas de arriba :P)
-	//sem_wait(&semPid);
-	//ejecutarMProc("/home/utnso/Documentos/mProg.txt",pid++,0);//esto lo uso para hacer pruebas
-	//sem_post(&semPid);
 
 }
 

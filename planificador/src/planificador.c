@@ -117,7 +117,7 @@ int finalizarProceso(int pid) {
 	if(proceso->estado == LISTO) {
 		aux = list_find(colaReady, (void*) _mismoPID);
 	}
-	if(proceso->estado == (BLOQUEADO|ESPERANDO_IO)){
+	if(proceso->estado == BLOQUEADO || proceso->estado == ESPERANDO_IO){
 
 		aux = list_find(colaBloqueados, (void*) _mismoPID);
 	}

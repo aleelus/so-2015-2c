@@ -47,7 +47,7 @@ sem_t semId;
 int id = 0;//para ir asignandole a idCPU
 
 static __thread int idCPU = 0;//Esta es una variable global visible solo por un hilo (para cada hilo tiene un valor distinto)
-static __thread int socketPlanificador;
+//static __thread int socketPlanificador;
 /******************************************************************************************************************************/
 
 sem_t semPid;

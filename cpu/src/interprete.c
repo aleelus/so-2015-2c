@@ -334,9 +334,12 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(resultados));
 
-			//TODO hacer el send al planificador, con el socket que le corresponde a este hilo de CPU + frees
+			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+
+			free(resultados);
+			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u
-			break;//Para de ejecutar!!!!!!!! xD
+			break;//Para de ejecutar!!!!!!!! xD TODO paro de ejecutar y a donde voy??, tendria que poner a la CPU a la escucha...
 		}
 
 		if (4 == posicionEnElArray) {//finalizar
@@ -379,10 +382,13 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(resultados));
 
-			//TODO hacer el send al planificador, con el socket que le corresponde a este hilo de CPU + frees
+			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
+
+			free(resultados);
+			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u
-			break;//Harakiri
+			break;//Harakiri TODO paro de ejecutar y a donde voy??, tendria que poner a la CPU a la escucha...
 		}
 
 	}

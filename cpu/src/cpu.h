@@ -24,7 +24,7 @@
 #define DEFAULT   "\x1b[0m"
 #define YO	"2"
 
-static __thread int socketPlanificador;
+
 sem_t semDormilon;
 
 // CONSTANTES //

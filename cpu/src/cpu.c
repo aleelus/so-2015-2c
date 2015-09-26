@@ -237,6 +237,7 @@ void ProcesoCPU() {
 void escucharPlanificador(){
 
 	char* buffer = string_new();
+	char* bufferRespuesta = string_new();
 	int posActual = 2;//para desarmar el mensaje
 	int pId;
 	int ip;
@@ -245,17 +246,17 @@ void escucharPlanificador(){
 
 	RecibirDatos(socketPlanificador,&buffer);//lalalalalala, esperoooo esperoooo, wiiiiiiiiiiiiiiiiiiii :PPPPP
 
-	buffer = DigitosNombreArchivo(buffer,&posActual);
-	pId = atoi(buffer);
+	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
+	pId = atoi(bufferRespuesta);
 
-	buffer = DigitosNombreArchivo(buffer,&posActual);
-	ip = atoi(buffer);
+	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
+	ip = atoi(bufferRespuesta);
 
-	buffer = DigitosNombreArchivo(buffer,&posActual);
-	cantInstr = atoi(buffer);
+	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
+	cantInstr = atoi(bufferRespuesta);
 
-	buffer = DigitosNombreArchivo(buffer,&posActual);
-	path = strdup(buffer);
+	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
+	path = strdup(bufferRespuesta);
 
 	if(cantInstr == -1){
 		//es FIFO!

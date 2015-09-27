@@ -51,7 +51,7 @@
 #define DEFAULT "\x1b[0m"
 #define PLANIFICADOR "1"
 #define __DEBUG__ 1
-#define __TEST__ 1
+#define __TEST__ 0
 
 const char* estados[];
 

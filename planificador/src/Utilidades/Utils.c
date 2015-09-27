@@ -233,9 +233,10 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 	char m = buffer[1];
 	t_mensaje mensaje = strtol(&m, NULL, 10);
 	int proximaInstruccion;
+	int pid = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
 	switch (mensaje){
 		case ENTRADA_SALIDA:
-			proximaInstruccion = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
+			proximaInstruccion = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10)+1;
 			int tiempo = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
 			pasarABloqueados(cpu, tiempo, proximaInstruccion);
 			break;
@@ -257,6 +258,9 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 			break;
 	}
 	//loguearResultados(DigitosNombreArchivo(buffer, &posActual));
+	if(__DEBUG__){
+		fprintf(stdout, "Resultado del proceso:\n%s\n", DigitosNombreArchivo(buffer, &posActual));
+	}
 	ejecutarDispatcher();
 
 }

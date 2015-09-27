@@ -1045,10 +1045,10 @@ void implementoEscribirCpu(int socket,char *buffer){
 void imprimirTLB(){
 	int i=0;
 	t_tlb* tlb;
-	printf("Pos		Pid		Pag		Marco\n");
+	printf("Pos\tPid\tPag\tMarco\n");
 	while(i<list_size(lista_tlb)){
 		tlb = list_get(lista_tlb,i);
-		printf("%d		%d		%d		%d\n",i,tlb->pid,tlb->pagina,tlb->marco);
+		printf("("COLOR_VERDE"%d"DEFAULT")\t%d\t%d\t%d\n",i,tlb->pid,tlb->pagina,tlb->marco);
 		i++;
 	}
 }

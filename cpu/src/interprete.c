@@ -15,7 +15,7 @@
 extern int g_Retardo;//Despues de ejecutar cada instruccion hay que ponerle el retardo
 extern char* g_Ip_Memoria;
 extern char* g_Puerto_Memoria;
-
+extern __thread int socketPlanificador;
 
 
 t_proceso* procesoEnEjecucion; //Es uno solo por procesador, TODO me parece que esto esta al pedo...
@@ -189,6 +189,7 @@ void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid,
 }
 
 void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
+	puts("Ejecutando mCod");
 	int i = ip;
 	int posicionEnElArray = -1;
 	int existeInstruccion = 0;
@@ -327,7 +328,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(i)));//Ultima linea ejecutada
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(instruccion->parametros[0]));
 
-			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
+			for(k=0; k<i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
 				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
 
 				string_append(&resultados,instruccionEjecutada->resultado);
@@ -372,7 +373,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				//TODO mandar al planificador todo para la shit?
 			}
 
-			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i finalizar
+			for(k=0; k<i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i finalizar, TODO aca estaba k<=i, ver porque rompe!
 				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
 
 				string_append(&resultados,instruccionEjecutada->resultado);

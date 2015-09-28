@@ -169,59 +169,6 @@ void LevantarConfig() {
 
 #endif
 
-
-char inkey(void) {
-  char c;
-  struct termio param_ant, params;
-
-  ioctl(STDINFD,TCGETA,&param_ant);
-
-  params = param_ant;
-  params.c_lflag &= ~(ICANON|ECHO);
-  params.c_cc[4] = 1;
-
-  ioctl(STDINFD,TCSETA,&params);
-
-  fflush(stdin); fflush(stderr); fflush(stdout);
-  read(STDINFD,&c,1);
-
-  ioctl(STDINFD,TCSETA,&param_ant);
-  return c;
-}
-
-int esParecido(char* comando,char* com){
-	int i,parecido = 1;
-	for(i=0;i<strlen(comando);i++){
-		if(comando[i]!=com[i]) parecido = 0;
-	}
-	return parecido;
-}
-
-void enviarArchivo(){
-
-	FILE *archivo = fopen("texto.txt","r");
-	t_cpu *cpu;
-	char *contenido;
-
-	fseek(archivo,0L,SEEK_END);
-	long unsigned tamanioA = ftell(archivo);
-
-	contenido = malloc(tamanioA+1);
-	memset(contenido,0,tamanioA+1);
-
-	rewind(archivo);
-
-	fread(contenido,1,tamanioA,archivo);
-
-	cpu = list_get(lista_cpu,0);
-
-	EnviarDatos(cpu->socket_Cpu,contenido,tamanioA, PLANIFICADOR);
-
-	free(contenido);
-
-	sem_post(&cpu->semaforoMensaje);
-}
-
 void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 
 	/*FILE * archivo = fopen("texto2.txt","w");

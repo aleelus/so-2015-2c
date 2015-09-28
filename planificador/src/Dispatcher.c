@@ -42,12 +42,12 @@ void Dispatcher(void *args){
 	int mensajeEnviado;
 
 	t_PCB* (*algoritmoPlanificador)();
-	if ( *algoritmo == FIFO ) {
+	if ( *algoritmo == FIFO || *algoritmo == RR ) {
 		algoritmoPlanificador = &algoritmoFIFO;
 	}
-	else if ( *algoritmo == RR ) {
+	/*else if ( *algoritmo == RR ) {
 		algoritmoPlanificador = &algoritmoRoundRobin;
-	}
+	}*/
 	else {
 		ErrorFatal("Algoritmo de planificacion no disponible");
 		return;
@@ -126,9 +126,9 @@ void dormirProceso(t_noni* noni){
 	}
 	t_PCB *pcb;
 
+	sem_wait(&semIO);
 	sem_wait(&semPCB);
 	sem_wait(&semLock);
-	sem_wait(&semIO);
 	pcb = list_find(colaBloqueados, (void*)_mismoProceso);
 	pcb->estado = BLOQUEADO;
 	sem_post(&semPCB);
@@ -151,17 +151,17 @@ void dormirProceso(t_noni* noni){
 	ejecutarDispatcher();
 }
 
-void terminarProceso(t_cpu cpu){
+void terminarProceso(t_cpu* cpu){
 	bool _mismoProceso(t_PCB* pcb){
-		return cpu.procesoAsignado->pid == pcb->pid;
+		return cpu->procesoAsignado->pid == pcb->pid;
 	}
 
-	sem_wait(&cpu.semaforoProceso);
+	sem_wait(&cpu->semaforoProceso);
 	sem_wait(&semPCB);
 
 	t_PCB *pcb = list_remove_by_condition(PCBs, (void*) _mismoProceso);
-
-	sem_post(&cpu.semaforoProceso);
+	cpu->procesoAsignado = NULL;
+	sem_post(&cpu->semaforoProceso);
 	sem_post(&semPCB);
 
 	free(pcb->path);

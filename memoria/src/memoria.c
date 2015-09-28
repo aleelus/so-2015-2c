@@ -181,6 +181,12 @@ void iniciarMemoriaPrincipal(){
 	int i;
 	printf("Cantidad Marcos Seteados en MP:%d\n",g_Cantidad_Marcos);
 	a_Memoria = malloc(sizeof(t_mp)*g_Cantidad_Marcos);
+
+	if(!strcmp(g_Algoritmo,"LRU")){
+
+		lista_lru = list_create();
+
+	}
 	for(i=0;i<g_Cantidad_Marcos;i++){
 		a_Memoria[i].marco = -1;
 		a_Memoria[i].bitModificado = 0;

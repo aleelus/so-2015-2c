@@ -27,6 +27,7 @@ int main(void) {
 		if(!crearParticionSwap())
 			ErrorFatal("Error al crear la particion de swap");
 		else{
+			crearEstructuraBloques();
 			if(__TEST_FRAGMENTACION__){
 				if( crearEstructuraBloques() > 0){
 				crearEntornoParaTestDesfragmentacion();
@@ -119,7 +120,7 @@ int ejecutarOrden(int orden, char* buffer){
 		break;
 		}
 	}
-	free(buffer);
+	//free(buffer); // No hay que liberar aca
 }
 
 int finalizarProceso(char* buffer){

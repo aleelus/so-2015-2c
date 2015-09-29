@@ -78,7 +78,8 @@ int AtiendeCliente(void * arg) {
 	int emisor = 0;
 
 	// Dentro del buffer se guarda el mensaje recibido por el cliente.
-	char* buffer=string_new();
+	//char* buffer=string_new();
+	char* buffer;
 
 	// Cantidad de bytes recibidos.
 	long unsigned bytesRecibidos;
@@ -89,8 +90,6 @@ int AtiendeCliente(void * arg) {
 	// Código de salida por defecto
 	int code = 0;
 	while ((!desconexionCliente) && g_Ejecutando) {
-		if (buffer != NULL )
-			free(buffer);
 		buffer = string_new();
 
 		//Recibimos los datos del cliente
@@ -117,13 +116,16 @@ int AtiendeCliente(void * arg) {
 				break;
 			default:
 				procesarBuffer(buffer,bytesRecibidos);
-				free(buffer);
-				buffer = string_new();
+				//free(buffer);
+				//buffer = string_new();
 				enviarArchivo();
 				break;
 			}
-		} else
+		}
+		else {
 			desconexionCliente = 1;
+		}
+		free(buffer);
 	}
 	CerrarSocket(socket_Memoria);
 	return code;
@@ -159,7 +161,10 @@ int EnviarRespuesta(operacion, fallo, pid){
 			case CREA_PROCESO:
 			{
 				//string_append(&rsp,"4111");
-				string_append(&rsp, (fallo ? INIT_FAIL : INIT_OK));
+				char *aux = malloc(2);
+				sprintf(aux,"%d",(fallo ? INIT_FAIL : INIT_OK));
+				string_append(&rsp, aux);
+				free(aux);
 				break;
 			}
 			case SOLICITA_MARCO:
@@ -172,7 +177,10 @@ int EnviarRespuesta(operacion, fallo, pid){
 				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
 				FILE* ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
 				char* contenido = getContenido(ptr);
-				string_append(&rsp, contenido != NULL ? contenido : READ_FAIL);
+				char *aux = malloc(2);
+				sprintf(aux, "%d",READ_FAIL );
+				string_append(&rsp, contenido != NULL ? contenido : aux);
+				free(aux);
 
 				if(contenido != NULL)
 					munmap(contenido, (size_t) __sizePagina__);
@@ -181,13 +189,19 @@ int EnviarRespuesta(operacion, fallo, pid){
 			case REEMPLAZA_MARCO:
 			{
 			//	string_append(&rsp,"4311");
-				string_append(&rsp, fallo ?  WRITE_FAIL : WRITE_OK);
+				char *aux = malloc(2);
+				sprintf(aux, "%d", fallo ?  WRITE_FAIL : WRITE_OK );
+				string_append(&rsp, aux);
+				free(aux);
 				break;
 			}
 			case FINALIZAR_PROCESO:
 			{
 				//string_append(&rsp,"4411");
-				string_append(&rsp, fallo ? FIN_FAIL : FIN_OK);
+				char *aux = malloc(2);
+				sprintf(aux, "%d", fallo ? FIN_FAIL : FIN_OK);
+				string_append(&rsp, aux);
+				free(aux);
 				break;
 			}
 		}

@@ -148,11 +148,11 @@ int nuevoPid(){
 
 void mostrarProcesos(){
 	t_PCB* proceso;
-	fprintf(stdout, "|%-30s||%-30s||%-30s|\n", "PID", "ESTADO", "PATH");
+	fprintf(stdout, "|%-30s||%-30s||%-30s\n", "PID", "ESTADO", "PATH");
 	int i;
 	for(i=0;i<list_size(PCBs);i++){
 		proceso = list_get(PCBs,i);
-		fprintf(stdout, "|%-30d||%-30s||%-30s|\n", proceso->pid, estados[proceso->estado], proceso->path);
+		fprintf(stdout, "|%-30d||%-30s||%-30s\n", proceso->pid, estados[proceso->estado], proceso->path);
 	}
 }
 

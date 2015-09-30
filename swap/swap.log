@@ -1,1 +1,10 @@
-[TRACE] 12:45:46:259 swap/(3178:3188): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 6000
+[TRACE] 20:46:46:82 swap/(6172:6179): SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: 4, puerto: 6000
+[TRACE] 20:46:53:231 swap/(6172:6179): NUEVA CONEXION ENTRANTE. Se ha conectado el cliente (127.0.0.1) por el puerto (30657). El número de socket del cliente es: 5
+[TRACE] 20:47:02:961 swap/(6172:6205): RECIBO DATOS. socket: 5. tamanio buffer:9
+[INFO] 20:47:02:961 swap/(6172:6205): Nuevo proceso mProc creado. PID: 1 ; Byte Inicial; 0xb474c4f4 ; Cantidad de Páginas: 10
+[INFO] 20:47:02:966 swap/(6172:6205): ENVIO DATOS. socket: 5. Cantidad Enviada:1 
+[TRACE] 20:47:46:9 swap/(6172:6205): RECIBO DATOS. socket: 5. tamanio buffer:14
+[ERROR] 20:47:46:9 swap/(6172:6205): No se encontro ningun bloque correspondiente al pid 1
+[INFO] 20:47:46:9 swap/(6172:6205): ENVIO DATOS. socket: 5. Cantidad Enviada:1 
+[TRACE] 20:47:50:12 swap/(6172:6205): RECIBO DATOS. socket: 5. tamanio buffer:1
+[INFO] 20:47:50:36 swap/(6172:6205): ENVIO DATOS. socket: 5. Cantidad Enviada:66 

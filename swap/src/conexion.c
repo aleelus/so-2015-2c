@@ -181,9 +181,14 @@ int EnviarRespuesta(operacion, fallo, pid){
 				sprintf(aux, "%d",READ_FAIL );
 				string_append(&rsp, contenido != NULL ? contenido : aux);
 				free(aux);
-
-				if(contenido != NULL)
+				if(contenido != NULL){
+					FILE* ptrPuto;
+					getComienzoParticionSwap(&ptr);
+					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptr - ptrPuto, __sizePagina__, rsp);
 					munmap(contenido, (size_t) __sizePagina__);
+				}
+				else
+					Error("Fallo al leer contenido. PID: %d, Pagina solicitada: %d", pid, paginaSolicitada);
 				break;
 			}
 			case REEMPLAZA_MARCO:

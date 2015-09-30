@@ -103,7 +103,7 @@ int getCantidadPaginasOcupadas();
  * Recibe la cantidad de paginas solicitadas,
  * ATENCION!!! devuelve 1 si fallo!!!
  */
-int guardarEnBloqueConEspacio(int paginasSolicitadas);
+int guardarEnBloque(int paginasSolicitadas, int pid);
 /*
  * @NAME getPtrPaginaProcesoSolic
  * @DESC comprueba si la pagina del proceso solicitado existe y devuelve un puntero a esa pagina o -1 en caso de error

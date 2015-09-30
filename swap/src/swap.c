@@ -89,23 +89,23 @@ int ejecutarOrden(int orden, char* buffer){
 	case CREA_PROCESO:
 	{
 		int posActual = 2;
-		char* pid = DigitosNombreArchivo(buffer,&posActual);
-		char* paginasSolicitadas = DigitosNombreArchivo(buffer, &posActual);
-		int res = crearProceso(atoi(pid), atoi(paginasSolicitadas));
-		EnviarRespuesta(CREA_PROCESO, (res < 0) ? __FALLO__ : guardarEnBloque(paginasSolicitadas), NULL);
-		free(pid);
-		free(paginasSolicitadas);
+		int pid = strtol(DigitosNombreArchivo(buffer,&posActual), NULL, 10);
+		int paginasSolicitadas = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
+		int res = crearProceso(pid, paginasSolicitadas);
+		EnviarRespuesta(CREA_PROCESO, (res < 0) ? __FALLO__ : guardarEnBloque(paginasSolicitadas, pid), NULL);
+		//free(pid);
+		//free(paginasSolicitadas);
 
 	}
 		break;
 	case SOLICITA_MARCO:
 	{
 		int posActual = 2;
-		char* pid = DigitosNombreArchivo(buffer,&posActual);
-		char* paginaSolicitada = DigitosNombreArchivo(buffer, &posActual);
-		EnviarRespuesta(SOLICITA_MARCO, atoi(paginaSolicitada), pid);
-		free(pid);
-		free(paginaSolicitada);
+		int pid = strtol(DigitosNombreArchivo(buffer,&posActual), NULL, 10);
+		int paginaSolicitada = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
+		EnviarRespuesta(SOLICITA_MARCO, paginaSolicitada, pid);
+		//free(pid);
+		//free(paginaSolicitada);
 		break;
 	}
 	case REEMPLAZA_MARCO:{
@@ -161,7 +161,7 @@ int finalizarProceso(char* buffer){
 			free(dir);
 
 			getComienzoParticionSwap(&ptrComienzoParticion);
-			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, ptrComienzoParticion - bloque->ptrComienzo );
+			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, bloque->ptrComienzo - ptrComienzoParticion );
 			close(fd);
 			memset(datos, '\0', __sizePagina__);
 
@@ -177,8 +177,11 @@ int finalizarProceso(char* buffer){
 
 			list_add(listaBloquesLibres, t_block_free_create(bloque->ptrComienzo, bloque->cantPag));
 
-			list_remove_and_destroy_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar, (void*) t_block_used_destroy );
-
+			t_block_used* bloqueLiberado = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar);
+			FILE* ptr;
+			getComienzoParticionSwap(&ptr);
+			log_info("Proceso mProc liberado. PID: %d ; Byte Inicial: %p ; Tamaño Liberado(en bytes): %d ;", bloqueLiberado->pid, ptr - bloqueLiberado->ptrComienzo, bloqueLiberado->cantPag );
+			t_block_used_destroy(bloqueLiberado);
 			return 1;
 		}
 		else{
@@ -229,7 +232,7 @@ int reemplazarMarco(char* buffer){
 		free(dir);
 
 		getComienzoParticionSwap(&ptrComienzoParticion);
-		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd, ptrComienzoParticion - ptrMarco );
+		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd,  ptrMarco - ptrComienzoParticion);
 		close(fd);
 		memcpy(datos, buffer[2], __sizePagina__);
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
@@ -237,6 +240,7 @@ int reemplazarMarco(char* buffer){
 			Error("Error al intentar sincronizar datos de pagina %d", PID);
 			return -1;
 		}
+		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", PID, ptrMarco - ptrComienzoParticion, __sizePagina__, datos );
 		ret = munmap( datos , __sizePagina__ );
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
@@ -255,8 +259,10 @@ int reemplazarMarco(char* buffer){
 
 int crearProceso(int pid, int paginasSolicitadas){
 	int totalPaginasLibres = getCantidadPaginasLibres();
-	if(paginasSolicitadas > totalPaginasLibres)
+	if(paginasSolicitadas > totalPaginasLibres){
+		Error("Proceso mProc PID: %d rechazado por falta de espacio.", pid);
 		return -1;
+	}
 	else
 	{
 		if(!existeEspacioContiguo(paginasSolicitadas))
@@ -281,7 +287,7 @@ FILE* getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 		return NULL;
 }
 
-int guardarEnBloque(paginasSolicitadas)
+int guardarEnBloque(paginasSolicitadas, pid)
 {
 /*Aca busco donde garcha meter el proceso*/
 		bool _bloque_espacio_suficiente(void *bloque){
@@ -289,18 +295,24 @@ int guardarEnBloque(paginasSolicitadas)
 		}
 		t_block_free* bloqueLibre = list_remove_by_condition(listaBloquesLibres, (void*) _bloque_espacio_suficiente);
 		if(bloqueLibre != NULL){
-			t_block_free_create(bloqueLibre->ptrComienzo, paginasSolicitadas);
+			t_block_used* bloqueNuevo = t_block_used_create(pid ,bloqueLibre->ptrComienzo, paginasSolicitadas);
 			free(bloqueLibre);
+			FILE* ptr;
+			getComienzoParticionSwap(&ptr);
+			log_info(logger, "Nuevo proceso mProc creado. PID: %d ; Byte Inicial; %p ; Cantidad de Páginas: %d", bloqueNuevo->pid, bloqueNuevo->ptrComienzo - ptr  ,paginasSolicitadas);
 			return 0;
 		}
-		else
+		else{
+			Error("Proceso mProc PID: %d rechazado por falta de espacio.", pid);
 			return 1;
+		}
 }
 
 int desfragmentar(){
 	FILE* ptrBloque, *ptrAnt;
 	t_block_used *bloqueAct;
 	int i = 0;
+	log_info(logger, "Comenzando desfragmentacion...");
 	getComienzoParticionSwap(&ptrBloque);
 	if(ptrBloque == NULL){
 		ErrorFatal("Error al intentar desfragmentar.");
@@ -330,6 +342,7 @@ int desfragmentar(){
 		if(cantPaginasLibres > 0)
 			list_add(listaBloquesLibres, t_block_free_create((int*)ptrBloque, cantPaginasLibres));
 		sleep(__retardoCompactacion__);
+		log_info(logger, "Gracias por desfragmentar con nosotros :) Vuelvas Prontos");
 		return 1;
 	}
 }
@@ -442,7 +455,7 @@ char* getContenido(FILE* ptr)
 	}
 	FILE *ptrComienzoParticion;
 	getComienzoParticionSwap(&ptrComienzoParticion);
-	char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_READ, MAP_PRIVATE, fd, ptrComienzoParticion - ptr );
+	char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_READ, MAP_PRIVATE, fd, ptr - ptrComienzoParticion );
 
 	if (datos == MAP_FAILED) {
 			perror("mmap");

@@ -196,7 +196,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 	char* bufferRespuesta = string_new();
 	int socket_Memoria_Local;
 
-	socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);
+	socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);//TODO si no se puede conectar a la memoria--->hilo de CPU se suicida (poner esto como variable de thread)
 
 	for (i = ip; i < procesoAEjecutar->instrucciones->elements_count; i++) { //ejecuta todas las instrucciones, corta con una entrada-salida o finalizar
 		t_instruccion* instruccion = list_get(procesoAEjecutar->instrucciones,i);
@@ -242,7 +242,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 												   //Mandar acá el resultado al planificador y cortar la ejecucion?
 			}
 
-
+			log_info(logger,"INSTRUCCION: iniciar EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
 			free(buffer);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
@@ -277,6 +277,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
+			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
 			free(buffer);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
@@ -313,6 +314,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
+			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
 			free(buffer);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
@@ -321,6 +323,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			int k = 0;
 			char* resultados = string_new();
 			char* respuestaParaElLogDelPlanificador = string_new();
+			char* resultado = string_new();
 
 			string_append(&respuestaParaElLogDelPlanificador, YO);//ID
 			string_append(&respuestaParaElLogDelPlanificador,"1");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
@@ -328,7 +331,16 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(i)));//Ultima linea ejecutada
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(instruccion->parametros[0]));
 
-			for(k=0; k<i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
+			string_append(&resultado,"mProc ");
+			string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+			string_append(&resultado," ");
+			string_append(&resultado,"entrada-salida de tiempo: ");
+			string_append(&resultado,instruccion->parametros[0]);
+			string_append(&resultado,"\n");
+
+			instruccion->resultado = resultado;
+
+			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
 				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
 
 				string_append(&resultados,instruccionEjecutada->resultado);
@@ -338,6 +350,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
+			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -348,6 +361,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			int k = 0;
 			char* resultados = string_new();
 			char* respuestaParaElLogDelPlanificador = string_new();
+
 
 			char* buffer = string_new();
 			string_append(&buffer,YO);
@@ -371,9 +385,17 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				instruccion->resultado = resultado;
 			}else{
 				//TODO mandar al planificador todo para la shit?
+				char* resultado = string_new();
+
+				string_append(&resultado,"mProc ");
+				string_append(&resultado,string_itoa(procesoAEjecutar->pid));
+				string_append(&resultado," ");
+				string_append(&resultado,"no se pudo finalizar");
+
+				instruccion->resultado = resultado;
 			}
 
-			for(k=0; k<i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i finalizar, TODO aca estaba k<=i, ver porque rompe!
+			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i finalizar, TODO aca estaba k<=i, ver porque rompe!
 				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
 
 				string_append(&resultados,instruccionEjecutada->resultado);
@@ -386,7 +408,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
-
+			log_info(logger,"INSTRUCCION: finalizar EJECUTADA PID: %d RESULTADO: %s",procesoAEjecutar->pid,instruccion->resultado);
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u

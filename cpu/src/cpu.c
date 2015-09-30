@@ -10,6 +10,7 @@
  */
 
 #include <api.h>
+#include <commons/log.h>
 #include "cpu.h"
 #include "interprete.h"
 
@@ -30,8 +31,7 @@ int g_Puerto;
 //Contador de Hilos
 int cantHilos=0;
 
-// Logger del commons
-t_log* logger;
+
 
 //Contador de Hilos
 //int cantHilos=0;
@@ -96,7 +96,7 @@ void CrearHilos(){
 	int i;
 	for(i=0;i<g_Cantidad_Hilos;i++){
 		CrearCPU();
-		idCPU++;
+
 	}
 	sem_wait(&semDormilon);
 }
@@ -221,9 +221,11 @@ void ProcesoCPU() {
 
 	sem_wait(&semId);
 	idCPU = id;
+	id++;
 	socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
 	sem_post(&semId);
 
+	log_info(logger,"INSTANCIA DE CPU CREADA. Id: %d",idCPU);
 
 	escucharPlanificador();
 
@@ -257,6 +259,8 @@ void escucharPlanificador(){
 
 	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
 	path = strdup(bufferRespuesta);
+
+	log_info(logger,"CONTEXTO DE EJECUCION RECIBIDO idCPU: %d PID: %d IP: %d QUANTUM: %d PATH: %s",idCPU, pId, ip, cantInstr, path);
 
 	if(cantInstr == -1){
 		//es FIFO!

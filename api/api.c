@@ -187,7 +187,7 @@ long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer,
 	if(cantEnviados!=tamanioBuffer){
 		return 0;
 	}
-	log_info(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ",socket,tamanioBuffer);
+	log_trace(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ",socket,tamanioBuffer);
 	return tamanioBuffer;
 }
 

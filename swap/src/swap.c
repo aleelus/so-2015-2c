@@ -194,12 +194,12 @@ int finalizarProceso(char* buffer){
 
 int reemplazarMarco(char* buffer){
 	int posActual = 2;
-	char* pid = DigitosNombreArchivo(buffer,&posActual);
-	char* pagina = DigitosNombreArchivo(buffer, &posActual);
-	int pag = atoi(pagina);
-	long PID = atol(pid);
-	free (pagina);
-	free(pid);
+	int pid = strtol(DigitosNombreArchivo(buffer,&posActual), NULL, 10);
+	int pagina = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
+	//int pag = atoi(pagina);
+	//long PID = atol(pid);
+	//free (pagina);
+	//free(pid);
 
 	bool _es_bloque_a_reemplazar(t_block_used* bloque)
 	{
@@ -212,7 +212,7 @@ int reemplazarMarco(char* buffer){
 	//Obtengo la direccion del marco
 		FILE* ptrComienzoParticion;
 		int fd;
-		FILE* ptrMarco = bloque->ptrComienzo + (pag * __sizePagina__);
+		FILE* ptrMarco = bloque->ptrComienzo + (pagina * __sizePagina__);
 		char * dir = string_new();
 		string_append(&dir, "/home/utnso/git/");
 		string_append(&dir, g_Nombre_Swap);
@@ -237,10 +237,10 @@ int reemplazarMarco(char* buffer){
 		memcpy(datos, buffer[2], __sizePagina__);
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 		if(ret < 0){
-			Error("Error al intentar sincronizar datos de pagina %d", PID);
+			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
-		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", PID, ptrMarco - ptrComienzoParticion, __sizePagina__, datos );
+		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptrMarco - ptrComienzoParticion, __sizePagina__, datos );
 		ret = munmap( datos , __sizePagina__ );
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
@@ -249,7 +249,7 @@ int reemplazarMarco(char* buffer){
 		return 1;
 	}
 	else{
-		Error("No se encontro ningun bloque correspondiente al pid %d", PID);
+		Error("No se encontro ningun bloque correspondiente al pid %d", pid);
 		return -1;
 	}
 }

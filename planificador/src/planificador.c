@@ -67,6 +67,10 @@ int main(void) {
 }
 
 int crearProceso(char* path) {
+	if (access(path, F_OK)){
+		Error("El path %s no se corresponde a un archivo existente.", path);
+		return 0;
+	}
 	t_PCB *nuevoPCB = malloc(sizeof(t_PCB));
 	nuevoPCB->estado = LISTO;
 	nuevoPCB->horaCreacion = time(NULL);
@@ -146,15 +150,30 @@ int nuevoPid(){
 	return pidAsignado;
 }
 
-void mostrarProcesos(){
+void mostrarProcesos(FILE* salida){
 	t_PCB* proceso;
-	fprintf(stdout, "|%-30s||%-30s||%-30s\n", "PID", "ESTADO", "PATH");
+	fprintf(salida, "|%-30s||%-30s||%-30s\n", "PID", "ESTADO", "PATH");
 	int i;
+	sem_wait(&semPCB);
 	for(i=0;i<list_size(PCBs);i++){
 		proceso = list_get(PCBs,i);
-		fprintf(stdout, "|%-30d||%-30s||%-30s\n", proceso->pid, estados[proceso->estado], proceso->path);
+		fprintf(salida, "|%-30d||%-30s||%-30s\n", proceso->pid, estados[proceso->estado], proceso->path);
 	}
+	sem_post(&semPCB);
 }
+
+/*void loguearEstadoProcesos(){
+	t_PCB* proceso;
+	log_info(logger, "|%-30s||%-30s||%-30s\n", "PID", "ESTADO", "PATH");
+	int i;
+	sem_wait(&semPCB);
+	for(i=0;i<list_size(PCBs);i++){
+		proceso = list_get(PCBs,i);
+		log_info(logger, "|%-30d||%-30s||%-30s\n", proceso->pid, estados[proceso->estado], proceso->path);
+	}
+	sem_post(&semPCB);
+}*/
+
 
 void inicializarListas() {
 	sem_init(&PID.sem, 0, 1);

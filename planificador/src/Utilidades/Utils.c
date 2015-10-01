@@ -89,7 +89,7 @@ int AtiendeCliente(void * arg) {
 	list_add(lista_cpu,cpu);
 	sem_post(&semListaCpu);
 
-
+	log_info(logger, "Se conecto CPU con socket: %d", cpu->socket_Cpu);
 
 	//Bloqueo a la CPU hasta que tenga alguna tarea
 	while(1){
@@ -200,11 +200,10 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 			// TODO: Ver que se hace en caso de fallo si es que existe
 			break;
 		default:
-			if(__DEBUG__)
-				ErrorFatal("El mensaje de la CPU no se puede interpretar. Buffer: %s", buffer);
+			Error(logger, "CPU con socket: %d desconectada.", cpu->socket_Cpu);
 			break;
 	}
-	//loguearResultados(DigitosNombreArchivo(buffer, &posActual));
+	log_info(logger, "Resultado del proceso PID: %d:\n\n%s", pid, DigitosNombreArchivo(buffer, &posActual));
 	if(__DEBUG__){
 		fprintf(stdout, "Resultado del proceso:\n%s\n", DigitosNombreArchivo(buffer, &posActual));
 	}

@@ -60,6 +60,8 @@ void Dispatcher(void *args){
 	sem_wait(&(cpuLibre->semaforoProceso));
 	cpuLibre->procesoAsignado = algoritmoPlanificador();
 	if (cpuLibre->procesoAsignado != NULL){
+		log_info(logger, "Proceso seleccionado PID: %d\nEstado colas:", cpuLibre->procesoAsignado->pid );
+		mostrarProcesos(logger->file);
 		if(__TEST__)
 			mensajeEnviado = 1;
 		else
@@ -67,7 +69,7 @@ void Dispatcher(void *args){
 
 
 		if (!mensajeEnviado){
-			Error("No se pudo ejecutar el proceso &d", cpuLibre->procesoAsignado->pid);
+			Error("No se pudo ejecutar el proceso %d", cpuLibre->procesoAsignado->pid);
 			//TODO Devolver a la cola de ready
 		}
 		sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
@@ -88,7 +90,7 @@ void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
 
 	t_PCB *pcb = list_find(PCBs, (void*)_mismoProceso);
 	pcb->estado = ESPERANDO_IO;
-	pcb->nroLinea = proximaInstruccion;
+	pcb->nroLinea = pcb->nroLinea == -1 ? -1 : proximaInstruccion;
 	list_add(colaBloqueados, pcb);
 	noni->pid = cpu->procesoAsignado->pid;
 	noni->tiempo = tiempo;
@@ -111,7 +113,7 @@ void pasarAReady(t_cpu *cpu, int proximaInstruccion){
 
 	t_PCB* pcb = list_find(PCBs, (void*) _mismoProceso);
 	pcb->estado = LISTO;
-	pcb->nroLinea = proximaInstruccion;
+	pcb->nroLinea = pcb->nroLinea == -1 ? -1 : proximaInstruccion;
 	list_add(colaReady, pcb);
 	cpu->procesoAsignado = NULL;
 

@@ -37,8 +37,14 @@ int procesarComando(char *comando, char *argumento){
 			if(__DEBUG__){
 				fprintf(stderr,"Entrando a la funcion CORRER, el PATH es %s\n", path);
 			}
-			pid = crearProceso(path);
-			fprintf(stdout, "Se creo el proceso %s con pid %d\n", path, pid);
+			if (!(pid = crearProceso(path))){
+				return 0;
+				break;
+			}
+			if (__DEBUG__){
+				fprintf(stdout, "Se creo el proceso %s con pid %d\n", path, pid);
+			}
+			log_info(logger, "Se creo el proceso %s con pid %d", path, pid);
 			ejecutarDispatcher();
 			break;
 
@@ -65,7 +71,7 @@ int procesarComando(char *comando, char *argumento){
 			if(__DEBUG__){
 				fprintf(stderr, "Entrando a la funcion PS\n");
 			}
-			mostrarProcesos();
+			mostrarProcesos(stdout);
 			break;
 
 		case HELP:

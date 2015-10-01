@@ -125,9 +125,9 @@ int ejecutarOrden(int orden, char* buffer){
 
 int finalizarProceso(char* buffer){
 	int posActual = 2;
-	char* pid = DigitosNombreArchivo(buffer,&posActual);
-	long PID = atol(pid);
-	free(pid);
+	int pid = strtol(DigitosNombreArchivo(buffer,&posActual), NULL, 10);
+	//long PID = atol(pid);
+	//free(pid);
 
 	bool _es_bloque_a_reemplazar(t_block_used* bloque)
 		{
@@ -149,13 +149,13 @@ int finalizarProceso(char* buffer){
 
 			if ((fd = open(dir, O_RDONLY)) == -1) {
 				free(dir);
-				Error("Error al finalizar proceso %d: no fue posible abrir la particion de swap", PID);
+				Error("Error al finalizar proceso %d: no fue posible abrir la particion de swap", pid);
 				return -1;
 			}
 			//Verifico el estado del archivo que estoy abriendo
 			if (stat(dir, &sbuf) == -1) {
 				free(dir);
-				Error("Error al finalizar proceso %d: Verificar estado de archivo particion de swap", PID);
+				Error("Error al finalizar proceso %d: Verificar estado de archivo particion de swap", pid);
 				return -1;
 			}
 			free(dir);
@@ -167,7 +167,7 @@ int finalizarProceso(char* buffer){
 
 			int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 			if(ret < 0){
-				Error("Error al intentar sincronizar datos de pagina %d", PID);
+				Error("Error al intentar sincronizar datos de pagina %d", pid);
 				return -1;
 			}
 			ret = munmap( datos , __sizePagina__ );
@@ -185,7 +185,7 @@ int finalizarProceso(char* buffer){
 			return 1;
 		}
 		else{
-			Error("Error al intentar finalizar proceso %d: No se encontro el bloque correspondiente al mismo", PID);
+			Error("Error al intentar finalizar proceso %d: No se encontro el bloque correspondiente al mismo", pid);
 			return -1;
 		}
 
@@ -290,22 +290,25 @@ FILE* getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 int guardarEnBloque(paginasSolicitadas, pid)
 {
 /*Aca busco donde garcha meter el proceso*/
-		bool _bloque_espacio_suficiente(void *bloque){
-			return((t_block_free*)bloque)->cantPag >= paginasSolicitadas;
+	bool _bloque_espacio_suficiente(void *bloque){
+		return((t_block_free*)bloque)->cantPag >= paginasSolicitadas;
+	}
+	t_block_free* bloqueLibre = list_remove_by_condition(listaBloquesLibres, (void*) _bloque_espacio_suficiente);
+	if(bloqueLibre != NULL){
+		t_block_used* bloqueNuevo = t_block_used_create(pid ,bloqueLibre->ptrComienzo, paginasSolicitadas);
+		if( bloqueLibre->cantPag > paginasSolicitadas) {
+			list_add(listaBloquesLibres, t_block_free_create(bloqueLibre->ptrComienzo + (paginasSolicitadas * __sizePagina__), bloqueLibre->cantPag - paginasSolicitadas ));
 		}
-		t_block_free* bloqueLibre = list_remove_by_condition(listaBloquesLibres, (void*) _bloque_espacio_suficiente);
-		if(bloqueLibre != NULL){
-			t_block_used* bloqueNuevo = t_block_used_create(pid ,bloqueLibre->ptrComienzo, paginasSolicitadas);
-			free(bloqueLibre);
-			FILE* ptr;
-			getComienzoParticionSwap(&ptr);
-			log_info(logger, "Nuevo proceso mProc creado. PID: %d ; Byte Inicial; %p ; Cantidad de Páginas: %d", bloqueNuevo->pid, bloqueNuevo->ptrComienzo - ptr  ,paginasSolicitadas);
-			return 0;
-		}
-		else{
-			Error("Proceso mProc PID: %d rechazado por falta de espacio.", pid);
-			return 1;
-		}
+		free(bloqueLibre);
+		FILE* ptr;
+		getComienzoParticionSwap(&ptr);
+		log_info(logger, "Nuevo proceso mProc creado. PID: %d ; Byte Inicial; %p ; Cantidad de Páginas: %d", bloqueNuevo->pid, bloqueNuevo->ptrComienzo - ptr  ,paginasSolicitadas);
+		return 0;
+	}
+	else{
+		Error("Proceso mProc PID: %d rechazado por falta de espacio.", pid);
+		return 1;
+	}
 }
 
 int desfragmentar(){

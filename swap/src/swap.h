@@ -108,12 +108,12 @@ int guardarEnBloque(int paginasSolicitadas, int pid);
  * @NAME getPtrPaginaProcesoSolic
  * @DESC comprueba si la pagina del proceso solicitado existe y devuelve un puntero a esa pagina o -1 en caso de error
  */
-FILE* getPtrPaginaProcesoSolic(int pid, int paginaSolicitada);
+int getPtrPaginaProcesoSolic(int pid, int paginaSolicitada);
 /*
  * @NAME getContenido
  * @DESC devuelve el contenido del bloque apuntado por ptr;
  */
-char* getContenido(FILE* ptr);
+char* getContenido(int ptr);
 
 
-FILE* abrirParticionSwap();
+int abrirParticionSwap();

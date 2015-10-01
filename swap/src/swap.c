@@ -147,10 +147,16 @@ int finalizarProceso(char* buffer){
 			}
 			free(dir); */
 
-			FILE* fd = abrirParticionSwap();
+			int fd = abrirParticionSwap();
 
 			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, bloque->ptrComienzo );
 			close(fd);
+			if (datos == MAP_FAILED) {
+					perror("mmap");
+					Error("Error al obtener datos contenidos en la pagina");
+					return NULL;
+			}
+
 			memset(datos, '\0',  __sizePagina__ * bloque->cantPag);
 
 			int ret = msync(datos, __sizePagina__ * bloque->cantPag, MS_INVALIDATE);
@@ -165,10 +171,9 @@ int finalizarProceso(char* buffer){
 
 			list_add(listaBloquesLibres, t_block_free_create(bloque->ptrComienzo, bloque->cantPag));
 
-			t_block_used* bloqueLiberado = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar);
 
-			log_info("Proceso mProc liberado. PID: %d ; Byte Inicial: %p ; Tamaño Liberado(en bytes): %d ;", bloqueLiberado->pid, bloqueLiberado->ptrComienzo, bloqueLiberado->cantPag );
-			t_block_used_destroy(bloqueLiberado);
+			log_info(logger,"Proceso mProc liberado. PID: %d ; Byte Inicial: %p ; Tamaño Liberado(en bytes): %d ;", bloque->pid, bloque->ptrComienzo, bloque->cantPag );
+			t_block_used_destroy(bloque);
 			return 1;
 		}
 		else{
@@ -178,15 +183,18 @@ int finalizarProceso(char* buffer){
 
 }
 
-FILE* abrirParticionSwap(){
+int abrirParticionSwap(){
 	char * dir = string_new();
 		string_append(&dir, "/home/utnso/git/");
 		string_append(&dir, g_Nombre_Swap);
 		string_append(&dir, ".bin");
-		FILE* ptrComienzoParticion = fopen(dir, "r");
+		//FILE* ptrComienzoParticion = fopen(dir, "r+");
 		struct stat sbuf;
 		int fd;
-		if ((fd = open(dir, O_RDONLY)) == -1) {
+		//if(ptrComienzoParticion == NULL)
+		//	ErrorFatal("Error al abrir particion de swap");
+
+		if ((fd = open(dir, O_RDWR)) == -1) {
 			Error("Error al abrir la particion de swap");
 			return NULL;
 		}
@@ -197,7 +205,8 @@ FILE* abrirParticionSwap(){
 		}
 		free(dir);
 
-		return ptrComienzoParticion;
+		//return ptrComienzoParticion;
+		return fd;
 }
 
 
@@ -219,29 +228,35 @@ int reemplazarMarco(char* buffer){
 
 	if (bloque != NULL){
 	//Obtengo la direccion del marco
-		int fd;
-		int pos = bloque->ptrComienzo + (pagina * __sizePagina__);
-		FILE* ptrComienzoParticion = abrirParticionSwap();
-		if (ptrComienzoParticion == NULL)
-		{
-			Error("Error al intentar reemplazar marco de PID: %d ", pid);
-			return -1;
-		}
 
-		if( fseek( ptrComienzoParticion, pos, SEEK_SET )< 0 ){
-			Error ("Error al reemplazar marco PID: %d ", pid);
-			return -1;
-		}
+		int pos = bloque->ptrComienzo + (pagina * __sizePagina__);
+		int fd = abrirParticionSwap();
+//		if (ptrComienzoParticion == NULL)
+//		{
+//			Error("Error al intentar reemplazar marco de PID: %d ", pid);
+//			return -1;
+//		}
+//
+//		if( fseek( ptrComienzoParticion, pos, SEEK_SET )< 0 ){
+//			Error ("Error al reemplazar marco PID: %d ", pid);
+//			return -1;
+//		}
 
 		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd,  pos);
 		close(fd);
+		if (datos == MAP_FAILED) {
+				perror("mmap");
+				Error("Error al obtener datos contenidos en la pagina");
+				return NULL;
+		}
+
 		memcpy(datos, buffer[2], __sizePagina__);
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 		if(ret < 0){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
-		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos - (int)ptrComienzoParticion, __sizePagina__, datos );
+		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, datos );
 		ret = munmap( datos , __sizePagina__ );
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
@@ -273,7 +288,7 @@ int crearProceso(int pid, int paginasSolicitadas){
 	}
 }
 
-FILE* getPtrPaginaProcesoSolic(pid, paginaSolicitada)
+int getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 {
 	bool _es_proceso_solicitado(t_block_used* bloque){
 		return (bloque->pid);
@@ -297,6 +312,7 @@ int guardarEnBloque(paginasSolicitadas, pid)
 	t_block_free* bloqueLibre = list_remove_by_condition(listaBloquesLibres, (void*) _bloque_espacio_suficiente);
 	if(bloqueLibre != NULL){
 		t_block_used* bloqueNuevo = t_block_used_create(pid ,bloqueLibre->ptrComienzo, paginasSolicitadas);
+		list_add(listaBloquesOcupados, bloqueNuevo);
 		if( bloqueLibre->cantPag > paginasSolicitadas) {
 			list_add(listaBloquesLibres, t_block_free_create(bloqueLibre->ptrComienzo + (paginasSolicitadas * __sizePagina__), bloqueLibre->cantPag - paginasSolicitadas ));
 		}
@@ -327,15 +343,27 @@ int desfragmentar(){
 			ptrAnt = bloqueAct->ptrComienzo;
 			if(ptrBloque != ptrAnt){
 
-				FILE* fd = abrirParticionSwap();
-				if(fd == NULL)
-				{
-					Error("Error al intentar desfragmentar");
-					return -1;
-				}
+				int fd = abrirParticionSwap();
+//				if(fd == NULL)
+//				{
+//					Error("Error al intentar desfragmentar");
+//					return -1;
+//				}
 
 				char *bloqueAnt = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloqueAct->cantPag , PROT_WRITE, MAP_SHARED, fd,  ptrAnt);
 				char *bloqueNuevo = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloqueAct->cantPag, PROT_WRITE, MAP_SHARED, fd,  ptrBloque);
+				close(fd);
+				if (bloqueAnt == MAP_FAILED) {
+						perror("mmap");
+						Error("Error al desfragmentar (mmap bloqueAnt)");
+						return NULL;
+				}
+
+				if (bloqueNuevo == MAP_FAILED) {
+						perror("mmap");
+						Error("Error al desfragmentar(mmap bloqueNuevo)");
+						return NULL;
+				}
 
 				memcpy(bloqueNuevo, bloqueAnt, (size_t) __sizePagina__ * bloqueAct->cantPag);
 				bloqueAct->ptrComienzo = ptrBloque;
@@ -444,15 +472,15 @@ int crearEstructuraBloquesOcupados(){
 }
 
 
-char* getContenido(FILE* ptr)
+char* getContenido(int ptr)
 {
 
-	FILE* fd = abrirParticionSwap();
-	if (fd == NULL)
-	{
-			Error("Error al obtener datos contenidos en la pagina");
-			return NULL;
-	}
+	int fd = abrirParticionSwap();
+//	if (fd == NULL)
+//	{
+//			Error("Error al obtener datos contenidos en la pagina");
+//			return NULL;
+//	}
 
 	char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_READ, MAP_PRIVATE, fd, ptr );
 

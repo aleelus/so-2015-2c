@@ -1,9 +1,3 @@
-/*
- * conexion.c
- *
- *  Created on: 5/9/2015
- *      Author: utnso
- */
 #include "conexion.h"
 
 void HiloOrquestadorDeConexiones() {
@@ -182,9 +176,7 @@ int EnviarRespuesta(operacion, fallo, pid){
 				string_append(&rsp, contenido != NULL ? contenido : aux);
 				free(aux);
 				if(contenido != NULL){
-					FILE* ptrPuto;
-					getComienzoParticionSwap(&ptr);
-					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptr - ptrPuto, __sizePagina__, rsp);
+					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rsp);
 					munmap(contenido, (size_t) __sizePagina__);
 				}
 				else
@@ -214,4 +206,3 @@ int EnviarRespuesta(operacion, fallo, pid){
 		EnviarDatos(socket_Memoria, rsp, strlen(rsp), COD_ADM_SWAP);
 		free(rsp);
 }
-

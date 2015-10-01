@@ -1,14 +1,3 @@
-/*o
- ============================================================================
- Name        : swap.c
- Author      : SO didn't C that coming
- Version     : 1.0
- Copyright   : SO didn't C that coming - UTN FRBA 2015
- Description : Trabajo Practivo Sistemas Operativos 2C 2015
- Testing	 :
- ============================================================================
- */
-
 #include "swap.h"
 #include <stdlib.h>
 #define __TEST_FRAGMENTACION__ 0
@@ -27,12 +16,11 @@ int main(void) {
 		if(!crearParticionSwap())
 			ErrorFatal("Error al crear la particion de swap");
 		else{
-			crearEstructuraBloques();
+			if(crearEstructuraBloques() < 0 )
+				ErrorFatal("Error al crear las estructuras de bloques de swap");
 			if(__TEST_FRAGMENTACION__){
-				if( crearEstructuraBloques() > 0){
 				crearEntornoParaTestDesfragmentacion();
 				ejecutarOrden(1, "311225112");
-				}
 			}
 		}
 	//Hilo orquestador conexiones
@@ -51,14 +39,15 @@ int main(void) {
 }
 
 void crearEntornoParaTestDesfragmentacion(){
-	FILE *ptr;
-	getComienzoParticionSwap(&ptr);
+	// FILE *ptr;
+	// getComienzoParticionSwap(&ptr);
+	int ptr  = 0;
 	if(ptr!=NULL){
 		list_remove(listaBloquesLibres, 0);
-		list_add(listaBloquesLibres, t_block_free_create((int*)ptr, 1));
-		list_add(listaBloquesLibres, t_block_free_create((int*)ptr + 2*__sizePagina__, 1));
-		list_add(listaBloquesOcupados, t_block_used_create(24, (int*)ptr + __sizePagina__, 1));
-		list_add(listaBloquesOcupados, t_block_used_create(45, (int*)ptr + 3*__sizePagina__,3));
+		list_add(listaBloquesLibres, t_block_free_create(ptr, 1));
+		list_add(listaBloquesLibres, t_block_free_create(ptr + 2*__sizePagina__, 1));
+		list_add(listaBloquesOcupados, t_block_used_create(24, ptr + __sizePagina__, 1));
+		list_add(listaBloquesOcupados, t_block_used_create(45, ptr + 3*__sizePagina__,3));
 	}
 	else
 		Error("Error al crear test para desfragmentacion");
@@ -104,8 +93,6 @@ int ejecutarOrden(int orden, char* buffer){
 		int pid = strtol(DigitosNombreArchivo(buffer,&posActual), NULL, 10);
 		int paginaSolicitada = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
 		EnviarRespuesta(SOLICITA_MARCO, paginaSolicitada, pid);
-		//free(pid);
-		//free(paginaSolicitada);
 		break;
 	}
 	case REEMPLAZA_MARCO:{
@@ -137,7 +124,7 @@ int finalizarProceso(char* buffer){
 		t_block_used *bloque = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar );
 
 		if (bloque != NULL){
-		//Obtengo la direccion del marco
+/* 		//Obtengo la direccion del marco
 			FILE* ptrComienzoParticion;
 			int fd;
 			char * dir = string_new();
@@ -158,29 +145,29 @@ int finalizarProceso(char* buffer){
 				Error("Error al finalizar proceso %d: Verificar estado de archivo particion de swap", pid);
 				return -1;
 			}
-			free(dir);
+			free(dir); */
 
-			getComienzoParticionSwap(&ptrComienzoParticion);
-			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, bloque->ptrComienzo - ptrComienzoParticion );
+			FILE* fd = abrirParticionSwap();
+
+			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, bloque->ptrComienzo );
 			close(fd);
-			memset(datos, '\0', __sizePagina__);
+			memset(datos, '\0',  __sizePagina__ * bloque->cantPag);
 
-			int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
+			int ret = msync(datos, __sizePagina__ * bloque->cantPag, MS_INVALIDATE);
 			if(ret < 0){
 				Error("Error al intentar sincronizar datos de pagina %d", pid);
 				return -1;
 			}
 			ret = munmap( datos , __sizePagina__ );
 			if (ret < 0){
-				ErrorFatal("Error al ejecutar munmap");
+				ErrorFatal("Error al ejecutar munmap al intentar finalizar proceso PID: %d", pid);
 			}
 
 			list_add(listaBloquesLibres, t_block_free_create(bloque->ptrComienzo, bloque->cantPag));
 
 			t_block_used* bloqueLiberado = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar);
-			FILE* ptr;
-			getComienzoParticionSwap(&ptr);
-			log_info("Proceso mProc liberado. PID: %d ; Byte Inicial: %p ; Tamaño Liberado(en bytes): %d ;", bloqueLiberado->pid, ptr - bloqueLiberado->ptrComienzo, bloqueLiberado->cantPag );
+
+			log_info("Proceso mProc liberado. PID: %d ; Byte Inicial: %p ; Tamaño Liberado(en bytes): %d ;", bloqueLiberado->pid, bloqueLiberado->ptrComienzo, bloqueLiberado->cantPag );
 			t_block_used_destroy(bloqueLiberado);
 			return 1;
 		}
@@ -189,6 +176,28 @@ int finalizarProceso(char* buffer){
 			return -1;
 		}
 
+}
+
+FILE* abrirParticionSwap(){
+	char * dir = string_new();
+		string_append(&dir, "/home/utnso/git/");
+		string_append(&dir, g_Nombre_Swap);
+		string_append(&dir, ".bin");
+		FILE* ptrComienzoParticion = fopen(dir, "r");
+		struct stat sbuf;
+		int fd;
+		if ((fd = open(dir, O_RDONLY)) == -1) {
+			Error("Error al abrir la particion de swap");
+			return NULL;
+		}
+		//Verifico el estado del archivo que estoy abriendo
+		if (stat(dir, &sbuf) == -1) {
+			Error("Error: Verificar estado de archivo particion de swap");
+			return NULL;
+		}
+		free(dir);
+
+		return ptrComienzoParticion;
 }
 
 
@@ -210,29 +219,21 @@ int reemplazarMarco(char* buffer){
 
 	if (bloque != NULL){
 	//Obtengo la direccion del marco
-		FILE* ptrComienzoParticion;
 		int fd;
-		FILE* ptrMarco = bloque->ptrComienzo + (pagina * __sizePagina__);
-		char * dir = string_new();
-		string_append(&dir, "/home/utnso/git/");
-		string_append(&dir, g_Nombre_Swap);
-		string_append(&dir, ".bin");
-		ptrComienzoParticion = fopen(dir, "r");
-		struct stat sbuf;
-
-		if ((fd = open(dir, O_RDONLY)) == -1) {
-			Error("Error al reemplazar marco: no fue posible abrir la particion de swap");
+		int pos = bloque->ptrComienzo + (pagina * __sizePagina__);
+		FILE* ptrComienzoParticion = abrirParticionSwap();
+		if (ptrComienzoParticion == NULL)
+		{
+			Error("Error al intentar reemplazar marco de PID: %d ", pid);
 			return -1;
 		}
-		//Verifico el estado del archivo que estoy abriendo
-		if (stat(dir, &sbuf) == -1) {
-			Error("Error al reemplazar marco: Verificar estado de archivo particion de swap");
+
+		if( fseek( ptrComienzoParticion, pos, SEEK_SET )< 0 ){
+			Error ("Error al reemplazar marco PID: %d ", pid);
 			return -1;
 		}
-		free(dir);
 
-		getComienzoParticionSwap(&ptrComienzoParticion);
-		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd,  ptrMarco - ptrComienzoParticion);
+		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd,  pos);
 		close(fd);
 		memcpy(datos, buffer[2], __sizePagina__);
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
@@ -240,7 +241,7 @@ int reemplazarMarco(char* buffer){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
-		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptrMarco - ptrComienzoParticion, __sizePagina__, datos );
+		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos - (int)ptrComienzoParticion, __sizePagina__, datos );
 		ret = munmap( datos , __sizePagina__ );
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
@@ -280,7 +281,7 @@ FILE* getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 	t_block_used* bloqueSolic = list_find(listaBloquesOcupados, (void*) _es_proceso_solicitado);
 
 	if(bloqueSolic != NULL){
-		FILE* ptr = bloqueSolic->ptrComienzo + paginaSolicitada * (size_t) __sizePagina__;
+		int ptr = bloqueSolic->ptrComienzo + paginaSolicitada * (size_t) __sizePagina__;
 
 		return ptr;
 	}
@@ -300,9 +301,7 @@ int guardarEnBloque(paginasSolicitadas, pid)
 			list_add(listaBloquesLibres, t_block_free_create(bloqueLibre->ptrComienzo + (paginasSolicitadas * __sizePagina__), bloqueLibre->cantPag - paginasSolicitadas ));
 		}
 		free(bloqueLibre);
-		FILE* ptr;
-		getComienzoParticionSwap(&ptr);
-		log_info(logger, "Nuevo proceso mProc creado. PID: %d ; Byte Inicial; %p ; Cantidad de Páginas: %d", bloqueNuevo->pid, bloqueNuevo->ptrComienzo - ptr  ,paginasSolicitadas);
+		log_info(logger, "Nuevo proceso mProc creado. PID: %d ; Byte Inicial; %p ; Cantidad de Páginas: %d", bloqueNuevo->pid, bloqueNuevo->ptrComienzo ,paginasSolicitadas);
 		return 0;
 	}
 	else{
@@ -312,11 +311,11 @@ int guardarEnBloque(paginasSolicitadas, pid)
 }
 
 int desfragmentar(){
-	FILE* ptrBloque, *ptrAnt;
+	int ptrAnt;
+	int ptrBloque = 0;
 	t_block_used *bloqueAct;
 	int i = 0;
 	log_info(logger, "Comenzando desfragmentacion...");
-	getComienzoParticionSwap(&ptrBloque);
 	if(ptrBloque == NULL){
 		ErrorFatal("Error al intentar desfragmentar.");
 		return -1;
@@ -327,11 +326,37 @@ int desfragmentar(){
 			bloqueAct = (t_block_used*)list_get(listaBloquesOcupados, i);
 			ptrAnt = bloqueAct->ptrComienzo;
 			if(ptrBloque != ptrAnt){
-				memcpy(ptrBloque, ptrAnt, (size_t) __sizePagina__);
+
+				FILE* fd = abrirParticionSwap();
+				if(fd == NULL)
+				{
+					Error("Error al intentar desfragmentar");
+					return -1;
+				}
+
+				char *bloqueAnt = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloqueAct->cantPag , PROT_WRITE, MAP_SHARED, fd,  ptrAnt);
+				char *bloqueNuevo = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloqueAct->cantPag, PROT_WRITE, MAP_SHARED, fd,  ptrBloque);
+
+				memcpy(bloqueNuevo, bloqueAnt, (size_t) __sizePagina__ * bloqueAct->cantPag);
 				bloqueAct->ptrComienzo = ptrBloque;
+
+				int ret = msync(bloqueNuevo, __sizePagina__ * bloqueAct->cantPag, MS_INVALIDATE);
+
+				if(ret < 0){
+					Error("Error al intentar desfragmentar");
+					return -1;
+				}
+
+				ret = munmap( bloqueAnt , __sizePagina__ * bloqueAct->cantPag  );
+				ret = munmap( bloqueNuevo , __sizePagina__ * bloqueAct->cantPag  );
+				if (ret < 0){
+					ErrorFatal("Error al ejecutar munmap");
+				}
 				list_replace(listaBloquesOcupados, i, bloqueAct);
+
+
 			}
-			ptrBloque = ptrAnt + (size_t) __sizePagina__ ;
+			ptrBloque = ptrAnt + (size_t) bloqueAct->cantPag ;
 		}
 		int cantElem = listaBloquesLibres->elements_count;
 		for(i= 0; i < cantElem ; i++)
@@ -400,28 +425,9 @@ int getCantidadPaginasOcupadas()
 
 }
 
-void getComienzoParticionSwap(FILE** ptr){
-	char * dir = string_new();
-		string_append(&dir, "/home/utnso/git/");
-		string_append(&dir, g_Nombre_Swap);
-		string_append(&dir, ".bin");
-		*ptr = fopen(dir, "r");
-		int v = fclose(*ptr);
-		if (v != 0){
-			Error("Error al cerrar particion de swap.");
-		}
-}
-
 int crearEstructuraBloquesLibres(){
-	FILE* ptr;
-	getComienzoParticionSwap(&ptr);
-	if(ptr == NULL){
-		ErrorFatal("Error al crear la estructura de nodos libres.");
-		return -1;
-	}
-
 	listaBloquesLibres = list_create();
-	list_add(listaBloquesLibres, t_block_free_create((int*)ptr, g_Cantidad_Paginas));
+	list_add(listaBloquesLibres, t_block_free_create(0, g_Cantidad_Paginas));
 	return 1;
 }
 
@@ -440,31 +446,22 @@ int crearEstructuraBloquesOcupados(){
 
 char* getContenido(FILE* ptr)
 {
-	char* dir = string_new();
-	int fd;
-	string_append(&dir, "/home/utnso/git/");
-	string_append(&dir, g_Nombre_Swap);
-	string_append(&dir, ".bin");
-	struct stat sbuf;
 
-	if ((fd = open(dir, O_RDONLY)) == -1) {
-		perror("open");
-		exit(1);
+	FILE* fd = abrirParticionSwap();
+	if (fd == NULL)
+	{
+			Error("Error al obtener datos contenidos en la pagina");
+			return NULL;
 	}
-	//Verifico el estado del archivo que estoy abriendo
-	if (stat(dir, &sbuf) == -1) {
-		perror("stat");
-		exit(1);
-	}
-	FILE *ptrComienzoParticion;
-	getComienzoParticionSwap(&ptrComienzoParticion);
-	char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_READ, MAP_PRIVATE, fd, ptr - ptrComienzoParticion );
+
+	char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_READ, MAP_PRIVATE, fd, ptr );
 
 	if (datos == MAP_FAILED) {
 			perror("mmap");
 			Error("Error al obtener datos contenidos en la pagina");
 			return NULL;
 	}
+
 	close(fd);
 	sleep(__retardoSwap__);
 	return datos;

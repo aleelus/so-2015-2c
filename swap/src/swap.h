@@ -114,3 +114,6 @@ FILE* getPtrPaginaProcesoSolic(int pid, int paginaSolicitada);
  * @DESC devuelve el contenido del bloque apuntado por ptr;
  */
 char* getContenido(FILE* ptr);
+
+
+FILE* abrirParticionSwap();

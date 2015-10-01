@@ -107,7 +107,7 @@ void Manejador(int signum);
 void Seniales();
 void funcionLimpiarTablasPaginas();
 void funcionBuscarPidPagina(int marco,int * pid, int * pagina);
-char * grabarContenidoASwap(int pid,int nroPagina,char* contenido);
+int grabarContenidoASwap(int pid,int nroPagina,char* contenido);
 //Estructuras
 
 //Pagina

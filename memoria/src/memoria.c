@@ -353,12 +353,14 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
 	printf("Buffer Enviado a SWAP (Iniciar): %s\n",bufferASwap);
-	//EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
+	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
 
-	////RecibirDatos(socket_Swap,&bufferRespuesta);
-	bufferRespuesta = "Ok";
-	if(strcmp(bufferRespuesta,"Ok")==0){
+	RecibirDatos(socket_Swap,&bufferRespuesta);
+
+	printf("Respuesta de swap: %s\n",bufferRespuesta);
+
+	if(strcmp(bufferRespuesta,"1")==0){
 
 		//El swap pudo reserver el pedido de Inicio de la Cpu
 		return 1;
@@ -409,6 +411,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 	}else{
 
 		//NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA PODER INICIAR ESE PROCESO
+		printf("NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
 		string_append(&bufferRespuestaCPU,"0");
 
 	}
@@ -513,7 +516,7 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 
 }
 
-char * grabarContenidoASwap(int pid,int nroPagina,char* contenido){
+int grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 
 	//3 3 111 112 14hola
 
@@ -527,12 +530,20 @@ char * grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 	string_append(&buffer,obtenerSubBuffer(contenido));
 
 	printf("Buffer a Swap (Escribir): %s",buffer);
-	//EnviarDatos(socket_Swap,buffer,strlen(buffer));
+	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
-	//RecibirDatos(socket_Swap,&bufferRespuesta);
+	RecibirDatos(socket_Swap,&bufferRespuesta);
 
-	return bufferRespuesta;
+	if(strcmp(bufferRespuesta,"1")==0){
+
+		return 1;
+
+	}else{
+
+		return 0;
+
+	}
 
 }
 
@@ -549,13 +560,15 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
 	printf("Buffer a Swap (Leer): %s",buffer);
-	//EnviarDatos(socket_Swap,buffer,strlen(buffer));
+	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
-	//RecibirDatos(socket_Swap,&bufferRespuesta);
-
-	return bufferRespuesta;
-
+	long unsigned tamanio=RecibirDatos(socket_Swap,&bufferRespuesta);
+	if(tamanio==g_Tamanio_Marco){
+		return bufferRespuesta;
+	} else {
+		return NULL;
+	}
 }
 
 
@@ -699,11 +712,12 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 int FIFO(int *marco){
 	int i=0;
 	int pid, pagina;
+	int valido=0;
 	while(i<g_Cantidad_Marcos){
 		if(a_Memoria[i].bitPuntero == 1){
 			if(a_Memoria[i].marco >= 0){
 				funcionBuscarPidPagina(a_Memoria[i].marco,&pid,&pagina);
-				grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+				valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 				*marco=i;
 			} else {
@@ -722,7 +736,7 @@ int FIFO(int *marco){
 		i++;
 	}
 	//printf("SALIO\n");
-	return 0;
+	return valido;
 }
 
 void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
@@ -1087,15 +1101,25 @@ void implementoLeerCpu(int socket,char *buffer){
 		}else{
 			//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 			contenido=pedirContenidoASwap(pid,nroPagina);
-			actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
+			if(contenido!=NULL){
+				actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
+			} else {
+				printf("PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+			}
 		}
-		actualizarTLB(pid,nroPagina);
-		imprimirTLB();
+		if(contenido!=NULL){
+			actualizarTLB(pid,nroPagina);
+			imprimirTLB();
+		}
 		//sleep(g_Retardo_Memoria);
 	}
 	printf("Contenido:%s\n",a_Memoria[marco].contenido);
-	EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
-	//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
+	if(contenido!=NULL){
+		EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
+	} else {
+		EnviarDatos(socket,"0",strlen("0"));
+	}
+		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
 }
 
 int eliminarDeSwap(int pid){
@@ -1104,14 +1128,16 @@ int eliminarDeSwap(int pid){
 	char* bufferRespuesta= string_new();
 
 
-	string_append(&bufferASwap,"1");
-	//string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
+	string_append(&bufferASwap,"34");
+	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 
-	//EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
+	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
-	////RecibirDatos(socket_Swap,&bufferRespuesta);
+	RecibirDatos(socket_Swap,&bufferRespuesta);
 
-	if(strcmp(bufferRespuesta,"Ok")==0){
+	printf("Respuesta de SWAP del Finalizar:%s\n",bufferRespuesta);
+
+	if(strcmp(bufferRespuesta,"1")==0){
 
 		//Swap pudo eliminar to do sobre ese proceso
 		return 1;
@@ -1550,6 +1576,8 @@ char* DigitosNombreArchivo(char *buffer,int *posicion){
 }
 
 long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer) {
+
+	printf("ENVIO DATOS:%s\n",buffer);
 
 	int bytecount,bytesRecibidos;
 	long unsigned cantEnviados=0;

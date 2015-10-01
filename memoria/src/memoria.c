@@ -352,13 +352,13 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
-	printf("Buffer Enviado a SWAP (Iniciar): %s\n",bufferASwap);
+	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
 	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
 
 	RecibirDatos(socket_Swap,&bufferRespuesta);
 
-	printf("Respuesta de swap: %s\n",bufferRespuesta);
+	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -400,18 +400,20 @@ void implementoIniciarCpu(int socket,char *buffer){
 		list_add(mProc->paginas,pagina);
 	}
 
+	printf("*****************************************************************\n");
+
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
 		//Agrego nuevo proceso a la lista
 		list_add(lista_mProc,mProc);
 		string_append(&bufferRespuestaCPU,"1");
 		mProc = list_get(lista_mProc,0);
-		printf("PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
+		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
 
 	}else{
 
 		//NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA PODER INICIAR ESE PROCESO
-		printf("NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
+		printf("* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
 		string_append(&bufferRespuestaCPU,"0");
 
 	}
@@ -426,12 +428,13 @@ int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
 	t_tlb *telebe;
 	int j=0;
 
+
 	if(list_size(lista_tlb)>0){
 		for(j=0;j<g_Entradas_TLB;j++){
 			telebe=list_get(lista_tlb,j);
 			if(telebe->pid == pid && telebe->pagina==nroPagina){
 				*marco = telebe->marco;
-				printf("Pid:%d Pagina:%d se encuentra en TLB\n",pid,nroPagina);
+				printf(" Pid:%d Pagina:%d se encuentra en TLB\n",pid,nroPagina);
 				return 1;
 			}
 		}
@@ -559,7 +562,7 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
-	printf("Buffer a Swap (Leer): %s",buffer);
+	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s",buffer);
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
@@ -639,6 +642,7 @@ void actualizarTLB(int pid,int nroPagina){
 						telebe->pid=pid;
 						telebe->pagina=posActual;
 						telebe->marco=pagina->marco;
+
 
 						contAgrego++;
 
@@ -1040,6 +1044,8 @@ void implementoEscribirCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	memcpy(contenido,bufferAux,tamanioC);
 
+	printf("*****************************************************************\n");
+	printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
 	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 	}else{
@@ -1051,12 +1057,13 @@ void implementoEscribirCpu(int socket,char *buffer){
 			hayLugarEnMPSinoLoHago(&marco,pid);
 
 		}
-		actualizarTLB(pid,nroPagina);
+
 		//sleep(g_Retardo_Memoria);
 	}
 	actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
+	actualizarTLB(pid,nroPagina);
 	//grabarEnMemoriaPrincipal(marco,contenido);
-	printf("Contenido:%s\n",a_Memoria[marco].contenido);
+	printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:%s\n",a_Memoria[marco].contenido);
 	EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 	//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 }
@@ -1065,12 +1072,16 @@ void implementoEscribirCpu(int socket,char *buffer){
 void imprimirTLB(){
 	int i=0;
 	t_tlb* tlb;
-	printf("Pos\tPid\tPag\tMarco\n");
+		  //
+	printf("*********************************\n");
+	printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
+	printf("*********************************\n");
 	while(i<list_size(lista_tlb)){
 		tlb = list_get(lista_tlb,i);
-		printf("("COLOR_VERDE"%d"DEFAULT")\t%d\t%d\t%d\n",i,tlb->pid,tlb->pagina,tlb->marco);
+		printf("*  %d\t%d\t%d\t%d\t*\n",i,tlb->pid,tlb->pagina,tlb->marco);
 		i++;
 	}
+	printf("*********************************\n");
 }
 
 void implementoLeerCpu(int socket,char *buffer){
@@ -1090,6 +1101,8 @@ void implementoLeerCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	nroPagina=atoi(bufferAux);
 
+	printf("*****************************************************************\n");
+	printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 		contenido=buscarEnMemoriaPrincipal(marco);
@@ -1104,7 +1117,7 @@ void implementoLeerCpu(int socket,char *buffer){
 			if(contenido!=NULL){
 				actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 			} else {
-				printf("PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+				printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
 			}
 		}
 		if(contenido!=NULL){
@@ -1113,7 +1126,7 @@ void implementoLeerCpu(int socket,char *buffer){
 		}
 		//sleep(g_Retardo_Memoria);
 	}
-	printf("Contenido:%s\n",a_Memoria[marco].contenido);
+	printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:%s\n",a_Memoria[marco].contenido);
 	if(contenido!=NULL){
 		EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 	} else {
@@ -1135,7 +1148,7 @@ int eliminarDeSwap(int pid){
 
 	RecibirDatos(socket_Swap,&bufferRespuesta);
 
-	printf("Respuesta de SWAP del Finalizar:%s\n",bufferRespuesta);
+	printf("* ("COLOR_VERDE"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -1235,6 +1248,9 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	pid = atoi(bufferAux);
 	free(bufferAux);
+
+
+	printf("*****************************************************************\n");
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
 	eliminarDeLaTlbEnFinalizar(pid);
@@ -1577,7 +1593,7 @@ char* DigitosNombreArchivo(char *buffer,int *posicion){
 
 long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer) {
 
-	printf("ENVIO DATOS:%s\n",buffer);
+	//printf("ENVIO DATOS:%s\n",buffer);
 
 	int bytecount,bytesRecibidos;
 	long unsigned cantEnviados=0;

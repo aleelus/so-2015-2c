@@ -724,7 +724,7 @@ int FIFO(int *marco){
 	while(i<g_Cantidad_Marcos){
 		if(a_Memoria[i].bitPuntero == 1){
 			if(a_Memoria[i].marco >= 0){
-				funcionBuscarPidPagina(a_Memoria[i].marco,&pid,&pagina);
+				funcionBuscarPidPagina(i,&pid,&pagina);
 				pagina=a_Memoria[i].marco;
 				valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
@@ -1032,7 +1032,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 	//Numero de Pagina
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	nroPagina=atoi(bufferAux);
-	int pos = posActual;
+	int pos = posActual,valido=0;
 
 	int cantDig = ChartToInt(buffer[pos]);
 
@@ -1051,27 +1051,36 @@ void implementoEscribirCpu(int socket,char *buffer){
 
 	printf("*****************************************************************\n");
 	printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
-	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
-		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
-	}else{
-		if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
-			//Encontro la pagina en la tabla de paginas
+	if(g_Cantidad_Marcos>0){
+		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
+			//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 		}else{
-			//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
-			// hacemos boleta a alguien
-			hayLugarEnMPSinoLoHago(&marco,pid);
-
+			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
+				//Encontro la pagina en la tabla de paginas
+			}else{
+				//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
+				// hacemos boleta a alguien
+				hayLugarEnMPSinoLoHago(&marco,pid);
+			}
+			sleep(g_Retardo_Memoria);
 		}
-
-		//sleep(g_Retardo_Memoria);
+		actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
+		actualizarTLB(pid,nroPagina);
+		//grabarEnMemoriaPrincipal(marco,contenido);
+		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:%s\n",a_Memoria[marco].contenido);
+		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
+		EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
+		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
+	} else {
+		valido=grabarContenidoASwap(pid,nroPagina,contenido);
+		if(valido){
+			printf("Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:%s\n",pid,nroPagina,contenido);
+			EnviarDatos(socket,contenido,g_Tamanio_Marco);
+		} else {
+			printf("No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",pid,nroPagina,contenido);
+			EnviarDatos(socket,"0",strlen("0"));
+		}
 	}
-	actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
-	actualizarTLB(pid,nroPagina);
-	//grabarEnMemoriaPrincipal(marco,contenido);
-	printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:%s\n",a_Memoria[marco].contenido);
-	printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
-	EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
-	//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 }
 
 
@@ -1109,34 +1118,43 @@ void implementoLeerCpu(int socket,char *buffer){
 
 	printf("*****************************************************************\n");
 	printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
-	if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
-		//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
-		contenido=buscarEnMemoriaPrincipal(marco);
-	}else{
-
-		if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
-			//Encontro la pagina en la tabla de paginas
+	if(g_Cantidad_Marcos>0){
+		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
+			//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 			contenido=buscarEnMemoriaPrincipal(marco);
 		}else{
-			//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
-			contenido=pedirContenidoASwap(pid,nroPagina);
-			if(contenido!=NULL){
-				actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
-			} else {
-				printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+
+			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
+				//Encontro la pagina en la tabla de paginas
+				contenido=buscarEnMemoriaPrincipal(marco);
+			}else{
+				//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
+				contenido=pedirContenidoASwap(pid,nroPagina);
+				if(contenido!=NULL){
+					actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
+				} else {
+					printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+				}
 			}
+			if(contenido!=NULL){
+				actualizarTLB(pid,nroPagina);
+				imprimirTLB();
+			}
+			sleep(g_Retardo_Memoria);
 		}
+		printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:%s\n",a_Memoria[marco].contenido);
 		if(contenido!=NULL){
-			actualizarTLB(pid,nroPagina);
-			imprimirTLB();
+			EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
+		} else {
+			EnviarDatos(socket,"0",strlen("0"));
 		}
-		//sleep(g_Retardo_Memoria);
-	}
-	printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:%s\n",a_Memoria[marco].contenido);
-	if(contenido!=NULL){
-		EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 	} else {
-		EnviarDatos(socket,"0",strlen("0"));
+		contenido=pedirContenidoASwap(pid,nroPagina);
+		if(contenido!=NULL){
+			EnviarDatos(socket,contenido,g_Tamanio_Marco);
+		} else {
+			EnviarDatos(socket,"0",strlen("0"));
+		}
 	}
 		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
 }

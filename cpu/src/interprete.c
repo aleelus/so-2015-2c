@@ -118,6 +118,13 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 	char* parametro;
 	t_instruccion* instruccion;
 	char** instruccionSpliteada = string_split(instruccionMasParametros, " ");
+	int lengDelTextoDeLaInstruccion;
+
+	//****************************************************************Parche para arreglar el bug de string_split u_u**********************************************************//
+	if(0 != strcmp(instruccionSpliteada[0],"finalizar")){
+		lengDelTextoDeLaInstruccion = strlen(instruccionMasParametros) - strlen(instruccionSpliteada[0]/*siempre va a ser escribir*/- strlen(instruccionSpliteada[1]/*numero*/));
+	}
+	//*************************************************************************************************************************************************************************//
 
 	for (k = 0; instruccionSpliteada[k] != NULL; k++) {
 		if (k == 0) { //La instruccion siempre va a estar primero
@@ -154,6 +161,16 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 
 		if(laInstruccionEsEscribir && k == 2){//esto le saca las "" al texto y deja solo el texto
 			parametro = string_substring(parametro,1,strlen(parametro)-2);
+
+			if((lengDelTextoDeLaInstruccion - strlen(instruccionSpliteada[0]) - strlen(instruccionSpliteada[1])) > strlen(instruccionSpliteada[2])){//significa que el string_split corto lo que no se suponia que iba a cortar :@
+				parametro = string_substring(instruccionMasParametros,strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1]),lengDelTextoDeLaInstruccion);
+
+				parametro = string_substring(parametro,3,strlen(parametro)-4);
+
+			}
+
+
+
 			laInstruccionEsEscribir = 0;
 		}
 

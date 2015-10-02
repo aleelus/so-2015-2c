@@ -242,7 +242,7 @@ int reemplazarMarco(char* buffer){
 //			return -1;
 //		}
 
-		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_WRITE, MAP_SHARED, fd,  pos);
+		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ + (pos%4096), PROT_WRITE, MAP_SHARED, fd, (pos/4096)*4096 ); // TODO Crear funciones para esto
 		close(fd);
 		if (datos == MAP_FAILED) {
 				perror("mmap");
@@ -250,14 +250,14 @@ int reemplazarMarco(char* buffer){
 				return NULL;
 		}
 
-		memcpy(datos, buffer[2], __sizePagina__);
+		memcpy(datos+(pos%4096), buffer+2, __sizePagina__); //TODO Crear funcion para esto
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 		if(ret < 0){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
 		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, datos );
-		ret = munmap( datos , __sizePagina__ );
+		ret = munmap( datos , __sizePagina__ ); // TODO Controlar cuanto munmapear
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
 		}

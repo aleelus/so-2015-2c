@@ -340,7 +340,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
-			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
+			for(k=ip; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i la entrada-salida, TODO preguntar al Gallego si lo dejo como "<" o "<="
 				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
 
 				string_append(&resultados,instruccionEjecutada->resultado);
@@ -395,7 +395,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				instruccion->resultado = resultado;
 			}
 
-			for(k=0; k<=i ;k++){//hasta aca se ejecutaron i instrucciones, siendo la numero i finalizar, TODO aca estaba k<=i, ver porque rompe!
+			for(k=ip; k<=i ;k++){//TODO aca esta rompiendo cuando el planificador le manda un -1 ya que las otras instrucciones no tienen respuestas. Agregar un bool para saber si se ejecuto alguna ves?
 				t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
 
 				string_append(&resultados,instruccionEjecutada->resultado);

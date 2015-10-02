@@ -254,6 +254,8 @@ void escucharPlanificador(){
 	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
 	ip = atoi(bufferRespuesta);
 
+	//ip = -1;//Para testear :P
+
 	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
 	cantInstr = atoi(bufferRespuesta);
 

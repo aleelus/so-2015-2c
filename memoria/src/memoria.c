@@ -527,12 +527,12 @@ int grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 	char * bufferRespuesta=string_new();
 
 	string_append(&buffer,"33");
-	printf("EL PID:%d\n",pid);
+	printf("* EL PID:%d\n",pid);
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 	string_append(&buffer,obtenerSubBuffer(contenido));
 
-	printf("Buffer a Swap (Escribir): %s",buffer);
+	printf("* Buffer a Swap ("COLOR_VERDE"Escribir"DEFAULT"): %s\n",buffer);
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
@@ -690,6 +690,9 @@ void funcionLimpiarTablasPaginas(){
 void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 	t_mProc* mProc;
 	t_pagina* unaPagina;
+
+
+
 	int i=0,j;
 	*pid=-1;
 	while(i<list_size(lista_mProc)){
@@ -697,6 +700,7 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 		j=0;
 		while(j<list_size(mProc->paginas)){
 			unaPagina = list_get(mProc->paginas,j);
+			//a_Memoria[pagina->marco].marco=nroPagina;// HAY Q VER ESTA LINEA
 			if(unaPagina->marco==marco){
 				*pid = mProc->pid;
 				*pagina = unaPagina->pagina;
@@ -709,7 +713,7 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 	}
 	if(*pid==-1){
 		printf("C:%d\n",*pid);
-		abort();
+		//abort();
 	}
 }
 
@@ -721,6 +725,7 @@ int FIFO(int *marco){
 		if(a_Memoria[i].bitPuntero == 1){
 			if(a_Memoria[i].marco >= 0){
 				funcionBuscarPidPagina(a_Memoria[i].marco,&pid,&pagina);
+				pagina=a_Memoria[i].marco;
 				valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 				*marco=i;
@@ -1064,6 +1069,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 	actualizarTLB(pid,nroPagina);
 	//grabarEnMemoriaPrincipal(marco,contenido);
 	printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:%s\n",a_Memoria[marco].contenido);
+	printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
 	EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 	//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 }

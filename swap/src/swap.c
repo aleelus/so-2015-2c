@@ -149,7 +149,7 @@ int finalizarProceso(char* buffer){
 
 			int fd = abrirParticionSwap();
 
-			char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, bloque->ptrComienzo );
+			char *datos = mmap((caddr_t) 0, getTamanioPagina(bloque->ptrComienzo) * bloque->cantPag, PROT_WRITE, MAP_SHARED, fd, getOffset(bloque->ptrComienzo ));
 			close(fd);
 			if (datos == MAP_FAILED) {
 					perror("mmap");
@@ -157,14 +157,14 @@ int finalizarProceso(char* buffer){
 					return NULL;
 			}
 
-			memset(datos, '\0',  __sizePagina__ * bloque->cantPag);
+			memset(datos+getCorrimiento(bloque->ptrComienzo), '\0',  __sizePagina__ * bloque->cantPag);
 
 			int ret = msync(datos, __sizePagina__ * bloque->cantPag, MS_INVALIDATE);
 			if(ret < 0){
 				Error("Error al intentar sincronizar datos de pagina %d", pid);
 				return -1;
 			}
-			ret = munmap( datos , __sizePagina__ );
+			ret = munmap( datos , getTamanioPagina(bloque->ptrComienzo) );
 			if (ret < 0){
 				ErrorFatal("Error al ejecutar munmap al intentar finalizar proceso PID: %d", pid);
 			}
@@ -242,7 +242,7 @@ int reemplazarMarco(char* buffer){
 //			return -1;
 //		}
 
-		char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__ + (pos%4096), PROT_WRITE, MAP_SHARED, fd, (pos/4096)*4096 ); // TODO Crear funciones para esto
+		char *datos = mmap((caddr_t) 0, getTamanioPagina(pos), PROT_WRITE, MAP_SHARED, fd, getOffset(pos) ); // TODO Crear funciones para esto
 		close(fd);
 		if (datos == MAP_FAILED) {
 				perror("mmap");
@@ -250,14 +250,14 @@ int reemplazarMarco(char* buffer){
 				return NULL;
 		}
 
-		memcpy(datos+(pos%4096), buffer+2, __sizePagina__); //TODO Crear funcion para esto
+		memcpy(datos+getCorrimiento(pos), buffer+2, __sizePagina__); //TODO Crear funcion para esto
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 		if(ret < 0){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
 		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, datos );
-		ret = munmap( datos , __sizePagina__ ); // TODO Controlar cuanto munmapear
+		ret = munmap( datos , getTamanioPagina(pos) ); // TODO Controlar cuanto munmapear
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
 		}
@@ -350,8 +350,8 @@ int desfragmentar(){
 //					return -1;
 //				}
 
-				char *bloqueAnt = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloqueAct->cantPag , PROT_WRITE, MAP_SHARED, fd,  ptrAnt);
-				char *bloqueNuevo = mmap((caddr_t) 0, (size_t) __sizePagina__ * bloqueAct->cantPag, PROT_WRITE, MAP_SHARED, fd,  ptrBloque);
+				char *bloqueAnt = mmap((caddr_t) 0, getTamanioPagina(ptrAnt) * bloqueAct->cantPag , PROT_WRITE, MAP_SHARED, fd,  getOffset(ptrAnt));
+				char *bloqueNuevo = mmap((caddr_t) 0, getTamanioPagina(ptrBloque) * bloqueAct->cantPag, PROT_WRITE, MAP_SHARED, fd,  getOffset(ptrBloque));
 				close(fd);
 				if (bloqueAnt == MAP_FAILED) {
 						perror("mmap");
@@ -365,7 +365,7 @@ int desfragmentar(){
 						return NULL;
 				}
 
-				memcpy(bloqueNuevo, bloqueAnt, (size_t) __sizePagina__ * bloqueAct->cantPag);
+				memcpy(bloqueNuevo+getCorrimiento(ptrBloque), bloqueAnt+getCorrimiento(ptrAnt), (size_t) __sizePagina__ * bloqueAct->cantPag);
 				bloqueAct->ptrComienzo = ptrBloque;
 
 				int ret = msync(bloqueNuevo, __sizePagina__ * bloqueAct->cantPag, MS_INVALIDATE);
@@ -375,8 +375,8 @@ int desfragmentar(){
 					return -1;
 				}
 
-				ret = munmap( bloqueAnt , __sizePagina__ * bloqueAct->cantPag  );
-				ret = munmap( bloqueNuevo , __sizePagina__ * bloqueAct->cantPag  );
+				ret = munmap( bloqueAnt , getTamanioPagina(ptrAnt) * bloqueAct->cantPag  );
+				ret = munmap( bloqueNuevo , getTamanioPagina(ptrBloque) * bloqueAct->cantPag  );
 				if (ret < 0){
 					ErrorFatal("Error al ejecutar munmap");
 				}
@@ -482,7 +482,7 @@ char* getContenido(int ptr)
 //			return NULL;
 //	}
 
-	char *datos = mmap((caddr_t) 0, (size_t) __sizePagina__, PROT_READ, MAP_PRIVATE, fd, ptr );
+	char *datos = mmap((caddr_t) 0, getTamanioPagina(ptr), PROT_READ, MAP_PRIVATE, fd, getOffset(ptr) );
 
 	if (datos == MAP_FAILED) {
 			perror("mmap");
@@ -493,4 +493,17 @@ char* getContenido(int ptr)
 	close(fd);
 	sleep(__retardoSwap__);
 	return datos;
+}
+
+
+size_t getTamanioPagina(int posicion){
+	return (size_t) __sizePagina__ + (posicion%4096);
+}
+
+off_t getOffset(int posicion){
+	return (off_t) (posicion/4096)*4096;
+}
+
+int getCorrimiento(int posicion){
+	return posicion%4096;
 }

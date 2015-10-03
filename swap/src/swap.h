@@ -117,3 +117,9 @@ char* getContenido(int ptr);
 
 
 int abrirParticionSwap();
+
+size_t getTamanioPagina(int posicion);
+
+off_t getOffset(int posicion);
+
+int getCorrimiento(int posicion);

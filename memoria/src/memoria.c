@@ -400,8 +400,8 @@ void implementoIniciarCpu(int socket,char *buffer){
 		list_add(mProc->paginas,pagina);
 	}
 
-	printf("*****************************************************************\n");
-
+	printf("********************INICIAR**************************************\n");
+	printf("CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n",pid,cantidadPaginas);
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
 		//Agrego nuevo proceso a la lista
@@ -530,9 +530,16 @@ int grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 	printf("* EL PID:%d\n",pid);
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
-	string_append(&buffer,obtenerSubBuffer(contenido));
-
-	printf("* Buffer a Swap ("COLOR_VERDE"Escribir"DEFAULT"): %s\n",buffer);
+	int digitos = cuentaDigitos(g_Tamanio_Marco);
+	//string_append(&buffer,obtenerSubBuffer(contenido));
+	string_append(&buffer,string_itoa(digitos));
+	string_append(&buffer,string_itoa(g_Tamanio_Marco));
+	int tamanio = strlen(buffer);
+	buffer = realloc(buffer,tamanio+g_Tamanio_Marco);
+	memcpy(buffer+tamanio,contenido,g_Tamanio_Marco);
+	printf("* Buffer a Swap ("COLOR_VERDE"Escribir"DEFAULT"):");
+	imprimirContenido(buffer,tamanio+g_Tamanio_Marco);
+	printf("\n");
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
@@ -1049,7 +1056,10 @@ void implementoEscribirCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	memcpy(contenido,bufferAux,tamanioC);
 
-	printf("*****************************************************************\n");
+	printf("***********************ESCRIBIR**********************************\n");
+	printf("CPU solicita escribir Pid:%d Pagina:%d Contenido:",pid,nroPagina);
+	imprimirContenido(contenido,tamanioC);
+	printf("\n");
 	printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
 	if(g_Cantidad_Marcos>0){
 		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
@@ -1062,19 +1072,23 @@ void implementoEscribirCpu(int socket,char *buffer){
 				// hacemos boleta a alguien
 				hayLugarEnMPSinoLoHago(&marco,pid);
 			}
-			sleep(g_Retardo_Memoria);
+			//sleep(g_Retardo_Memoria);
 		}
 		actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
 		actualizarTLB(pid,nroPagina);
 		//grabarEnMemoriaPrincipal(marco,contenido);
-		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:%s\n",a_Memoria[marco].contenido);
+		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:");
+		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
+		printf("\n");
 		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
 		EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 	} else {
 		valido=grabarContenidoASwap(pid,nroPagina,contenido);
 		if(valido){
-			printf("Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:%s\n",pid,nroPagina,contenido);
+			printf("Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",pid,nroPagina);
+			imprimirContenido(contenido,g_Tamanio_Marco);
+			printf("\n");
 			EnviarDatos(socket,contenido,g_Tamanio_Marco);
 		} else {
 			printf("No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",pid,nroPagina,contenido);
@@ -1116,7 +1130,8 @@ void implementoLeerCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	nroPagina=atoi(bufferAux);
 
-	printf("*****************************************************************\n");
+	printf("**************************LEER***********************************\n");
+	printf("CPU Solicita leer Pid:%d Pagina:%d\n",pid,nroPagina);
 	printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if(g_Cantidad_Marcos>0){
 		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
@@ -1140,9 +1155,11 @@ void implementoLeerCpu(int socket,char *buffer){
 				actualizarTLB(pid,nroPagina);
 				imprimirTLB();
 			}
-			sleep(g_Retardo_Memoria);
+			//sleep(g_Retardo_Memoria);
 		}
-		printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:%s\n",a_Memoria[marco].contenido);
+		printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:");
+		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
+		printf("\n");
 		if(contenido!=NULL){
 			EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 		} else {
@@ -1151,6 +1168,9 @@ void implementoLeerCpu(int socket,char *buffer){
 	} else {
 		contenido=pedirContenidoASwap(pid,nroPagina);
 		if(contenido!=NULL){
+			printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en SWAP Contenido:");
+			imprimirContenido(contenido,g_Tamanio_Marco);
+			printf("\n");
 			EnviarDatos(socket,contenido,g_Tamanio_Marco);
 		} else {
 			EnviarDatos(socket,"0",strlen("0"));
@@ -1751,3 +1771,14 @@ char* obtenerSubBuffer(char *nombre){
 	return aux;
 }
 
+void imprimirContenido(char* contenido, long unsigned tamanio){
+	long unsigned i=0;
+	while(i<tamanio){
+		if(*(contenido+i)!='\0'){
+			printf("%c",*(contenido+i));
+		} else {
+			printf("\\0");
+		}
+		i++;
+	}
+}

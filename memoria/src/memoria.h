@@ -108,6 +108,7 @@ void Seniales();
 void funcionLimpiarTablasPaginas();
 void funcionBuscarPidPagina(int marco,int * pid, int * pagina);
 int grabarContenidoASwap(int pid,int nroPagina,char* contenido);
+void imprimirContenido(char* contenido, long unsigned tamanio);
 //Estructuras
 
 //Pagina

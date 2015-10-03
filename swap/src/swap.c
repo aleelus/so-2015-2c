@@ -7,7 +7,7 @@
 
 int main(void) {
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
-	logger = log_create(NOMBRE_ARCHIVO_LOG, "swap", false, LOG_LEVEL_TRACE);
+	logger = log_create(NOMBRE_ARCHIVO_LOG, "swap", true, LOG_LEVEL_TRACE);
 
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
@@ -56,7 +56,7 @@ void crearEntornoParaTestDesfragmentacion(){
 int crearParticionSwap(){
 			int res;
 			char* cmd = string_new();
-			string_append(&cmd, "dd if=/dev/zero of=/home/utnso/git/");
+			string_append(&cmd, "dd if=/dev/zero of=./");
 			string_append(&cmd, g_Nombre_Swap);
 			string_append(&cmd, ".bin bs=");
 			string_append(&cmd, string_itoa(__sizePagina__));
@@ -185,7 +185,7 @@ int finalizarProceso(char* buffer){
 
 int abrirParticionSwap(){
 	char * dir = string_new();
-		string_append(&dir, "/home/utnso/git/");
+		string_append(&dir, "./");
 		string_append(&dir, g_Nombre_Swap);
 		string_append(&dir, ".bin");
 		//FILE* ptrComienzoParticion = fopen(dir, "r+");

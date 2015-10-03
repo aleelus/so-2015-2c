@@ -68,7 +68,7 @@ int main(void) {
 	sem_init(&semListaDeProcesos,0,1);
 
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
-	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", false, LOG_LEVEL_TRACE);
+	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", true, LOG_LEVEL_TRACE);
 
 	sem_init(&semDormilon,0,0);
 

@@ -149,7 +149,7 @@ void enviarArchivo(){
 }
 
 
-int EnviarRespuesta(operacion, fallo, pid){
+void EnviarRespuesta(operacion, fallo, pid){
 	char* rsp = string_new();
 		switch(operacion){
 			case CREA_PROCESO:
@@ -171,13 +171,17 @@ int EnviarRespuesta(operacion, fallo, pid){
 				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
 				int ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
 				char* contenido = getContenido(ptr);
-				char *aux = malloc(2);
+				char *aux = malloc(__sizePagina__+1);
 				sprintf(aux, "%d",READ_FAIL );
-				string_append(&rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux);
+				//string_append(&rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux);
+				memcpy(rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux, __sizePagina__ );
 				free(aux);
 				if(contenido != NULL){
 					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rsp);
 					munmap(contenido, getTamanioPagina(ptr));
+					EnviarDatos(socket_Memoria, rsp, __sizePagina__, COD_ADM_SWAP);
+					free(rsp);
+					return;
 				}
 				else
 					Error("Fallo al leer contenido. PID: %d, Pagina solicitada: %d", pid, paginaSolicitada);

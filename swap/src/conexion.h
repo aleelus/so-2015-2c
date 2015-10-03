@@ -47,7 +47,7 @@ int AtiendeCliente(void * arg);
  * @DESC: por lo general PID no se usa, en cuyo caso se le envia NULL
  * solo se usara en caso de que soliciten un marco donde fallo va a ser el numero de marco en vez de fallo
  */
-int EnviarRespuesta(int operacion, int fallo, int pid);
+void EnviarRespuesta(int operacion, int fallo, int pid);
 
 
 

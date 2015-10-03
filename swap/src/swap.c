@@ -224,7 +224,7 @@ int reemplazarMarco(char* buffer){
 		return(bloque->pid == pid);
 	}
 	//Obtengo el bloque que contiene el marco a reemplazar.
-	t_block_used *bloque = list_remove_by_condition(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar );
+	t_block_used *bloque = list_find(listaBloquesOcupados, (void*) _es_bloque_a_reemplazar );
 
 	if (bloque != NULL){
 	//Obtengo la direccion del marco
@@ -250,7 +250,7 @@ int reemplazarMarco(char* buffer){
 				return NULL;
 		}
 
-		memcpy(datos+getCorrimiento(pos), buffer+2, __sizePagina__); //TODO Crear funcion para esto
+		memcpy(datos+getCorrimiento(pos), DigitosNombreArchivo(buffer, &posActual), __sizePagina__); //TODO Crear funcion para esto
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 		if(ret < 0){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
@@ -291,7 +291,7 @@ int crearProceso(int pid, int paginasSolicitadas){
 int getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 {
 	bool _es_proceso_solicitado(t_block_used* bloque){
-		return (bloque->pid);
+		return bloque->pid == pid;
 	}
 	t_block_used* bloqueSolic = list_find(listaBloquesOcupados, (void*) _es_proceso_solicitado);
 
@@ -300,7 +300,7 @@ int getPtrPaginaProcesoSolic(pid, paginaSolicitada)
 
 		return ptr;
 	}
-		return NULL;
+	return NULL;
 }
 
 int guardarEnBloque(paginasSolicitadas, pid)

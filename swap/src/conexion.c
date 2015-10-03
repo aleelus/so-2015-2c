@@ -169,15 +169,15 @@ int EnviarRespuesta(operacion, fallo, pid){
 
 				//string_append(&rsp,"42");
 				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
-				FILE* ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
+				int ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
 				char* contenido = getContenido(ptr);
 				char *aux = malloc(2);
 				sprintf(aux, "%d",READ_FAIL );
-				string_append(&rsp, contenido != NULL ? contenido : aux);
+				string_append(&rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux);
 				free(aux);
 				if(contenido != NULL){
 					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rsp);
-					munmap(contenido, (size_t) __sizePagina__);
+					munmap(contenido, getTamanioPagina(ptr));
 				}
 				else
 					Error("Fallo al leer contenido. PID: %d, Pagina solicitada: %d", pid, paginaSolicitada);

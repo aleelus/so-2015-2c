@@ -569,11 +569,12 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
-	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s",buffer);
+	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	long unsigned tamanio=RecibirDatos(socket_Swap,&bufferRespuesta);
+	printf("TAMANIO:%d\n",tamanio);
 	if(tamanio==g_Tamanio_Marco){
 		return bufferRespuesta;
 	} else {
@@ -1294,10 +1295,12 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	free(bufferAux);
 
 
-	printf("*****************************************************************\n");
+	printf("***************************FINALIZAR*****************************\n");
+	printf("CPU Solicita finalizar Pid:%d\n",pid);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
-	eliminarDeLaTlbEnFinalizar(pid);
+	if(g_Entradas_TLB>0)
+		eliminarDeLaTlbEnFinalizar(pid);
 	//
 
 	if(eliminarProceso(pid)){

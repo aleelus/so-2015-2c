@@ -35,7 +35,7 @@ char* obtenerNombreDelArchivo(char* path) {
 		posDelNombre = i;
 	}
 
-	nombre = calloc(strlen(pathPartido[posDelNombre]), sizeof(char));
+	nombre = calloc(strlen(pathPartido[posDelNombre])+1, sizeof(char));
 	nombre = pathPartido[posDelNombre];
 
 	return nombre;
@@ -71,9 +71,7 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 	list_add(procesos, proceso);
 	sem_post(&semListaDeProcesos);
 
-	contenidoDelArchivo = calloc(ftell(archivoDeInstrucciones) + 1,
-			sizeof(char));
-
+	contenidoDelArchivo = calloc(ftell(archivoDeInstrucciones) + 1,sizeof(char));
 
 
 	for (; feof(archivoDeInstrucciones) == 0;) {
@@ -90,6 +88,9 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 		separarInstruccionDeParametros(contenidoAux, proceso);
 
 	}
+
+	//free(contenidoDelArchivo);//TODO este free no estaba, pero me parece que faltaba, pero rompe cuando se ejecuta
+
 	fclose(archivoDeInstrucciones);
 
 	free(contenidoAux);

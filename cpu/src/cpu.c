@@ -264,6 +264,9 @@ void escucharPlanificador(){
 
 	log_info(logger,"CONTEXTO DE EJECUCION RECIBIDO idCPU: %d PID: %d IP: %d QUANTUM: %d PATH: %s",idCPU, pId, ip, cantInstr, path);
 
+	free(bufferRespuesta);
+	free(buffer);
+
 	if(cantInstr == -1){
 		//es FIFO!
 		ejecutarMProc(path,pId,ip);

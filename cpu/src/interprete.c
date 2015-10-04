@@ -35,8 +35,9 @@ char* obtenerNombreDelArchivo(char* path) {
 		posDelNombre = i;
 	}
 
-	nombre = calloc(strlen(pathPartido[posDelNombre])+1, sizeof(char));
-	nombre = pathPartido[posDelNombre];
+	nombre = strdup(pathPartido[posDelNombre]);
+
+	free(pathPartido);
 
 	return nombre;
 }

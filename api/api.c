@@ -128,6 +128,8 @@ long unsigned RecibirDatos(int socket, char **buffer) {
 	}while (pos < tamanioBuffer);
 
 	log_trace(logger, "RECIBO DATOS. socket: %d. tamanio buffer:%lu", socket,tamanioBuffer);
+
+	free(bufferAux);
 	return tamanioBuffer;
 }
 

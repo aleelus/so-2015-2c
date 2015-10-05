@@ -56,7 +56,7 @@ t_proceso* crearProceso(char* pathDelArchivoDeInstrucciones, int pid) {
 t_instruccion* crearInstruccion(char* instruccion, int cantParam) {
 	t_instruccion* instr = malloc(sizeof(t_instruccion));
 	instr->instruccion = strdup(instruccion);
-	instr->parametros = calloc(3, sizeof(char*));
+	//instr->parametros = calloc(3, sizeof(char*));//TODO Pasar a dos parametros char* para ver que si se soluciona el error del valgrind
 	instr->cantDeParametros = cantParam;
 	return instr;
 }
@@ -182,8 +182,13 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 			pasePorSacarComillas = 0;
 		}
 
-		instruccion->parametros[k - 1] = strdup(parametro); //k>0
+		if(k == 1){
+			instruccion->parametro = strdup(parametro); //k>0
+		}
 
+		if(k == 2){
+			instruccion->otroParametro = strdup(parametro);//lo que hay que hacer para que valgrind no llore u_u
+		}
 		free(parametro);
 	}
 
@@ -237,7 +242,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&buffer, YO);//ID
 			string_append(&buffer, "1"); //Tipo de operacion (1-Nuevo proceso)
 			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametro));
 
 			long unsigned size = strlen(buffer);
 
@@ -270,7 +275,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 												   //Mandar acá el resultado al planificador y cortar la ejecucion?
 			}
 
-			log_info(logger,"INSTRUCCION: iniciar EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
+			log_info(logger,"INSTRUCCION: iniciar EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(buffer);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
@@ -282,7 +287,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&buffer, YO);//ID
 			string_append(&buffer,"2");//Tipo de operacion 2-Leer memoria
 			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametro));
 
 
 
@@ -297,7 +302,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&resultado,string_itoa(procesoAEjecutar->pid));
 			string_append(&resultado," ");
 			string_append(&resultado,"pagina ");
-			string_append(&resultado,instruccion->parametros[0]);
+			string_append(&resultado,instruccion->parametro);
 			string_append(&resultado," ");
 			string_append(&resultado,"leida: ");
 			string_append(&resultado,contenidoLeido);
@@ -305,7 +310,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
-			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
+			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(buffer);
 			free(contenidoLeido);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -318,8 +323,8 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&buffer, YO);//ID
 			string_append(&buffer,"3");//Tipo de operacion 3-Escribir memoria
 			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[0]));//TODO dar vuelta otra ves???
-			string_append(&buffer,obtenerSubBuffer(instruccion->parametros[1]));
+			string_append(&buffer,obtenerSubBuffer(instruccion->parametro));//TODO dar vuelta otra ves???
+			string_append(&buffer,obtenerSubBuffer(instruccion->otroParametro));
 
 
 
@@ -335,7 +340,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&resultado,string_itoa(procesoAEjecutar->pid));
 			string_append(&resultado," ");
 			string_append(&resultado,"pagina ");
-			string_append(&resultado,instruccion->parametros[0]);
+			string_append(&resultado,instruccion->parametro);
 			string_append(&resultado," ");
 			string_append(&resultado,"leida: ");
 			string_append(&resultado,contenidoEscrito);//se supone que es lo mismo que el parametros[1]...
@@ -343,7 +348,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
-			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
+			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(buffer);
 			free(contenidoEscrito);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -359,13 +364,13 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador,"1");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(i)));//Ultima linea ejecutada
-			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(instruccion->parametros[0]));
+			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(instruccion->parametro));
 
 			string_append(&resultado,"mProc ");
 			string_append(&resultado,string_itoa(procesoAEjecutar->pid));
 			string_append(&resultado," ");
 			string_append(&resultado,"entrada-salida de tiempo: ");
-			string_append(&resultado,instruccion->parametros[0]);
+			string_append(&resultado,instruccion->parametro);
 			string_append(&resultado,"\n");
 
 			instruccion->resultado = resultado;
@@ -380,7 +385,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
-			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
+			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u

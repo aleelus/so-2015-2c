@@ -12,7 +12,8 @@
 
 typedef struct{
 	char* instruccion;
-	char** parametros;//vector dinamico de parametros (vector de punteros a char)
+	char* parametro;
+	char* otroParametro;
 	int cantDeParametros;
 	char* resultado;//contatenar con barra n, para mandar todo en un char al planificador
 }t_instruccion;

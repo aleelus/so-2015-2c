@@ -72,25 +72,26 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 	list_add(procesos, proceso);
 	sem_post(&semListaDeProcesos);
 
+	fseek(archivoDeInstrucciones,0L,SEEK_END);
+
 	contenidoDelArchivo = calloc(ftell(archivoDeInstrucciones) + 1,sizeof(char));
 
+	rewind(archivoDeInstrucciones);
 
 	for (; feof(archivoDeInstrucciones) == 0;) {
 
 		fscanf(archivoDeInstrucciones, " %[^\n]", contenidoDelArchivo);
 
-		contenidoAux = calloc(strlen(contenidoDelArchivo) + 1, sizeof(char));
-
 		contenidoAux = string_substring_until(contenidoDelArchivo,
 				strlen(contenidoDelArchivo) - 1);
-
-		contenidoAux[strlen(contenidoDelArchivo)] = '\0';
 
 		separarInstruccionDeParametros(contenidoAux, proceso);
 
 	}
 
-	//free(contenidoDelArchivo);//TODO este free no estaba, pero me parece que faltaba, pero rompe cuando se ejecuta
+	if(contenidoDelArchivo != NULL){
+		free(contenidoDelArchivo);//TODO este free no estaba, pero me parece que faltaba, pero rompe cuando se ejecuta
+	}
 
 	fclose(archivoDeInstrucciones);
 
@@ -124,7 +125,7 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 
 	//****************************************************************Parche para arreglar el bug de string_split u_u**********************************************************//
 	if(0 != strcmp(instruccionSpliteada[0],"finalizar")){
-		lengDelTextoDeLaInstruccion = strlen(instruccionMasParametros) - strlen(instruccionSpliteada[0]/*siempre va a ser escribir*/- strlen(instruccionSpliteada[1]/*numero*/));
+		lengDelTextoDeLaInstruccion = strlen(instruccionMasParametros) - (strlen(instruccionSpliteada[0])/*siempre va a ser escribir*/+ strlen(instruccionSpliteada[1])/*numero*/);
 	}
 	//*************************************************************************************************************************************************************************//
 
@@ -164,7 +165,7 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 		if(laInstruccionEsEscribir && k == 2){//esto le saca las "" al texto y deja solo el texto
 			parametro = string_substring(parametro,1,strlen(parametro)-2);
 
-			if((lengDelTextoDeLaInstruccion - strlen(instruccionSpliteada[0]) - strlen(instruccionSpliteada[1])) > strlen(instruccionSpliteada[2])){//significa que el string_split corto lo que no se suponia que iba a cortar :@
+			if(lengDelTextoDeLaInstruccion > strlen(instruccionSpliteada[2])){//significa que el string_split corto lo que no se suponia que iba a cortar :@
 				parametro = string_substring(instruccionMasParametros,strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1]),lengDelTextoDeLaInstruccion);
 
 				parametro = string_substring(parametro,3,strlen(parametro)-4);

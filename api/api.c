@@ -190,6 +190,9 @@ long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer,
 		return 0;
 	}
 	log_trace(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ",socket,tamanioBuffer);
+
+	free(bufferE);
+	free(bufferR);
 	return tamanioBuffer;
 }
 

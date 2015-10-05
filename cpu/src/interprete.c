@@ -117,15 +117,18 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 	int laInstruccionEsEscribir = 0;
 	int existeInstruccion = 0;
 	int posicionEnElArray = -1;
+	int pasePorLoQueSeSuponiaQueIbaACortar = 0;
+	int pasePorSacarComillas = 0;
 	int k;
 	char* parametro;
+	char* parametroAux;
 	t_instruccion* instruccion;
 	char** instruccionSpliteada = string_split(instruccionMasParametros, " ");
 	int lengDelTextoDeLaInstruccion;
 
 	//****************************************************************Parche para arreglar el bug de string_split u_u**********************************************************//
 	if(0 != strcmp(instruccionSpliteada[0],"finalizar")){
-		lengDelTextoDeLaInstruccion = strlen(instruccionMasParametros) - (strlen(instruccionSpliteada[0])/*siempre va a ser escribir*/+ strlen(instruccionSpliteada[1])/*numero*/);
+		lengDelTextoDeLaInstruccion = strlen(instruccionMasParametros) - (strlen(instruccionSpliteada[0])/*siempre va a ser escribir*/+ strlen(instruccionSpliteada[1])/*numero*/+ 2/*dos espacios*/);
 	}
 	//*************************************************************************************************************************************************************************//
 
@@ -160,25 +163,30 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 			}
 		}
 		//es un parametro
-		parametro = strdup(instruccionSpliteada[k]);
+		if(k != 2){
+			parametro = strdup(instruccionSpliteada[k]);
+		}
 
 		if(laInstruccionEsEscribir && k == 2){//esto le saca las "" al texto y deja solo el texto
-			parametro = string_substring(parametro,1,strlen(parametro)-2);
+			pasePorSacarComillas = 1;
 
-			if(lengDelTextoDeLaInstruccion > strlen(instruccionSpliteada[2])){//significa que el string_split corto lo que no se suponia que iba a cortar :@
-				parametro = string_substring(instruccionMasParametros,strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1]),lengDelTextoDeLaInstruccion);
+			parametroAux = string_substring(instruccionMasParametros, strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1]) + 2,lengDelTextoDeLaInstruccion);
 
-				parametro = string_substring(parametro,3,strlen(parametro)-4);
-
-			}
-
-
+			parametro = string_substring(parametroAux,1,strlen(parametroAux)-2);
 
 			laInstruccionEsEscribir = 0;
 		}
 
-		instruccion->parametros[k - 1] = parametro; //k>0
+		if(pasePorSacarComillas){
+			free(parametroAux);
+			pasePorSacarComillas = 0;
+		}
+
+		instruccion->parametros[k - 1] = strdup(parametro); //k>0
+
+		free(parametro);
 	}
+
 
 	list_add(proceso->instrucciones, instruccion);
 }
@@ -213,7 +221,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 	int i = ip;
 	int posicionEnElArray = -1;
 	int existeInstruccion = 0;
-	char* bufferRespuesta = string_new();
+	char* bufferRespuesta /*= string_new()*/;//no hace falta inicializar porque recibirDatos le hace un malloc, en todo caso, recibirDatos no tendria que hacer un realloc?
 	int socket_Memoria_Local;
 
 	socket_Memoria_Local = conectarCliente(g_Ip_Memoria, g_Puerto_Memoria);//TODO si no se puede conectar a la memoria--->hilo de CPU se suicida (poner esto como variable de thread)
@@ -299,6 +307,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
 			free(buffer);
+			free(contenidoLeido);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
 
@@ -336,6 +345,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametros[0],instruccion->resultado);
 			free(buffer);
+			free(contenidoEscrito);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 		}
 

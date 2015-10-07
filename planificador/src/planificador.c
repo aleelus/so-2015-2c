@@ -201,3 +201,33 @@ void ejecutarDispatcher(){
 		exit(EXIT_FAILURE);
 	}
 }
+
+void mostrarPorcentajesDeUso(){
+	sem_wait(&semListaCpu);
+	int i;
+	printf("Porcentaje de uso:\n");
+	for(i=0;i<lista_cpu->elements_count;i++){
+		t_cpu* cpu = list_get(lista_cpu,i);
+		sem_wait(&cpu->semaforoProceso);
+		sem_wait(&cpu->semUso);
+		bit_array* aux = malloc(sizeof(bit_array));
+		*aux = *(cpu->uso);
+
+		if(cpu->procesoAsignado != NULL && cpu->procesoAsignado->estado == EJECUTANDO){
+			llenarUnos(aux, (int)(difftime(time(NULL), cpu->horaEntrada)));
+		}
+		else {
+			llenarZeros(aux, (int)(difftime(time(NULL), cpu->horaSalida)));
+		}
+		if(__DEBUG__){
+			imprimirBinario(*aux);
+			printf("\n");
+		}
+		sem_post(&cpu->semUso);
+		sem_post(&cpu->semaforoProceso);
+
+		printf(" - CPU %d: %.2f\%\n", i+1, 100*(double)sumarBits(*aux)/60);
+		free(aux);
+	}
+	sem_post(&semListaCpu);
+}

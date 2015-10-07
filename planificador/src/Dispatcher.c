@@ -72,10 +72,14 @@ void Dispatcher(void *args){
 			Error("No se pudo ejecutar el proceso %d", cpuLibre->procesoAsignado->pid);
 			//TODO Devolver a la cola de ready
 		}
+		marcarEntradaCpu(cpuLibre);
 		sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
 	}
 	sem_post(&(cpuLibre->semaforoProceso));
-
+	mostrarPorcentajesDeUso();
+	if (!(*cpuLibre->uso)){
+		Error("Aca hay problema");
+	}
 }
 
 void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){

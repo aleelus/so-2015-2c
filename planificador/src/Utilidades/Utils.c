@@ -84,6 +84,11 @@ int AtiendeCliente(void * arg) {
 	cpu->procesoAsignado = NULL;
 	sem_init(&cpu->semaforoMensaje,0,0);
 	sem_init(&cpu->semaforoProceso,0,1);
+	sem_init(&cpu->semUso,0,1);
+	cpu->uso = calloc(1, sizeof(bit_array));
+	cpu->horaEntrada = 0;
+	cpu->horaSalida = 0;
+
 
 	sem_wait(&semListaCpu);
 	list_add(lista_cpu,cpu);
@@ -99,6 +104,14 @@ int AtiendeCliente(void * arg) {
 		if (__DEBUG__)
 			printf("CPU DESBLOQUEADA\n");
 		char* bufferR = string_new();
+
+		marcarSalidaCpu(cpu);
+		if(!(*cpu->uso)){
+			Error("Aca hay problemas");
+		}
+		mostrarPorcentajesDeUso();
+
+
 		if(__TEST__){
 			sleep(10);
 			//	CPU	I/O	linea	tiempo	resultado
@@ -236,3 +249,58 @@ int enviarMensajeEjecucion(t_cpu cpu) {
 	free(mensaje);
 	return datosEnviados;
 }
+
+void marcarEntradaCpu(t_cpu* cpu){
+	/*printf("Entrada CPU: \n");
+	imprimirBinario(cpu->uso);
+	printf("\n");*/
+	sem_wait(&cpu->semUso);
+	llenarZeros(cpu->uso, (int)(difftime(time(&cpu->horaEntrada), cpu->horaSalida)));
+	sem_post(&cpu->semUso);
+	/*imprimirBinario(cpu->uso);
+	printf("\n");*/
+}
+
+void marcarSalidaCpu(t_cpu* cpu){
+	/*printf("Salida CPU: \n");
+	imprimirBinario(cpu->uso);
+	printf("\n");*/
+	sem_wait(&cpu->semUso);
+	llenarUnos(cpu->uso, (int)(difftime(time(&cpu->horaSalida), cpu->horaEntrada)));
+	sem_post(&cpu->semUso);
+	/*imprimirBinario(cpu->uso);
+	printf("\n");*/
+}
+
+void imprimirBinario(bit_array ba){
+    if (ba) {
+    	imprimirBinario(ba >> 1ULL);
+    	putchar((ba & 1ULL) ? '1' : '0');
+    }
+}
+
+void llenarUnos(bit_array* ba, int n){
+	//n = (n>60) ? 60 : n;
+	if (n>0){
+		*ba <<= n;
+		for(;n--;){
+			*ba |= 1ULL << n;
+		}
+	}
+    *ba &= mask;
+}
+
+void llenarZeros(bit_array* ba, int n){
+	//n = (n>60) ? 60 : n;
+	if (n>0)
+		*ba <<= n;
+    *ba &= mask;
+}
+
+int sumarBits(bit_array ba){
+    if (ba)
+    	return (ba & 1ULL) + sumarBits(ba>>1);
+    return 0;
+}
+
+

@@ -65,6 +65,7 @@ int procesarComando(char *comando, char *argumento){
 			if(__DEBUG__){
 				fprintf(stderr, "Entrando a la funcion CPU\n");
 			}
+			mostrarPorcentajesDeUso();
 			break;
 
 		case PS:

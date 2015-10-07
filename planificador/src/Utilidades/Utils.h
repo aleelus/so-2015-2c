@@ -50,8 +50,12 @@
 #define COLOR_VERDE "\x1b[32m"
 #define DEFAULT "\x1b[0m"
 #define PLANIFICADOR "1"
-#define __DEBUG__ 1
+#define __DEBUG__ 0
 #define __TEST__ 0
+#define mask 0x0FFFFFFFFFFFFFFFULL
+#define bit_array uint64_t
+//#define BITS60 sizeof(uint64_t)
+
 
 const char* estados[];
 
@@ -93,11 +97,17 @@ typedef struct {
 } t_PCB;
 
 
+
+
 typedef struct {
 	int socket_Cpu;
 	sem_t semaforoMensaje; //Semaforo para esperar un mensaje de la cpu
 	sem_t semaforoProceso; // Semaforo para el proceso que esta ejecutando la cpu
+	sem_t semUso;
 	t_PCB* procesoAsignado;
+	time_t horaEntrada;
+	time_t horaSalida;
+	bit_array* uso;
 } t_cpu;
 
 

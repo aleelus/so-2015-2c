@@ -1,15 +1,15 @@
 iniciar 10;
-escribir 0 "P1P0"
-escribir 1 "P1P1"
-escribir 2 "P1P2"
-escribir 3 "P1P3"
-escribir 4 "P1J4"
-escribir 5 "P1P5"
-escribir 6 "P1P6"
-escribir 7 "P1P7"
-escribir 8 "P1P8"
-escribir 9 "P1P9"
-entrada-salida 10
+escribir 0 "P1P0";
+escribir 1 "P1P1";
+escribir 2 "P1P2";
+escribir 3 "P1P3";
+escribir 4 "P1J4";
+escribir 5 "P1P5";
+escribir 6 "P1P6";
+escribir 7 "P1P7";
+escribir 8 "P1P8";
+escribir 9 "P1P9";
+entrada-salida 10;
 leer 0;
 leer 1;
 leer 2;

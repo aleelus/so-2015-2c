@@ -1,0 +1,22 @@
+iniciar 10;
+escribir 0 "P2P0"
+escribir 1 "P2P1"
+escribir 2 "P2P2"
+escribir 3 "P2P3"
+escribir 4 "P2J4"
+escribir 5 "P2P5"
+escribir 6 "P2P6"
+escribir 7 "P2P7"
+escribir 8 "P2P8"
+escribir 9 "P2P9"
+leer 0;
+leer 1;
+leer 2;
+leer 3;
+leer 4;
+leer 9;
+leer 8;
+leer 7;
+leer 6;
+leer 5;
+finalizar;

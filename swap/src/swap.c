@@ -256,7 +256,7 @@ int reemplazarMarco(char* buffer){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
-		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, datos );
+		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, datos+getCorrimiento(pos) );
 		ret = munmap( datos , getTamanioPagina(pos) ); // TODO Controlar cuanto munmapear
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
@@ -330,77 +330,88 @@ int desfragmentar(){
 	int ptrAnt;
 	int ptrBloque = 0;
 	t_block_used *bloqueAct;
-	int i = 0;
+	int i;
 	log_info(logger, "Comenzando desfragmentacion...");
-	if(ptrBloque == NULL){
+	/*if(ptrBloque == NULL){
 		ErrorFatal("Error al intentar desfragmentar.");
 		return -1;
 	}
-	else{
-
-		for(i ; i < listaBloquesOcupados->elements_count; i++){
-			bloqueAct = (t_block_used*)list_get(listaBloquesOcupados, i);
-			ptrAnt = bloqueAct->ptrComienzo;
-			if(ptrBloque != ptrAnt){
-
-				int fd = abrirParticionSwap();
-//				if(fd == NULL)
-//				{
-//					Error("Error al intentar desfragmentar");
-//					return -1;
-//				}
-
-				char *bloqueAnt = mmap((caddr_t) 0, getTamanioPagina(ptrAnt) * bloqueAct->cantPag , PROT_WRITE, MAP_SHARED, fd,  getOffset(ptrAnt));
-				char *bloqueNuevo = mmap((caddr_t) 0, getTamanioPagina(ptrBloque) * bloqueAct->cantPag, PROT_WRITE, MAP_SHARED, fd,  getOffset(ptrBloque));
-				close(fd);
-				if (bloqueAnt == MAP_FAILED) {
-						perror("mmap");
-						Error("Error al desfragmentar (mmap bloqueAnt)");
-						return NULL;
-				}
-
-				if (bloqueNuevo == MAP_FAILED) {
-						perror("mmap");
-						Error("Error al desfragmentar(mmap bloqueNuevo)");
-						return NULL;
-				}
-
-				memcpy(bloqueNuevo+getCorrimiento(ptrBloque), bloqueAnt+getCorrimiento(ptrAnt), (size_t) __sizePagina__ * bloqueAct->cantPag);
-				bloqueAct->ptrComienzo = ptrBloque;
-
-				int ret = msync(bloqueNuevo, __sizePagina__ * bloqueAct->cantPag, MS_INVALIDATE);
-
-				if(ret < 0){
-					Error("Error al intentar desfragmentar");
-					return -1;
-				}
-
-				ret = munmap( bloqueAnt , getTamanioPagina(ptrAnt) * bloqueAct->cantPag  );
-				ret = munmap( bloqueNuevo , getTamanioPagina(ptrBloque) * bloqueAct->cantPag  );
-				if (ret < 0){
-					ErrorFatal("Error al ejecutar munmap");
-				}
-				list_replace(listaBloquesOcupados, i, bloqueAct);
-
-
-			}
-			ptrBloque = ptrAnt + (size_t) bloqueAct->cantPag ;
-		}
-		int cantElem = listaBloquesLibres->elements_count;
-		for(i= 0; i < cantElem ; i++)
-		{
-			/*Saco los elementos desde adelante, por eso siempre es 0 :B */
-				list_remove_and_destroy_element(listaBloquesLibres, 0, (void*)t_block_free_destroy);
-		}
-		/*Creo elemento de la lista con las paginas que quedan libres */
-		int cantPaginasLibres = getCantidadPaginasOcupadas();
-		cantPaginasLibres =  g_Cantidad_Paginas - cantPaginasLibres;
-		if(cantPaginasLibres > 0)
-			list_add(listaBloquesLibres, t_block_free_create((int*)ptrBloque, cantPaginasLibres));
-		sleep(__retardoCompactacion__);
-		log_info(logger, "Gracias por desfragmentar con nosotros :) Vuelvas Prontos");
-		return 1;
+	else{*/
+	int fd = abrirParticionSwap();
+	char *swap = mmap((caddr_t) 0, g_Cantidad_Paginas * __sizePagina__ , PROT_READ|PROT_WRITE, MAP_SHARED, fd,  0);
+	//char *bloqueNuevo = mmap((caddr_t) 0, getTamanioPagina(ptrBloque) * bloqueAct->cantPag, PROT_WRITE, MAP_SHARED, fd,  getOffset(ptrBloque));
+	char *aux = malloc(g_Cantidad_Paginas * __sizePagina__);
+	close(fd);
+	if (swap == MAP_FAILED) {
+			perror("mmap");
+			ErrorFatal("Error al desfragmentar (mmap swap)");
 	}
+
+	/*if (bloqueNuevo == MAP_FAILED) {
+			perror("mmap");
+			Error("Error al desfragmentar(mmap bloqueNuevo)");
+			return NULL;
+	}*/
+
+	if(aux == NULL){
+		ErrorFatal("Error al desfragmentar (malloc aux)");
+	}
+
+	memcpy(aux, swap, g_Cantidad_Paginas * __sizePagina__);
+	memset(swap, '\0', g_Cantidad_Paginas * __sizePagina__);
+	if (msync(swap, g_Cantidad_Paginas * __sizePagina__, MS_INVALIDATE)<0){
+		ErrorFatal("Error al desfragmentar (msync externo)");
+	}
+	/*munmap(swap, g_Cantidad_Paginas * __sizePagina__);
+	swap = mmap((caddr_t) 0, g_Cantidad_Paginas * __sizePagina__ , PROT_READ|PROT_WRITE, MAP_SHARED, fd,  0);*/
+
+	for(i=0 ; i < listaBloquesOcupados->elements_count; i++){
+		bloqueAct = (t_block_used*)list_get(listaBloquesOcupados, i);
+		ptrAnt = bloqueAct->ptrComienzo;
+		if(ptrBloque != ptrAnt){
+
+			memcpy(swap+ptrBloque, aux+ptrAnt, (size_t) __sizePagina__ * bloqueAct->cantPag);
+			bloqueAct->ptrComienzo = ptrBloque;
+
+			/*int ret = msync(bloqueNuevo, __sizePagina__ * bloqueAct->cantPag, MS_INVALIDATE);
+
+			if(ret < 0){
+				Error("Error al intentar desfragmentar");
+				return -1;
+			}
+
+			ret = munmap( swap , getTamanioPagina(ptrAnt) * bloqueAct->cantPag  );
+			ret = munmap( bloqueNuevo , getTamanioPagina(ptrBloque) * bloqueAct->cantPag  );
+			if (ret < 0){
+				ErrorFatal("Error al ejecutar munmap");
+			}*/
+			list_replace(listaBloquesOcupados, i, bloqueAct);
+
+			if (msync(swap, g_Cantidad_Paginas * __sizePagina__, MS_INVALIDATE)<0){
+				ErrorFatal("Error al desfragmentar (msync interno)");
+			}
+
+		}
+		ptrBloque += bloqueAct->cantPag * __sizePagina__ ;
+	}
+	if( munmap(swap, g_Cantidad_Paginas * __sizePagina__)<0){
+		ErrorFatal("Error al ejecutar munmap");
+	}
+	free(aux);
+	int cantElem = listaBloquesLibres->elements_count;
+	for(i= 0; i < cantElem ; i++)
+	{
+		/*Saco los elementos desde adelante, por eso siempre es 0 :B */
+			list_remove_and_destroy_element(listaBloquesLibres, 0, (void*)t_block_free_destroy);
+	}
+	/*Creo elemento de la lista con las paginas que quedan libres */
+	int cantPaginasLibres = g_Cantidad_Paginas - getCantidadPaginasOcupadas();
+	if(cantPaginasLibres > 0)
+		list_add(listaBloquesLibres, t_block_free_create((int*)ptrBloque, cantPaginasLibres));
+	sleep(__retardoCompactacion__);
+	log_info(logger, "Gracias por desfragmentar con nosotros :) Vuelvas Prontos");
+	return 1;
+	//}
 }
 
 int existeEspacioContiguo(int paginasSolicitadas){

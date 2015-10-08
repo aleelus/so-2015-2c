@@ -359,7 +359,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&resultado,"pagina ");
 			string_append(&resultado,instruccion->parametro);
 			string_append(&resultado," ");
-			string_append(&resultado,"leida: ");
+			string_append(&resultado,"escrita: ");
 			string_append(&resultado,contenidoEscrito);//se supone que es lo mismo que el parametros[1]...
 			string_append(&resultado,"\n");
 

@@ -290,6 +290,8 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 				EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
+				boom = 0;
+
 				free(respuestaParaElLogDelPlanificador);
 				break;//Stop!, ponete a escuchar el planificador!
 			}

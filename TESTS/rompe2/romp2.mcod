@@ -1,0 +1,12 @@
+iniciar 10;
+escribir 0 "pag0";
+escribir 1 "pag1";
+escribir 2 "pag2";
+escribir 3 "pag3";
+escribir 4 "pag4";
+escribir 5 "pag5";
+escribir 6 "pag6";
+escribir 7 "pag7";
+escribir 8 "pag8";
+escribir 9 "pag9";
+finalizar;

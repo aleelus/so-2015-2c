@@ -1,0 +1,13 @@
+iniciar 10;
+escribir 0 "p0";
+escribir 1 "p1";
+escribir 2 "p2";
+escribir 3 "p3";
+escribir 4 "p4";
+escribir 5 "p5";
+escribir 6 "p6";
+escribir 7 "p7";
+escribir 8 "p8";
+escribir 9 "p9";
+finalizar;
+

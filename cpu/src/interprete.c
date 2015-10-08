@@ -237,6 +237,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 		existeInstruccion = instruccionValida(instruccion->instruccion,&posicionEnElArray);
 
 		if (0 == posicionEnElArray) { //iniciar
+			int boom = 0;//si esto es 1, el planificador tiene que matar el mPcoc
 
 			char* buffer = string_new();
 			string_append(&buffer, YO);//ID
@@ -262,6 +263,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				instruccion->resultado = resultado;//Me guardo el resultado para despues mandar al planificador
 			}else{
 				//mProc fallo
+				boom = 1;
 				char* resultado = string_new();
 
 				string_append(&resultado,"mProc ");
@@ -278,6 +280,21 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			log_info(logger,"INSTRUCCION: iniciar EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(buffer);
 			sleep(g_Retardo);//lo pide el enunciado u_u
+
+			if(boom){
+				char* respuestaParaElLogDelPlanificador = string_new();
+
+				string_append(&respuestaParaElLogDelPlanificador, YO);//ID
+				string_append(&respuestaParaElLogDelPlanificador,"4");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
+				string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+
+				EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+
+				boom = 0;
+
+				free(respuestaParaElLogDelPlanificador);
+				break;//Stop!, ponete a escuchar el planificador!
+			}
 		}
 
 		if (1 == posicionEnElArray) {//leer

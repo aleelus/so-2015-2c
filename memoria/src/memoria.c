@@ -62,11 +62,15 @@ int main(void) {
 
 void vaciarTLB(){
 	t_tlb* tlb;
+	int i = 0;
 
 	sem_wait(&semTLB);
-	while(list_size(lista_tlb)>0){
-		tlb = list_remove(lista_tlb,0);
-		free(tlb);
+	while(i<list_size(lista_tlb)){
+		tlb = list_get(lista_tlb,i);
+		tlb->marco = -1;
+		tlb->pagina = -1;
+		tlb->pid = -1;
+		i++;
 	}
 	sem_post(&semTLB);
 
@@ -180,27 +184,29 @@ void iniciarListamProc(){
 void iniciarMemoriaPrincipal(){
 	int i;
 	printf("Cantidad Marcos Seteados en MP:%d\n",g_Cantidad_Marcos);
-	a_Memoria = malloc(sizeof(t_mp)*g_Cantidad_Marcos);
+	if(g_Cantidad_Marcos>0) a_Memoria = malloc(sizeof(t_mp)*g_Cantidad_Marcos);
 
 	if(!strcmp(g_Algoritmo,"LRU")){
 
 		lista_lru = list_create();
 
 	}
-	for(i=0;i<g_Cantidad_Marcos;i++){
-		a_Memoria[i].marco = -1;
-		a_Memoria[i].bitModificado = 0;
-		a_Memoria[i].bitUso = 0;
-		a_Memoria[i].contenido = malloc(g_Tamanio_Marco);
-		a_Memoria[i].bitPuntero = 0;
-		memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+	if(g_Cantidad_Marcos>0){
+		for(i=0;i<g_Cantidad_Marcos;i++){
+			a_Memoria[i].marco = -1;
+			a_Memoria[i].bitModificado = 0;
+			a_Memoria[i].bitUso = 0;
+			a_Memoria[i].contenido = malloc(g_Tamanio_Marco);
+			a_Memoria[i].bitPuntero = 0;
+			memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+		}
+		a_Memoria[0].bitPuntero = 1;
 	}
-	a_Memoria[0].bitPuntero = 1;
 }
 
 void iniciarTLB(){
+	lista_tlb = list_create();
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		lista_tlb = list_create();
 		printf("TLB Habilitada - Entradas:%d\n",g_Entradas_TLB);
 		int i;
 		for(i=0;i<g_Entradas_TLB;i++){
@@ -407,7 +413,6 @@ void implementoIniciarCpu(int socket,char *buffer){
 		//Agrego nuevo proceso a la lista
 		list_add(lista_mProc,mProc);
 		string_append(&bufferRespuestaCPU,"1");
-		mProc = list_get(lista_mProc,0);
 		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
 
 	}else{
@@ -574,7 +579,6 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	long unsigned tamanio=RecibirDatos(socket_Swap,&bufferRespuesta);
-	printf("TAMANIO:%d\n",tamanio);
 	if(tamanio==g_Tamanio_Marco){
 		return bufferRespuesta;
 	} else {
@@ -645,13 +649,14 @@ void actualizarTLB(int pid,int nroPagina){
 
 					if(pagina->bitMP==1 && contAgrego<entradasTLB){
 
+						sem_wait(&semTLB);
 						telebe = list_get(lista_tlb,contAgrego);
 
 						telebe->pid=pid;
 						telebe->pagina=posActual;
 						telebe->marco=pagina->marco;
 
-
+						sem_post(&semTLB);
 						contAgrego++;
 
 					}
@@ -725,6 +730,32 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 	}
 }
 
+void actualizarTablaPagina(int pid,int pagina){
+	t_mProc* mProc;
+	t_pagina* unaPagina;
+
+	int i=0,j;
+
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		j=0;
+		if(mProc->pid == pid){
+			while(j<list_size(mProc->paginas)){
+				unaPagina = list_get(mProc->paginas,j);
+				//a_Memoria[pagina->marco].marco=nroPagina;// HAY Q VER ESTA LINEA
+				if(unaPagina->pagina==pagina){
+					unaPagina->bitMP = 0;
+					unaPagina->marco = -1;
+					j = list_size(mProc->paginas);
+					i = list_size(lista_mProc);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
 int FIFO(int *marco){
 	int i=0;
 	int pid, pagina;
@@ -735,6 +766,7 @@ int FIFO(int *marco){
 				funcionBuscarPidPagina(i,&pid,&pagina);
 				pagina=a_Memoria[i].marco;
 				valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+				if(valido) actualizarTablaPagina(pid,pagina);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 				*marco=i;
 			} else {
@@ -1102,16 +1134,17 @@ void implementoEscribirCpu(int socket,char *buffer){
 void imprimirTLB(){
 	int i=0;
 	t_tlb* tlb;
-		  //
-	printf("*********************************\n");
-	printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
-	printf("*********************************\n");
-	while(i<list_size(lista_tlb)){
-		tlb = list_get(lista_tlb,i);
-		printf("*  %d\t%d\t%d\t%d\t*\n",i,tlb->pid,tlb->pagina,tlb->marco);
-		i++;
+	if(!strcmp(g_TLB_Habilitada,"SI")){
+		printf("*********************************\n");
+		printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
+		printf("*********************************\n");
+		while(i<list_size(lista_tlb)){
+			tlb = list_get(lista_tlb,i);
+			printf("*  %d\t%d\t%d\t%d\t*\n",i,tlb->pid,tlb->pagina,tlb->marco);
+			i++;
+		}
+		printf("*********************************\n");
 	}
-	printf("*********************************\n");
 }
 
 void implementoLeerCpu(int socket,char *buffer){
@@ -1133,7 +1166,7 @@ void implementoLeerCpu(int socket,char *buffer){
 
 	printf("**************************LEER***********************************\n");
 	printf("CPU Solicita leer Pid:%d Pagina:%d\n",pid,nroPagina);
-	printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
+	//printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if(g_Cantidad_Marcos>0){
 		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 			//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
@@ -1147,6 +1180,7 @@ void implementoLeerCpu(int socket,char *buffer){
 				//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 				contenido=pedirContenidoASwap(pid,nroPagina);
 				if(contenido!=NULL){
+					hayLugarEnMPSinoLoHago(&marco,pid);
 					actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 				} else {
 					printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
@@ -1230,12 +1264,13 @@ int eliminarProceso(int pid){
 				if(pagina->bitMP == 1){
 
 					a_Memoria[pagina->marco].marcoEnUso=0;
-					free(a_Memoria[pagina->marco].contenido);
-					a_Memoria[pagina->marco].contenido = string_new();
-
+					a_Memoria[pagina->marco].marco = -1;
+					memset(a_Memoria[pagina->marco].contenido,0,g_Tamanio_Marco);
 				}
 
 			}
+
+			list_remove(lista_mProc,i);
 
 			if(eliminarDeSwap(pid)){
 
@@ -1250,7 +1285,6 @@ int eliminarProceso(int pid){
 			}
 
 		}
-
 		i++;
 	}
 

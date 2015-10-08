@@ -1,0 +1,4 @@
+prueba1: correr largo.cod correctamente
+prueba2: concurrentemente correr largo.cod, corto.cod y largo.cod. Se debera ver en el log las sentencias ejecutadas en orden FIFO
+prueba3: concurrentemente correr largo.cod y no_entra.cod. no_entra.cod debera ser rechazado
+prueba4: se debera correr entra.cod. La particion de swap de 64 posiciones deberia estar completamente ocupada

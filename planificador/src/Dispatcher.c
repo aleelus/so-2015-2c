@@ -76,10 +76,7 @@ void Dispatcher(void *args){
 		sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
 	}
 	sem_post(&(cpuLibre->semaforoProceso));
-	mostrarPorcentajesDeUso();
-	if (!(*cpuLibre->uso)){
-		Error("Aca hay problema");
-	}
+
 }
 
 void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){

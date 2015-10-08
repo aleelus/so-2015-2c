@@ -105,11 +105,7 @@ int AtiendeCliente(void * arg) {
 			printf("CPU DESBLOQUEADA\n");
 		char* bufferR = string_new();
 
-		marcarSalidaCpu(cpu);
-		if(!(*cpu->uso)){
-			Error("Aca hay problemas");
-		}
-		mostrarPorcentajesDeUso();
+
 
 
 		if(__TEST__){
@@ -120,6 +116,7 @@ int AtiendeCliente(void * arg) {
 			continue;
 		}
 		long unsigned bytesRecibidos = RecibirDatos(cpu->socket_Cpu,&bufferR);
+		marcarSalidaCpu(cpu);
 		procesarBuffer(cpu, bufferR,bytesRecibidos);
 		free(bufferR);
 		//Aca se define el envio de mCod a la cpu para que la procese
@@ -200,6 +197,8 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 			int tiempo = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
 			pasarABloqueados(cpu, tiempo, proximaInstruccion);
 			break;
+		case FALLO:
+			// TODO: Si hay que hacer otra cosa mas es aca
 		case FINALIZADO:
 			terminarProceso(cpu);
 			break;
@@ -208,9 +207,6 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 			proximaInstruccion = cpu->procesoAsignado->nroLinea + g_Quantum;
 			sem_post(&cpu->semaforoProceso);
 			pasarAReady(cpu, proximaInstruccion);
-			break;
-		case FALLO:
-			// TODO: Ver que se hace en caso de fallo si es que existe
 			break;
 		default:
 			Error(logger, "CPU con socket: %d desconectada.", cpu->socket_Cpu);
@@ -255,7 +251,7 @@ void marcarEntradaCpu(t_cpu* cpu){
 	imprimirBinario(cpu->uso);
 	printf("\n");*/
 	sem_wait(&cpu->semUso);
-	llenarZeros(cpu->uso, (int)(difftime(time(&cpu->horaEntrada), cpu->horaSalida)));
+	llenarZeros(cpu->uso, (int64_t)(difftime(time(&cpu->horaEntrada), cpu->horaSalida)));
 	sem_post(&cpu->semUso);
 	/*imprimirBinario(cpu->uso);
 	printf("\n");*/
@@ -266,7 +262,7 @@ void marcarSalidaCpu(t_cpu* cpu){
 	imprimirBinario(cpu->uso);
 	printf("\n");*/
 	sem_wait(&cpu->semUso);
-	llenarUnos(cpu->uso, (int)(difftime(time(&cpu->horaSalida), cpu->horaEntrada)));
+	llenarUnos(cpu->uso, (int64_t)(difftime(time(&cpu->horaSalida), cpu->horaEntrada)));
 	sem_post(&cpu->semUso);
 	/*imprimirBinario(cpu->uso);
 	printf("\n");*/
@@ -279,8 +275,8 @@ void imprimirBinario(bit_array ba){
     }
 }
 
-void llenarUnos(bit_array* ba, int n){
-	//n = (n>60) ? 60 : n;
+void llenarUnos(bit_array* ba, int64_t n){
+	n = (n>60) ? 60 : n;
 	if (n>0){
 		*ba <<= n;
 		for(;n--;){
@@ -290,8 +286,8 @@ void llenarUnos(bit_array* ba, int n){
     *ba &= mask;
 }
 
-void llenarZeros(bit_array* ba, int n){
-	//n = (n>60) ? 60 : n;
+void llenarZeros(bit_array* ba, int64_t n){
+	n = (n>60) ? 60 : n;
 	if (n>0)
 		*ba <<= n;
     *ba &= mask;

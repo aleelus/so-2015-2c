@@ -214,10 +214,10 @@ void mostrarPorcentajesDeUso(){
 		*aux = *(cpu->uso);
 
 		if(cpu->procesoAsignado != NULL && cpu->procesoAsignado->estado == EJECUTANDO){
-			llenarUnos(aux, (int)(difftime(time(NULL), cpu->horaEntrada)));
+			llenarUnos(aux, (int64_t)(difftime(time(NULL), cpu->horaEntrada)));
 		}
 		else {
-			llenarZeros(aux, (int)(difftime(time(NULL), cpu->horaSalida)));
+			llenarZeros(aux, (int64_t)(difftime(time(NULL), cpu->horaSalida)));
 		}
 		if(__DEBUG__){
 			imprimirBinario(*aux);

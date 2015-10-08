@@ -11,7 +11,7 @@
 
 #define PLANIFICADOR "1"
 #define BUFFERSIZE 50
-#define __DEBUG__ 1
+//#define __DEBUG__ 1
 //Tipos de operaciones
 #define ES_CPU	2
 #define COMANDO 8

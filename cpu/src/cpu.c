@@ -48,6 +48,10 @@ int id = 0;//para ir asignandole a idCPU
 
 __thread int idCPU = 0;//Esta es una variable global visible solo por un hilo (para cada hilo tiene un valor distinto)
 __thread int socketPlanificador;
+
+__thread int esRR = 0;
+
+__thread int quantum;
 /******************************************************************************************************************************/
 
 sem_t semPid;
@@ -273,6 +277,11 @@ void escucharPlanificador(){
 	}else{
 		//es RR!
 		//TODO, es agregar un flag, y contar el quantum para cortar (ejecutar hasta que cantInstr == i (del for de instrucciones ejecutadas))
+		esRR = 1;
+
+		quantum = cantInstr;
+
+		ejecutarMProc(path,pId,ip);
 	}
 
 }

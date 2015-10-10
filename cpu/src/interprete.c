@@ -16,6 +16,8 @@ extern int g_Retardo;//Despues de ejecutar cada instruccion hay que ponerle el r
 extern char* g_Ip_Memoria;
 extern char* g_Puerto_Memoria;
 extern __thread int socketPlanificador;
+extern __thread int esRR;
+extern __thread int quantum;
 
 
 t_proceso* procesoEnEjecucion; //Es uno solo por procesador, TODO me parece que esto esta al pedo...
@@ -282,18 +284,34 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			sleep(g_Retardo);//lo pide el enunciado u_u
 
 			if(boom){
-				char* respuestaParaElLogDelPlanificador = string_new();
+				char* respuestaParaElPlanificador = string_new();
 
-				string_append(&respuestaParaElLogDelPlanificador, YO);//ID
-				string_append(&respuestaParaElLogDelPlanificador,"4");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
-				string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+				string_append(&respuestaParaElPlanificador, YO);//ID
+				string_append(&respuestaParaElPlanificador,"4");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 
-				EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
 
 				boom = 0;
 
-				free(respuestaParaElLogDelPlanificador);
+				free(respuestaParaElPlanificador);
 				break;//Stop!, ponete a escuchar el planificador!
+			}
+
+			if(esRR && quantum == i){
+				//3- Quantum (Resultados con barra n)
+				char* respuestaParaElPlanificador = string_new();
+
+				string_append(&respuestaParaElPlanificador, YO);//ID
+				string_append(&respuestaParaElPlanificador,"3");
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(i)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(instruccion->resultado));
+
+				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+
+				free(respuestaParaElPlanificador);
+				break;
 			}
 		}
 
@@ -331,6 +349,33 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(buffer);
 			free(contenidoLeido);
 			sleep(g_Retardo);//lo pide el enunciado u_u
+
+			if(esRR && quantum == i){
+				//3- Quantum (Resultados con barra n)
+				int k;
+				char* resultados = string_new();
+				char* respuestaParaElPlanificador = string_new();
+
+				string_append(&respuestaParaElPlanificador, YO);//ID
+				string_append(&respuestaParaElPlanificador,"3");
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(i)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(instruccion->resultado));
+
+				for(k=ip; k<=i ;k++){//hasta aca se ejecutaron i instrucciones
+					t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
+
+					string_append(&resultados,instruccionEjecutada->resultado);
+				}
+
+				string_append(&respuestaParaElPlanificador,obtenerSubBuffer(resultados));
+
+				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+
+				free(respuestaParaElPlanificador);
+				free(resultados);
+				break;
+			}
 		}
 
 		if (2 == posicionEnElArray) {//escribir
@@ -369,6 +414,33 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(buffer);
 			free(contenidoEscrito);
 			sleep(g_Retardo);//lo pide el enunciado u_u
+
+			if(esRR && quantum == i){
+				//3- Quantum (Resultados con barra n)
+				int k;
+				char* resultados = string_new();
+				char* respuestaParaElPlanificador = string_new();
+
+				string_append(&respuestaParaElPlanificador, YO);//ID
+				string_append(&respuestaParaElPlanificador,"3");
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(i)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(instruccion->resultado));
+
+				for(k=ip; k<=i ;k++){//hasta aca se ejecutaron i instrucciones
+					t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
+
+					string_append(&resultados,instruccionEjecutada->resultado);
+				}
+
+				string_append(&respuestaParaElPlanificador,obtenerSubBuffer(resultados));
+
+				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+
+				free(respuestaParaElPlanificador);
+				free(resultados);
+				break;
+			}
 		}
 
 		if (3 == posicionEnElArray) {//entrada-salida
@@ -400,13 +472,43 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(resultados));
 
-			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+			if(!esRR){
+				EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+			}
 
 			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u
-			break;//Para de ejecutar!!!!!!!! xD TODO paro de ejecutar y a donde voy??, tendria que poner a la CPU a la escucha...
+
+			/*if(esRR && quantum == i){//TODO capaz que esto esta de mas, ya que por la entrada-salida va a salir si o si, para el planificador cambia algo si es salida por quantum?
+				//3- Quantum (Resultados con barra n)
+				int k;
+				char* resultados = string_new();
+				char* respuestaParaElPlanificador = string_new();
+
+				string_append(&respuestaParaElPlanificador, YO);//ID
+				string_append(&respuestaParaElPlanificador,"3");
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(i)));
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(instruccion->resultado));
+
+				for(k=ip; k<=i ;k++){//hasta aca se ejecutaron i instrucciones
+					t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
+
+					string_append(&resultados,instruccionEjecutada->resultado);
+				}
+
+				string_append(&respuestaParaElPlanificador,obtenerSubBuffer(resultados));
+
+				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+
+				free(respuestaParaElPlanificador);
+				free(resultados);
+				break;
+			}*/
+
+			break;//Para de ejecutar!!!!!!!! xD
 		}
 
 		if (4 == posicionEnElArray) {//finalizar

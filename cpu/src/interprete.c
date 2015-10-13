@@ -298,7 +298,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				break;//Stop!, ponete a escuchar el planificador!
 			}
 
-			if(esRR && quantum == i){
+			if(esRR && quantum == i - ip + 1){
 				//3- Quantum (Resultados con barra n)
 				char* respuestaParaElPlanificador = string_new();
 
@@ -350,7 +350,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(contenidoLeido);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 
-			if(esRR && quantum == i){
+			if(esRR && quantum == i - ip + 1){
 				//3- Quantum (Resultados con barra n)
 				int k;
 				char* resultados = string_new();
@@ -415,7 +415,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(contenidoEscrito);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 
-			if(esRR && quantum == i){
+			if(esRR && quantum == i - ip + 1){
 				//3- Quantum (Resultados con barra n)
 				int k;
 				char* resultados = string_new();
@@ -472,9 +472,8 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(resultados));
 
-			if(!esRR){
-				EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
-			}
+
+			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
 			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			free(resultados);

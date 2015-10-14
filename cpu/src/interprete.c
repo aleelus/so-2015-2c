@@ -11,6 +11,9 @@
 #include <commons/string.h>
 #include <api.h>
 #include "cpu.h"
+#include <pthread.h>
+
+pthread_mutex_t semaforoLog = PTHREAD_MUTEX_INITIALIZER;
 
 extern int g_Retardo;//Despues de ejecutar cada instruccion hay que ponerle el retardo
 extern char* g_Ip_Memoria;
@@ -249,7 +252,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			long unsigned size = strlen(buffer);
 
-			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			EnviarDatos(socket_Memoria_Local, buffer, size, YO);//TODO comentar el log del enviar datos o poner un semaforo aca... :/
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
 			if(0 == strcmp(bufferRespuesta,"1")){
@@ -279,7 +282,10 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 												   //Mandar acá el resultado al planificador y cortar la ejecucion?
 			}
 
+			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: iniciar EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			pthread_mutex_unlock(&semaforoLog);
+
 			free(buffer);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 
@@ -345,7 +351,10 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
+			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			pthread_mutex_unlock(&semaforoLog);
+
 			free(buffer);
 			free(contenidoLeido);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -410,7 +419,10 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			instruccion->resultado = resultado;
 
+			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			pthread_mutex_unlock(&semaforoLog);
+
 			free(buffer);
 			free(contenidoEscrito);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -475,37 +487,13 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
+			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			pthread_mutex_unlock(&semaforoLog);
+
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u
-
-			/*if(esRR && quantum == i){//TODO capaz que esto esta de mas, ya que por la entrada-salida va a salir si o si, para el planificador cambia algo si es salida por quantum?
-				//3- Quantum (Resultados con barra n)
-				int k;
-				char* resultados = string_new();
-				char* respuestaParaElPlanificador = string_new();
-
-				string_append(&respuestaParaElPlanificador, YO);//ID
-				string_append(&respuestaParaElPlanificador,"3");
-				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
-				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(i)));
-				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(instruccion->resultado));
-
-				for(k=ip; k<=i ;k++){//hasta aca se ejecutaron i instrucciones
-					t_instruccion* instruccionEjecutada = list_get(procesoAEjecutar->instrucciones,k);
-
-					string_append(&resultados,instruccionEjecutada->resultado);
-				}
-
-				string_append(&respuestaParaElPlanificador,obtenerSubBuffer(resultados));
-
-				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
-
-				free(respuestaParaElPlanificador);
-				free(resultados);
-				break;
-			}*/
 
 			break;//Para de ejecutar!!!!!!!! xD
 		}
@@ -561,7 +549,10 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
 
+			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: finalizar EJECUTADA PID: %d RESULTADO: %s",procesoAEjecutar->pid,instruccion->resultado);
+			pthread_mutex_unlock(&semaforoLog);
+
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			sleep(g_Retardo);//lo pide el enunciado u_u

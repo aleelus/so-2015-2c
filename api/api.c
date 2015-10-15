@@ -269,3 +269,15 @@ char* obtenerSubBufferDeContenido(char *nombre,int tamanio){
 
 	return aux;
 }
+
+void imprimirContenido(char* contenido, long unsigned tamanio){
+	long unsigned i=0;
+	while(i<tamanio){
+		if(*(contenido+i)!='\0'){
+			printf("%c",*(contenido+i));
+		} else {
+			printf("\\0");
+		}
+		i++;
+	}
+}

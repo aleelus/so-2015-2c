@@ -112,7 +112,7 @@ int cuentaDigitos(int valor);
  * 		  Le tengo q pasar un string y un tamanio que seria el tamaño maximo de ese string,
  *		  El nombre debe tener el resto del contenido con \0, Ej: nombre="hola\0\0\0....\0" la cantidad de \0 son (tamanio-strlen(hola))
  *		  PD: Puse el strlen como ejemplo pero no se puede usar xDXDXDXDxXxXdXXdXDXd
- *		  Ej: nombre= AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos  tamanio=256  ==> salida= 3256AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos\0\0\0\0...\0
+ *		  Ej: nombre= AhiEstaLaYetaDeCeci\0,\0aTocarMaderaTodos  tamanio=256  ==> salida= 3256AhiEstaLaYetaDeCeci\0,\0aTocarMaderaTodos\0\0\0\0...\0
  * */
 char* obtenerSubBufferDeContenido(char *nombre,int tamanio);
 
@@ -122,5 +122,10 @@ char* obtenerSubBufferDeContenido(char *nombre,int tamanio);
  * @DESC: Hace un print del error (mensaje) y lo escribe en el archivo log
  * */
 void Error(const char* mensaje, ...);
+/*
+ * @NAME: imprimirContenido
+ * @DESC: Esta funcion imprime el contenido de un string malvado. (String malvado = string que tiene \0 en el medio, no solo en el final)
+ * */
+void imprimirContenido(char* contenido, long unsigned tamanio);
 
 #endif /* API_H_ */

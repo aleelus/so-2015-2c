@@ -87,10 +87,12 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 
 		fscanf(archivoDeInstrucciones, " %[^\n]", contenidoDelArchivo);
 
-		contenidoAux = string_substring_until(contenidoDelArchivo,
-				strlen(contenidoDelArchivo) - 1);
+		int length = strlenHastaUnChar(contenidoDelArchivo,';');//Saca el size del contenidoDelArchivo hasta el ;
 
-		separarInstruccionDeParametros(contenidoAux, proceso);
+		contenidoAux = calloc(length,sizeof(char));
+		contenidoAux = memcpy(contenidoAux,contenidoDelArchivo,length);
+
+		separarInstruccionDeParametros(contenidoAux, proceso, length);
 
 	}
 
@@ -117,7 +119,7 @@ int instruccionValida(char* instruccion, int* posicionEnElArray) {
 }
 
 void separarInstruccionDeParametros(char* instruccionMasParametros,
-		t_proceso* proceso) {
+		t_proceso* proceso, int lengthDeLaInstruccionMasParametros) {
 	//{"iniciar", "leer", "escribir", "entrada-salida", "finalizar"}
 	int laInstruccionEsEscribir = 0;
 	int existeInstruccion = 0;
@@ -133,7 +135,7 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 
 	//****************************************************************Parche para arreglar el bug de string_split u_u**********************************************************//
 	if(0 != strcmp(instruccionSpliteada[0],"finalizar")){
-		lengDelTextoDeLaInstruccion = strlen(instruccionMasParametros) - (strlen(instruccionSpliteada[0])/*siempre va a ser escribir*/+ strlen(instruccionSpliteada[1])/*numero*/+ 2/*dos espacios*/);
+		lengDelTextoDeLaInstruccion = lengthDeLaInstruccionMasParametros - (strlen(instruccionSpliteada[0])/*siempre va a ser escribir*/+ strlen(instruccionSpliteada[1])/*numero*/+ 2/*dos espacios*/);
 	}
 	//*************************************************************************************************************************************************************************//
 
@@ -173,11 +175,25 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 		}
 
 		if(laInstruccionEsEscribir && k == 2){//esto le saca las "" al texto y deja solo el texto
+			int z = 0;
+
 			pasePorSacarComillas = 1;
 
-			parametroAux = string_substring(instruccionMasParametros, strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1]) + 2,lengDelTextoDeLaInstruccion);
+			parametroAux = calloc(lengDelTextoDeLaInstruccion,sizeof(char));
+			parametroAux = memcpy(parametroAux,instruccionMasParametros+(2 + strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1])),lengDelTextoDeLaInstruccion);
 
-			parametro = string_substring(parametroAux,1,strlen(parametroAux)-2);
+			parametro = calloc(lengDelTextoDeLaInstruccion,sizeof(char));
+			for(z=0; z<lengDelTextoDeLaInstruccion ;z++){
+				if(parametroAux[z]!='"'){
+					if(parametroAux[z]!='\0'){
+						strncat(parametro,&parametroAux[z],1);
+					}else{
+						strncat(parametro,"\\0",2);
+					}
+				}
+			}
+
+			//parametro = string_substring(parametroAux,1,strlen(parametroAux)-2);
 
 			laInstruccionEsEscribir = 0;
 		}

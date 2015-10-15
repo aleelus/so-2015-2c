@@ -45,7 +45,7 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid);
  * @NAME: separarInstruccionDeParametros
  * @DESC: separa la instruccion de los parametros, los graba en una lista para despues ser ejecutados por ejecutarMProc...
  * */
-void separarInstruccionDeParametros(char* instruccionMasParametros, t_proceso* proceso);
+void separarInstruccionDeParametros(char* instruccionMasParametros, t_proceso* proceso, int lengthDeLaInstruccionMasParametros);
 
 /*
  * @NAME: obtenerNombreDelArchivo

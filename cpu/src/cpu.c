@@ -229,7 +229,7 @@ void ProcesoCPU() {
 	socketPlanificador = conectarCliente(g_Ip_Planificador,g_Puerto_Planificador);
 	sem_post(&semId);
 
-	log_info(logger,"INSTANCIA DE CPU CREADA. Id: %d",idCPU);
+	log_info(logger,"INSTANCIA DE CPU CREADA. Id: %d",idCPU);//TODO semaforo aca
 
 	escucharPlanificador();
 

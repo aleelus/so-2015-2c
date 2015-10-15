@@ -281,3 +281,14 @@ void imprimirContenido(char* contenido, long unsigned tamanio){
 		i++;
 	}
 }
+
+int strlenHastaUnChar(char* string, char unChar){
+	//LTABarraCero
+	int length = 0;
+
+	for(length = 0 ;string[length] != unChar;length++){
+		//cuenta caracter por caracter
+	}
+
+	return length;
+}

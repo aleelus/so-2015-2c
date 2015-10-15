@@ -128,4 +128,10 @@ void Error(const char* mensaje, ...);
  * */
 void imprimirContenido(char* contenido, long unsigned tamanio);
 
+/*
+ * @NAME: strlenHastaUnChar
+ * @DESC: Esta funcion cuenta el tamanio del string hasta encontrer unChar, funciona aunque el string tenga \0 en el medio
+ * */
+int strlenHastaUnChar(char* string, char unChar);
+
 #endif /* API_H_ */

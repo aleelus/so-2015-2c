@@ -1,4 +1,5 @@
 iniciar 2;
 leer 0;
+entrada-salida 4;
 leer 1;
 finalizar;

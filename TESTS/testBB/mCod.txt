@@ -1,0 +1,4 @@
+iniciar 5;
+escribir 1 "alala";
+leer 1;
+finalizar;

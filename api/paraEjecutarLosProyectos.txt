@@ -1,0 +1,4 @@
+export LD_LIBRARY_PATH=/home/utnso/git/tp-2015-2c-so-didnt-c-that-coming/api/Debug:/home/utnso/git/commons/Debug
+
+esto hay que poner en la consola antes de ejecutar los proyectos, si en las pruebas, creamos una carpeta git y ahi adentro hacemos el clone,
+todo tendria que funcionar bien (es como configurar el "run configurations" del eclipse) :D

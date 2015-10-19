@@ -1133,7 +1133,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 		printf("***********************ESCRIBIR-ERROR****************************\n");
 		printf("CPU solicita escribir pero envia algo mas grande que el tamaño de marco\n");
 		printf("Tamaño de Marco:%d Tamaño que envia CPU:%d\n",g_Tamanio_Marco,tamanioC);
-
+		EnviarDatos(socket,"0",strlen("0"));
 	}
 }
 

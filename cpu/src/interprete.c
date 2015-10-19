@@ -419,6 +419,25 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
+			if(0 == strcmp(bufferRespuesta,"0")){
+				//Fallo la escritura, esto puede pasar si el tamanio del texto, supera el del marco
+				char* respuestaParaElPlanificador = string_new();
+
+				string_append(&respuestaParaElPlanificador, YO);//ID
+				string_append(&respuestaParaElPlanificador,"4");//Tipo de operacion Fallo
+				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
+
+				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+
+				pthread_mutex_lock(&semaforoLog);
+				log_info(logger,"INSTRUCCION: escribir FALLO PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro);
+				pthread_mutex_unlock(&semaforoLog);
+
+				free(respuestaParaElPlanificador);
+				free(buffer);
+				break;
+			}
+
 			//Me llega solo el contenido
 			char* contenidoEscrito = strdup(bufferRespuesta);//TODO algo se cambio del lado de la memoria?, ahora la memoria esta retornando el "1" en lugar del "hola" :S
 			char* resultado = string_new();

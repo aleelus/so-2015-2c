@@ -1084,49 +1084,56 @@ void implementoEscribirCpu(int socket,char *buffer){
 		tamanioC=tamanioC*10+aux;
 	}
 
+	if(tamanioC<=g_Tamanio_Marco){
 
-	//Contenido a grabar en la Pagina
-	bufferAux= DigitosNombreArchivo(buffer,&posActual);
-	memcpy(contenido,bufferAux,tamanioC);
+		//Contenido a grabar en la Pagina
+		bufferAux= DigitosNombreArchivo(buffer,&posActual);
+		memcpy(contenido,bufferAux,tamanioC);
 
-	printf("***********************ESCRIBIR**********************************\n");
-	printf("CPU solicita escribir Pid:%d Pagina:%d Contenido:",pid,nroPagina);
-	imprimirContenido(contenido,tamanioC);
-	printf("\n");
-	printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
-	if(g_Cantidad_Marcos>0){
-		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
-			//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
-		}else{
-			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
-				//Encontro la pagina en la tabla de paginas
-			}else{
-				//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
-				// hacemos boleta a alguien
-				hayLugarEnMPSinoLoHago(&marco,pid);
-			}
-			//sleep(g_Retardo_Memoria);
-		}
-		actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
-		actualizarTLB(pid,nroPagina);
-		//grabarEnMemoriaPrincipal(marco,contenido);
-		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:");
-		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
+		printf("***********************ESCRIBIR**********************************\n");
+		printf("CPU solicita escribir Pid:%d Pagina:%d Contenido:",pid,nroPagina);
+		imprimirContenido(contenido,tamanioC);
 		printf("\n");
-		printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
-		EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
-		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
-	} else {
-		valido=grabarContenidoASwap(pid,nroPagina,contenido);
-		if(valido){
-			printf("Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",pid,nroPagina);
-			imprimirContenido(contenido,g_Tamanio_Marco);
+		printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
+		if(g_Cantidad_Marcos>0){
+			if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
+				//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
+			}else{
+				if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
+					//Encontro la pagina en la tabla de paginas
+				}else{
+					//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
+					// hacemos boleta a alguien
+					hayLugarEnMPSinoLoHago(&marco,pid);
+				}
+				//sleep(g_Retardo_Memoria);
+			}
+			actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
+			actualizarTLB(pid,nroPagina);
+			//grabarEnMemoriaPrincipal(marco,contenido);
+			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:");
+			imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 			printf("\n");
-			EnviarDatos(socket,contenido,g_Tamanio_Marco);
+			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
+			EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
+			//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 		} else {
-			printf("No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",pid,nroPagina,contenido);
-			EnviarDatos(socket,"0",strlen("0"));
+			valido=grabarContenidoASwap(pid,nroPagina,contenido);
+			if(valido){
+				printf("Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",pid,nroPagina);
+				imprimirContenido(contenido,g_Tamanio_Marco);
+				printf("\n");
+				EnviarDatos(socket,contenido,g_Tamanio_Marco);
+			} else {
+				printf("No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",pid,nroPagina,contenido);
+				EnviarDatos(socket,"0",strlen("0"));
+			}
 		}
+	} else {
+		printf("***********************ESCRIBIR-ERROR****************************\n");
+		printf("CPU solicita escribir pero envia algo mas grande que el tamaño de marco\n");
+		printf("Tamaño de Marco:%d Tamaño que envia CPU:%d\n",g_Tamanio_Marco,tamanioC);
+
 	}
 }
 

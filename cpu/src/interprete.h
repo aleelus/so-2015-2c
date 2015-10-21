@@ -16,6 +16,7 @@ typedef struct{
 	char* otroParametro;
 	int cantDeParametros;
 	char* resultado;//contatenar con barra n, para mandar todo en un char al planificador
+	int sizeDelTexto;//esto se va a usar para el tam del texto de una instruccion escribir, ya que si tiene \0 en el medio no se puede usar strlen
 }t_instruccion;
 
 typedef struct{

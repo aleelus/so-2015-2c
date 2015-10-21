@@ -183,15 +183,8 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 			parametroAux = memcpy(parametroAux,instruccionMasParametros+(2 + strlen(instruccionSpliteada[0]) + strlen(instruccionSpliteada[1])),lengDelTextoDeLaInstruccion);
 
 			parametro = calloc(lengDelTextoDeLaInstruccion,sizeof(char));
-			for(z=0; z<lengDelTextoDeLaInstruccion ;z++){
-				if(parametroAux[z]!='"'){
-					if(parametroAux[z]!='\0'){
-						strncat(parametro,&parametroAux[z],1);
-					}else{
-						strncat(parametro,"\\0",2);
-					}
-				}
-			}
+
+			parametro = memcpy(parametro,parametroAux + 1,lengDelTextoDeLaInstruccion - 2);
 
 			//parametro = string_substring(parametroAux,1,strlen(parametroAux)-2);
 
@@ -208,7 +201,10 @@ void separarInstruccionDeParametros(char* instruccionMasParametros,
 		}
 
 		if(k == 2){
-			instruccion->otroParametro = strdup(parametro);//lo que hay que hacer para que valgrind no llore u_u
+			//instruccion->otroParametro = strdup(parametro);//lo que hay que hacer para que valgrind no llore u_u
+			instruccion->sizeDelTexto = lengDelTextoDeLaInstruccion - 2;
+			instruccion->otroParametro = calloc(lengDelTextoDeLaInstruccion - 2,sizeof(char));
+			instruccion->otroParametro = memcpy(instruccion->otroParametro,parametro,lengDelTextoDeLaInstruccion - 2);
 		}
 		free(parametro);
 	}
@@ -268,8 +264,13 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			long unsigned size = strlen(buffer);
 
+			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);//TODO comentar el log del enviar datos o poner un semaforo aca... :/
+			pthread_mutex_unlock(&semaforoLog);
+
+			pthread_mutex_lock(&semaforoLog);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+			pthread_mutex_unlock(&semaforoLog);
 
 			if(0 == strcmp(bufferRespuesta,"1")){
 				//mProc iniciado
@@ -312,8 +313,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				string_append(&respuestaParaElPlanificador,"4");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
 				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 
+				pthread_mutex_lock(&semaforoLog);
 				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
-
+				pthread_mutex_unlock(&semaforoLog);
 				boom = 0;
 
 				free(respuestaParaElPlanificador);
@@ -330,7 +332,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(i)));
 				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(instruccion->resultado));
 
+				pthread_mutex_lock(&semaforoLog);
 				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+				pthread_mutex_unlock(&semaforoLog);
 
 				free(respuestaParaElPlanificador);
 				break;
@@ -349,10 +353,32 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 
 			long unsigned size = strlen(buffer);
-			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
-			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 
-			char* contenidoLeido = strdup(bufferRespuesta);//TODO tenemos que hacer que retorne un 1 o un 0 por las dudas de que manden un leer sin escribir? (ver pruebas)
+			pthread_mutex_lock(&semaforoLog);
+			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			pthread_mutex_unlock(&semaforoLog);
+
+			pthread_mutex_lock(&semaforoLog);
+			int sizeDeLaRespuesta = RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+			pthread_mutex_unlock(&semaforoLog);
+
+			//char* contenidoLeido = strdup(bufferRespuesta);//TODO esto no puede estar mas por los barra cero
+			char* contenidoLeido = calloc(sizeDeLaRespuesta,sizeof(char));
+			contenidoLeido = memcpy(contenidoLeido,bufferRespuesta,sizeDeLaRespuesta);//TODO esto tampoco puede estar ya que el append de abajo appendea mal
+			//TODO hacer una funcion que cuente los barra ceros para despues saber de cuanto hacer el malloc de lo de abajo para que no de error de valgrind y se vea lindo en el log
+			//TODO esto de aca abajo de esta dando error de valgrind
+			/*
+			char* contenidoLeido = calloc(sizeDeLaRespuesta*2,sizeof(char));
+
+			int z =0;
+
+			for(z=0; z<sizeDeLaRespuesta ;z++){//lo hago para escribirlo en el log
+				if(bufferRespuesta[z]!='\0'){
+					strncat(contenidoLeido,&bufferRespuesta[z],1);
+				}else{
+					strncat(contenidoLeido,"\\0",2);
+				}
+			}*/
 
 			char* resultado = string_new();
 			string_append(&resultado,"mProc ");
@@ -395,7 +421,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 				string_append(&respuestaParaElPlanificador,obtenerSubBuffer(resultados));
 
+				pthread_mutex_lock(&semaforoLog);
 				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+				pthread_mutex_unlock(&semaforoLog);
 
 				free(respuestaParaElPlanificador);
 				free(resultados);
@@ -411,13 +439,23 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&buffer,"3");//Tipo de operacion 3-Escribir memoria
 			string_append(&buffer, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&buffer,obtenerSubBuffer(instruccion->parametro));//TODO dar vuelta otra ves???
-			string_append(&buffer,obtenerSubBuffer(instruccion->otroParametro));
 
+			char* subBuffer = obtenerSubBufferDeContenido(instruccion->otroParametro,instruccion->sizeDelTexto);
 
+			long unsigned size = strlen(buffer) + instruccion->sizeDelTexto + 1 + strlen(string_itoa(instruccion->sizeDelTexto));
 
-			long unsigned size = strlen(buffer);
-			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			char* bufferMasSubBuffer = calloc(size,sizeof(char));
+
+			memcpy(bufferMasSubBuffer,buffer,strlen(buffer));
+			memcpy(bufferMasSubBuffer+strlen(buffer),subBuffer,instruccion->sizeDelTexto + 1 + strlen(string_itoa(instruccion->sizeDelTexto)));
+
+			pthread_mutex_lock(&semaforoLog);
+			EnviarDatos(socket_Memoria_Local, bufferMasSubBuffer, size, YO);
+			pthread_mutex_unlock(&semaforoLog);
+
+			pthread_mutex_lock(&semaforoLog);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+			pthread_mutex_unlock(&semaforoLog);
 
 			if(0 == strcmp(bufferRespuesta,"0")){
 				//Fallo la escritura, esto puede pasar si el tamanio del texto, supera el del marco
@@ -427,19 +465,34 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				string_append(&respuestaParaElPlanificador,"4");//Tipo de operacion Fallo
 				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 
+				pthread_mutex_lock(&semaforoLog);
 				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+				pthread_mutex_unlock(&semaforoLog);
 
 				pthread_mutex_lock(&semaforoLog);
 				log_info(logger,"INSTRUCCION: escribir FALLO PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro);
 				pthread_mutex_unlock(&semaforoLog);
 
+				free(subBuffer);
 				free(respuestaParaElPlanificador);
 				free(buffer);
 				break;
 			}
 
 			//Me llega solo el contenido
-			char* contenidoEscrito = strdup(bufferRespuesta);//TODO algo se cambio del lado de la memoria?, ahora la memoria esta retornando el "1" en lugar del "hola" :S
+			//char* contenidoEscrito = strdup(bufferRespuesta);//TODO algo se cambio del lado de la memoria?, ahora la memoria esta retornando el "1" en lugar del "hola" :S
+			char* contenidoEscrito = calloc(instruccion->sizeDelTexto + 2,sizeof(char));
+
+			int z =0;
+
+			for(z=0; z<instruccion->sizeDelTexto ;z++){//lo hago para escribirlo en el log
+					if(bufferRespuesta[z]!='\0'){
+						strncat(contenidoEscrito,&bufferRespuesta[z],1);
+							}else{
+						strncat(contenidoEscrito,"\\0",2);
+					}
+			}
+
 			char* resultado = string_new();
 
 			string_append(&resultado,"mProc ");
@@ -458,6 +511,8 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			pthread_mutex_unlock(&semaforoLog);
 
+			free(bufferMasSubBuffer);
+			free(subBuffer);
 			free(buffer);
 			free(contenidoEscrito);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -482,7 +537,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 				string_append(&respuestaParaElPlanificador,obtenerSubBuffer(resultados));
 
+				pthread_mutex_lock(&semaforoLog);
 				EnviarDatos(socketPlanificador,respuestaParaElPlanificador,strlen(respuestaParaElPlanificador),YO);
+				pthread_mutex_unlock(&semaforoLog);
 
 				free(respuestaParaElPlanificador);
 				free(resultados);
@@ -519,8 +576,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			string_append(&respuestaParaElLogDelPlanificador,obtenerSubBuffer(resultados));
 
-
+			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+			pthread_mutex_unlock(&semaforoLog);
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
@@ -547,8 +605,14 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 
 			long unsigned size = strlen(buffer);
+
+			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
+			pthread_mutex_unlock(&semaforoLog);
+
+			pthread_mutex_lock(&semaforoLog);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
+			pthread_mutex_unlock(&semaforoLog);
 
 			if(0 == strcmp(bufferRespuesta,"1")){//supuestamente no hay razon para que esta operacion falle, pero la memoria me va a mandar un 1 si se hizo todo bien
 				char* resultado = string_new();
@@ -582,7 +646,9 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 			string_append(&respuestaParaElLogDelPlanificador, obtenerSubBuffer(resultados));
 
+			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socketPlanificador,respuestaParaElLogDelPlanificador,strlen(respuestaParaElLogDelPlanificador),YO);
+			pthread_mutex_unlock(&semaforoLog);
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: finalizar EJECUTADA PID: %d RESULTADO: %s",procesoAEjecutar->pid,instruccion->resultado);

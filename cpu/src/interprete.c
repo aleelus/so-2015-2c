@@ -499,7 +499,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				}
 			}
 
-			char* contenidoEscrito = calloc(instruccion->sizeDelTexto + cantidadDeBarraCeros * 2,sizeof(char));
+			char* contenidoEscrito = calloc(instruccion->sizeDelTexto + cantidadDeBarraCeros + 1,sizeof(char));
 
 			int z =0;
 

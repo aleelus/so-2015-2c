@@ -367,18 +367,26 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			contenidoLeido = memcpy(contenidoLeido,bufferRespuesta,sizeDeLaRespuesta);//TODO esto tampoco puede estar ya que el append de abajo appendea mal
 			//TODO hacer una funcion que cuente los barra ceros para despues saber de cuanto hacer el malloc de lo de abajo para que no de error de valgrind y se vea lindo en el log
 			//TODO esto de aca abajo de esta dando error de valgrind
-			/*
-			char* contenidoLeido = calloc(sizeDeLaRespuesta*2,sizeof(char));
 
-			int z =0;
+			int z = 0;
+			int cantidadDeBarraCeros = 0;
 
-			for(z=0; z<sizeDeLaRespuesta ;z++){//lo hago para escribirlo en el log
-				if(bufferRespuesta[z]!='\0'){
-					strncat(contenidoLeido,&bufferRespuesta[z],1);
-				}else{
-					strncat(contenidoLeido,"\\0",2);
+			for(z=0;z<sizeDeLaRespuesta;z++){
+				if(contenidoLeido[z] == '\0'){
+					cantidadDeBarraCeros++;
 				}
-			}*/
+			}
+
+			char* contenidoLeidoConBarraCerosChar = calloc(sizeDeLaRespuesta + cantidadDeBarraCeros * 2,sizeof(char));
+			int d = 0;
+
+			for(d=0; d<sizeDeLaRespuesta ;d++){//lo hago para escribirlo en el log
+				if(contenidoLeido[d]!='\0'){
+					strncat(contenidoLeidoConBarraCerosChar,&contenidoLeido[d],1);
+				}else{
+					strncat(contenidoLeidoConBarraCerosChar,"\\0",2);
+				}
+			}
 
 			char* resultado = string_new();
 			string_append(&resultado,"mProc ");
@@ -388,7 +396,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			string_append(&resultado,instruccion->parametro);
 			string_append(&resultado," ");
 			string_append(&resultado,"leida: ");
-			string_append(&resultado,contenidoLeido);
+			string_append(&resultado,contenidoLeidoConBarraCerosChar);
 			string_append(&resultado,"\n");
 
 			instruccion->resultado = resultado;
@@ -397,6 +405,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 			pthread_mutex_unlock(&semaforoLog);
 
+			free(contenidoLeidoConBarraCerosChar);
 			free(buffer);
 			free(contenidoLeido);
 			sleep(g_Retardo);//lo pide el enunciado u_u
@@ -480,12 +489,21 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			}
 
 			//Me llega solo el contenido
-			//char* contenidoEscrito = strdup(bufferRespuesta);//TODO algo se cambio del lado de la memoria?, ahora la memoria esta retornando el "1" en lugar del "hola" :S
-			char* contenidoEscrito = calloc(instruccion->sizeDelTexto + 2,sizeof(char));
+			//char* contenidoEscrito = strdup(bufferRespuesta);
+			int cantidadDeBarraCeros = 0;
+
+			int c = 0;
+			for(c=0;c<instruccion->sizeDelTexto;c++){
+				if(bufferRespuesta[c] == '\0'){
+					cantidadDeBarraCeros++;
+				}
+			}
+
+			char* contenidoEscrito = calloc(instruccion->sizeDelTexto + cantidadDeBarraCeros * 2,sizeof(char));
 
 			int z =0;
 
-			for(z=0; z<instruccion->sizeDelTexto ;z++){//lo hago para escribirlo en el log
+			for(z=0; z<instruccion->sizeDelTexto ;z++){//lo hago para escribirlo en el log, TODO hacer lo de contar barra ceros para que el calloc sea el correcto
 					if(bufferRespuesta[z]!='\0'){
 						strncat(contenidoEscrito,&bufferRespuesta[z],1);
 							}else{

@@ -61,6 +61,8 @@ extern t_list* procesos;
 
 extern sem_t semListaDeProcesos;
 
+extern pthread_mutex_t semaforoLog;
+
 int* socketsDeLosHilosDeCpuDelPlanificador;//cada CPU se va a conectar con el planificador por un socket distinto,
 										   //la posicion del vector es = al idCPU
 
@@ -266,7 +268,9 @@ void escucharPlanificador(){
 	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
 	path = strdup(bufferRespuesta);
 
+	pthread_mutex_lock(&semaforoLog);
 	log_info(logger,"CONTEXTO DE EJECUCION RECIBIDO idCPU: %d PID: %d IP: %d QUANTUM: %d PATH: %s",idCPU, pId, ip, cantInstr, path);
+	pthread_mutex_unlock(&semaforoLog);
 
 	free(bufferRespuesta);
 	free(buffer);
@@ -276,7 +280,6 @@ void escucharPlanificador(){
 		ejecutarMProc(path,pId,ip);
 	}else{
 		//es RR!
-		//TODO, es agregar un flag, y contar el quantum para cortar (ejecutar hasta que cantInstr == i (del for de instrucciones ejecutadas))
 		esRR = 1;
 
 		quantum = cantInstr;

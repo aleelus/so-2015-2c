@@ -130,6 +130,7 @@ t_list* lista_tlb;
 //mProc
 typedef struct {
 	int pid;
+	int cantMarcosPorProceso;
 	t_list* paginas;
 } t_mProc;
 
@@ -137,7 +138,7 @@ t_list* lista_mProc;
 
 //Memoria Principal
 typedef struct {
-	int marco;
+	int pag;
 	int bitModificado; //Algoritmo
 	int bitUso;	       //Algoritmo
 	int marcoEnUso;   // Interno Nuestro

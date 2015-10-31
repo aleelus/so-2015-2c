@@ -184,7 +184,7 @@ void iniciarListamProc(){
 void iniciarMemoriaPrincipal(){
 	int i;
 	printf("Cantidad Marcos Seteados en MP:%d\n",g_Cantidad_Marcos);
-	if(g_Cantidad_Marcos>0) a_Memoria = malloc(sizeof(t_mp)*g_Cantidad_Marcos);
+	if(g_Cantidad_Marcos>0) a_Memoria = (t_mp*)malloc(sizeof(t_mp)*g_Cantidad_Marcos);
 
 	if(!strcmp(g_Algoritmo,"LRU")){
 
@@ -193,7 +193,8 @@ void iniciarMemoriaPrincipal(){
 	}
 	if(g_Cantidad_Marcos>0){
 		for(i=0;i<g_Cantidad_Marcos;i++){
-			a_Memoria[i].marco = -1;
+			a_Memoria[i].pid= -1;
+			a_Memoria[i].pag = -1;
 			a_Memoria[i].bitModificado = 0;
 			a_Memoria[i].bitUso = 0;
 			a_Memoria[i].contenido = malloc(g_Tamanio_Marco);
@@ -398,6 +399,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 	cantidadPaginas=atoi(bufferAux);
 
 	mProc->paginas=list_create();
+	mProc->cantMarcosPorProceso=0;
 	for(i=0;i<cantidadPaginas;i++){
 		pagina=malloc(sizeof(t_pagina));
 		pagina->bitMP=-1;
@@ -605,7 +607,8 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 					pagina->marco = marco;
 					pagina->bitMP=1;
 					a_Memoria[pagina->marco].marcoEnUso=1;
-					a_Memoria[pagina->marco].marco=nroPagina;// HAY Q VER ESTA LINEA
+					a_Memoria[pagina->marco].pag=nroPagina;// HAY Q VER ESTA LINEA
+					a_Memoria[pagina->marco].pid=pid;
 					if(!strcmp(g_Algoritmo,"LRU")){
 						lru = malloc(sizeof(t_lru));
 						lru->pagina=nroPagina;
@@ -713,7 +716,7 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 		j=0;
 		while(j<list_size(mProc->paginas)){
 			unaPagina = list_get(mProc->paginas,j);
-			//a_Memoria[pagina->marco].marco=nroPagina;// HAY Q VER ESTA LINEA
+			//a_Memoria[pagina->marco].pag=nroPagina;// HAY Q VER ESTA LINEA
 			if(unaPagina->marco==marco){
 				*pid = mProc->pid;
 				*pagina = unaPagina->pagina;
@@ -742,7 +745,7 @@ void actualizarTablaPagina(int pid,int pagina){
 		if(mProc->pid == pid){
 			while(j<list_size(mProc->paginas)){
 				unaPagina = list_get(mProc->paginas,j);
-				//a_Memoria[pagina->marco].marco=nroPagina;// HAY Q VER ESTA LINEA
+				//a_Memoria[pagina->marco].pag=nroPagina;// HAY Q VER ESTA LINEA
 				if(unaPagina->pagina==pagina){
 					unaPagina->bitMP = 0;
 					unaPagina->marco = -1;
@@ -756,36 +759,113 @@ void actualizarTablaPagina(int pid,int pagina){
 	}
 }
 
-int FIFO(int *marco, int pid){
+int contarMarcosPorProceso(int pid){
+
+	t_mProc *mProc;
 	int i=0;
-	int pidi, pagina;
-	int valido=0;
-	while(i<g_Cantidad_Marcos){
-		if(a_Memoria[i].pid==pid){
-			if(a_Memoria[i].bitPuntero == 1){
-				if(a_Memoria[i].marco >= 0){
-					funcionBuscarPidPagina(i,&pidi,&pagina);
-					pagina=a_Memoria[i].marco;
-					valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
-					if(valido) actualizarTablaPagina(pidi,pagina);
-					memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-					*marco=i;
-				} else {
-					//printf("la i:%d\n",i);
-					*marco = i;
-				}
-				a_Memoria[i].bitPuntero = 0;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-				i=g_Cantidad_Marcos;
-			}
-		}
-		//printf("%d %d\n",i,g_Cantidad_Marcos);
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid)
+			return mProc->cantMarcosPorProceso;
+
 		i++;
 	}
+
+	return -1;
+
+}
+
+void actualizarCantidadMarcosPorProceso(int pid){
+
+	t_mProc *mProc;
+	int i=0;
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+
+		if(mProc->pid==pid){
+			mProc->cantMarcosPorProceso++;
+			return;
+		}
+
+		i++;
+	}
+
+
+}
+
+int FIFO(int *marco, int pid){
+	int i=0,k=0;
+	int pidi, pagina;
+	int valido=0;
+	int bandera=0;
+	int cantMarcosPorProceso=-1;
+
+	cantMarcosPorProceso = contarMarcosPorProceso(pid);
+
+
+
+	i=0;
+	while(i<g_Cantidad_Marcos){
+
+		if(a_Memoria[i].pag<0 && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
+			*marco=i;
+			actualizarCantidadMarcosPorProceso(pid);
+			bandera=1;
+			i=g_Cantidad_Marcos;
+		}
+		i++;
+	}
+
+
+	if(!bandera){
+		i=0;
+		while(i<g_Cantidad_Marcos){
+			if(a_Memoria[i].pid==pid ){
+				if(a_Memoria[i].bitPuntero == 1){
+					if(a_Memoria[i].pag >= 0){
+						funcionBuscarPidPagina(i,&pidi,&pagina);
+						pagina=a_Memoria[i].pag;
+						valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+						if(valido) actualizarTablaPagina(pidi,pagina);
+						memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+						*marco=i;
+					} else {
+
+						// HAY Q VER ESTE ELSE XQ CREO Q NO VA A ENTRAR NUNCA MAS CON LO DE ARRIBA
+						*marco = i;
+					}
+					a_Memoria[i].bitPuntero = 0;
+					bandera=1;
+					if(i==g_Cantidad_Marcos-1){
+						k=0;
+						while(k<g_Cantidad_Marcos){
+							if(a_Memoria[k].pid==pid)
+								a_Memoria[k].bitPuntero = 1;
+							k++;
+						}
+
+					} else {
+
+						k=i+1;
+						while(k<g_Cantidad_Marcos){
+							if(a_Memoria[k].pid==pid)
+								a_Memoria[k].bitPuntero = 1;
+							k++;
+						}
+
+					}
+					i=g_Cantidad_Marcos;
+				}
+			}
+			//printf("%d %d\n",i,g_Cantidad_Marcos);
+
+			i++;
+		}
+	}
+
+
 	//printf("SALIO\n");
 	return valido;
 }
@@ -916,7 +996,7 @@ int primeraPasada(){
 
 	while(i<g_Cantidad_Marcos){
 
-		if(a_Memoria[i].marco<0){
+		if(a_Memoria[i].pag<0){
 			return i;
 		}
 
@@ -961,7 +1041,7 @@ void LRU(int *marco, int pid){
 							lru=list_get(lista_lru,k);
 							if(lru-> pid == pid){
 
-								if(lru->pagina!=a_Memoria[pagina->marco].marco){
+								if(lru->pagina!=a_Memoria[pagina->marco].pag){
 									cont++;
 								}
 
@@ -1273,7 +1353,7 @@ int eliminarProceso(int pid){
 				if(pagina->bitMP == 1){
 
 					a_Memoria[pagina->marco].marcoEnUso=0;
-					a_Memoria[pagina->marco].marco = -1;
+					a_Memoria[pagina->marco].pag = -1;
 					memset(a_Memoria[pagina->marco].contenido,0,g_Tamanio_Marco);
 				}
 

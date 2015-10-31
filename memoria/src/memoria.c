@@ -1020,9 +1020,9 @@ void LRU(int *marco, int pid){
 
 	//ASIGNACION FIJA Y REEMPLAZO LOCAL
 
-	int i=0,j=0,k=0,contLRU=0;
+	int i=0,j=0,k=0,contLRU=0,valido=-1;
 	int cont=0,maximo=-1;
-	int marquito;
+	int marquito,pag=-1;
 	t_lru *lru;
 	t_mProc *mProc;
 	t_pagina *pagina;
@@ -1067,7 +1067,9 @@ void LRU(int *marco, int pid){
 					}
 					if(cont>maximo){
 
+
 						maximo=cont;
+						pag= pagina->pagina;
 						*marco=pagina->marco;
 
 					}
@@ -1077,6 +1079,13 @@ void LRU(int *marco, int pid){
 			}
 			i++;
 		}
+
+		if(a_Memoria[*marco].pag >= 0){//siempre va a entrar creo
+			valido=grabarContenidoASwap(pid,pag,a_Memoria[*marco].contenido);
+			if(valido) actualizarTablaPagina(pid,pag);
+			memset(a_Memoria[*marco].contenido,0,g_Tamanio_Marco);
+		}
+
 
 	}else{
 

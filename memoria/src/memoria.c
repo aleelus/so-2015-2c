@@ -990,16 +990,21 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	}
 }
 
-int primeraPasada(){
+int primeraPasada(int pid){
 
+
+	int cantMarcosPorProceso=-1;
 	int i=0;
+
+	cantMarcosPorProceso = contarMarcosPorProceso(pid);
 
 	while(i<g_Cantidad_Marcos){
 
-		if(a_Memoria[i].pag<0){
+		if(a_Memoria[i].pag<0 && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
+			actualizarCantidadMarcosPorProceso(pid);
+
 			return i;
 		}
-
 		i++;
 	}
 
@@ -1022,7 +1027,7 @@ void LRU(int *marco, int pid){
 	t_mProc *mProc;
 	t_pagina *pagina;
 
-	marquito=primeraPasada();
+	marquito=primeraPasada(pid);
 	if(marquito==-1){
 
 		while(i<list_size(lista_mProc)){
@@ -1035,28 +1040,30 @@ void LRU(int *marco, int pid){
 
 					cont=0;
 					contLRU=0;
-					for(k=list_size(lista_lru)-1;k>=0;k--){
+					if(pagina->bitMP == 1){
+						for(k=list_size(lista_lru)-1;k>=0;k--){
 
-						if(contLRU<g_Cantidad_Marcos){
-							lru=list_get(lista_lru,k);
-							if(lru-> pid == pid){
+							if(contLRU<g_Cantidad_Marcos){
+								lru=list_get(lista_lru,k);
+								if(lru-> pid == pid && a_Memoria[pagina->marco].pid == pid){
 
-								if(lru->pagina!=a_Memoria[pagina->marco].pag){
-									cont++;
+									if(lru->pagina!=a_Memoria[pagina->marco].pag){
+										cont++;
+									}
+
+								}
+							}else{
+
+								while(list_size(lista_lru)>g_Cantidad_Marcos){
+									lru=list_remove(lista_lru,0);
+									free(lru);
 								}
 
-							}
-						}else{
 
-							while(list_size(lista_lru)>g_Cantidad_Marcos){
-								lru=list_remove(lista_lru,0);
-								free(lru);
 							}
-
+							contLRU++;
 
 						}
-						contLRU++;
-
 					}
 					if(cont>maximo){
 

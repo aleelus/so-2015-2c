@@ -80,7 +80,7 @@ void bajarMarcosASwapYLimpiarMP(){
 	int i=0,pid,pagina;
 	while(i<g_Cantidad_Marcos){
 		if(a_Memoria[i].bitModificado==1){
-			funcionBuscarPidPagina(a_Memoria[i].marco,&pid,&pagina);
+			funcionBuscarPidPagina(i,&pid,&pagina);
 			grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
 		}
 		memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
@@ -756,30 +756,32 @@ void actualizarTablaPagina(int pid,int pagina){
 	}
 }
 
-int FIFO(int *marco){
+int FIFO(int *marco, int pid){
 	int i=0;
-	int pid, pagina;
+	int pidi, pagina;
 	int valido=0;
 	while(i<g_Cantidad_Marcos){
-		if(a_Memoria[i].bitPuntero == 1){
-			if(a_Memoria[i].marco >= 0){
-				funcionBuscarPidPagina(i,&pid,&pagina);
-				pagina=a_Memoria[i].marco;
-				valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
-				if(valido) actualizarTablaPagina(pid,pagina);
-				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-				*marco=i;
-			} else {
-				//printf("la i:%d\n",i);
-				*marco = i;
+		if(a_Memoria[i].pid==pid){
+			if(a_Memoria[i].bitPuntero == 1){
+				if(a_Memoria[i].marco >= 0){
+					funcionBuscarPidPagina(i,&pidi,&pagina);
+					pagina=a_Memoria[i].marco;
+					valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+					if(valido) actualizarTablaPagina(pidi,pagina);
+					memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
+					*marco=i;
+				} else {
+					//printf("la i:%d\n",i);
+					*marco = i;
+				}
+				a_Memoria[i].bitPuntero = 0;
+				if(i==g_Cantidad_Marcos-1){
+					a_Memoria[0].bitPuntero = 1;
+				} else {
+					a_Memoria[i+1].bitPuntero = 1;
+				}
+				i=g_Cantidad_Marcos;
 			}
-			a_Memoria[i].bitPuntero = 0;
-			if(i==g_Cantidad_Marcos-1){
-				a_Memoria[0].bitPuntero = 1;
-			} else {
-				a_Memoria[i+1].bitPuntero = 1;
-			}
-			i=g_Cantidad_Marcos;
 		}
 		//printf("%d %d\n",i,g_Cantidad_Marcos);
 		i++;
@@ -800,7 +802,7 @@ void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
 					a_Memoria[i+1].bitPuntero = 1;
 				}
 			} else if(a_Memoria[i].bitUso == 0){
-				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				funcionBuscarPidPagina(i,pid,pagina);
 				*contenido = a_Memoria[i].contenido;
 				grabarContenidoASwap(*pid,*pagina,*contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
@@ -828,7 +830,7 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	while(i<g_Cantidad_Marcos){
 		if(a_Memoria[i].bitPuntero == 1){
 			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 0){
-				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				funcionBuscarPidPagina(i,pid,pagina);
 				*contenido = a_Memoria[i].contenido;
 				grabarContenidoASwap(*pid,*pagina,*contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
@@ -855,7 +857,7 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	while(i<g_Cantidad_Marcos&&!bandera){
 		if(a_Memoria[i].bitPuntero == 1){
 			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 1){
-				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				funcionBuscarPidPagina(i,pid,pagina);
 				*contenido = a_Memoria[i].contenido;
 				grabarContenidoASwap(*pid,*pagina,*contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
@@ -883,7 +885,7 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	while(i<g_Cantidad_Marcos&&!bandera){
 		if(a_Memoria[i].bitPuntero == 1){
 			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 0){
-				funcionBuscarPidPagina(a_Memoria[i].marco,pid,pagina);
+				funcionBuscarPidPagina(i,pid,pagina);
 				*contenido = a_Memoria[i].contenido;
 				grabarContenidoASwap(*pid,*pagina,*contenido);
 				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
@@ -1007,7 +1009,7 @@ void hayLugarEnMPSinoLoHago(int* marco,int pid){
 	int pidi,pagina;
 	char* contenido;
 	if(!strcmp(g_Algoritmo,"FIFO")){
-		FIFO(marco);
+		FIFO(marco,pid);
 	}else if(!strcmp(g_Algoritmo,"LRU")){
 		LRU(marco,pid);
 	}else if (!strcmp(g_Algoritmo,"CLOCK")){

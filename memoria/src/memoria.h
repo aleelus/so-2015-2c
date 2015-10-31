@@ -142,6 +142,7 @@ typedef struct {
 	int bitUso;	       //Algoritmo
 	int marcoEnUso;   // Interno Nuestro
 	int bitPuntero;
+	int pid;
 	char* contenido;
 } t_mp;
 

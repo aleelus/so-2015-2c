@@ -22,6 +22,8 @@
 #include <signal.h>
 
 #define COLOR_VERDE   "\x1b[32m"
+#define COLOR_CYAN "\x1b[36m"
+#define COLOR_MAGENTA "\x1b[35m"
 #define DEFAULT   "\x1b[0m"
 #define YO	"3"
 

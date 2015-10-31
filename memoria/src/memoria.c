@@ -26,6 +26,7 @@ int main(void) {
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
 
+	//Adentro de IniciarTLB muestra el seteo del archivo de configuracion
 	iniciarTLB();
 
 	iniciarListamProc();
@@ -183,7 +184,7 @@ void iniciarListamProc(){
 
 void iniciarMemoriaPrincipal(){
 	int i;
-	printf("Cantidad Marcos Seteados en MP:%d\n",g_Cantidad_Marcos);
+
 	if(g_Cantidad_Marcos>0) a_Memoria = (t_mp*)malloc(sizeof(t_mp)*g_Cantidad_Marcos);
 
 	if(!strcmp(g_Algoritmo,"LRU")){
@@ -206,9 +207,11 @@ void iniciarMemoriaPrincipal(){
 }
 
 void iniciarTLB(){
+	printf(COLOR_CYAN"\t SETEO\n"DEFAULT);
+
 	lista_tlb = list_create();
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		printf("TLB Habilitada - Entradas:%d\n",g_Entradas_TLB);
+		printf("*"COLOR_CYAN" TLB Habilitada - Entradas:%d\n"DEFAULT,g_Entradas_TLB);
 		int i;
 		for(i=0;i<g_Entradas_TLB;i++){
 			t_tlb* tlb = malloc(sizeof(t_tlb));
@@ -218,8 +221,13 @@ void iniciarTLB(){
 			list_add(lista_tlb,tlb);
 		}
 	} else {
-		printf("TLB No Habilitada\n");
+		printf(COLOR_CYAN"* TLB No Habilitada\n"DEFAULT);
 	}
+	printf("*"COLOR_CYAN" Algoritmo ultilizado: %s\n"DEFAULT,g_Algoritmo);
+	printf("*"COLOR_CYAN" Maximo marcos por proceso: %d\n"DEFAULT,g_Maximo_Marcos_Por_Proceso);
+	printf("*"COLOR_CYAN" Cantidad de marcos: %d\n"DEFAULT,g_Cantidad_Marcos);
+	printf("*"COLOR_CYAN" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
+	printf("*"COLOR_CYAN" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
 }
 
 void HiloOrquestadorDeConexiones() {

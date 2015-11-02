@@ -65,7 +65,7 @@ void vaciarTLB(){
 	t_tlb* tlb;
 	int i = 0;
 
-	sem_wait(&semTLB);
+	pthread_mutex_lock(&semTELEBE);
 	while(i<list_size(lista_tlb)){
 		tlb = list_get(lista_tlb,i);
 		tlb->marco = -1;
@@ -73,7 +73,7 @@ void vaciarTLB(){
 		tlb->pid = -1;
 		i++;
 	}
-	sem_post(&semTLB);
+	pthread_mutex_unlock(&semTELEBE);
 
 }
 
@@ -181,7 +181,9 @@ void Seniales(){
 }
 
 void iniciarListamProc(){
+	pthread_mutex_lock(&semListaMproc);
 	lista_mProc = list_create();
+	pthread_mutex_unlock(&semListaMproc);
 }
 
 void iniciarMemoriaPrincipal(){
@@ -215,6 +217,8 @@ void iniciarMemoriaPrincipal(){
 }
 
 void iniciarTLB(){
+	pthread_mutex_lock(&semTELEBE);
+
 	printf(COLOR_CYAN"\t SETEO\n"DEFAULT);
 
 	lista_tlb = list_create();
@@ -236,6 +240,8 @@ void iniciarTLB(){
 	printf("*"COLOR_CYAN" Cantidad de marcos: %d\n"DEFAULT,g_Cantidad_Marcos);
 	printf("*"COLOR_CYAN" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
 	printf("*"COLOR_CYAN" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
+
+	pthread_mutex_unlock(&semTELEBE);
 }
 
 void HiloOrquestadorDeConexiones() {
@@ -429,7 +435,10 @@ void implementoIniciarCpu(int socket,char *buffer){
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
 		//Agrego nuevo proceso a la lista
+		pthread_mutex_lock(&semListaMproc);
 		list_add(lista_mProc,mProc);
+		pthread_mutex_unlock(&semListaMproc);
+
 		string_append(&bufferRespuestaCPU,"1");
 		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
 
@@ -451,18 +460,20 @@ int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
 	t_tlb *telebe;
 	int j=0;
 
-
+	pthread_mutex_lock(&semTELEBE);
 	if(list_size(lista_tlb)>0){
 		for(j=0;j<g_Entradas_TLB;j++){
 			telebe=list_get(lista_tlb,j);
 			if(telebe->pid == pid && telebe->pagina==nroPagina){
 				*marco = telebe->marco;
 				printf(" Pid:%d Pagina:%d se encuentra en TLB\n",pid,nroPagina);
+				pthread_mutex_unlock(&semTELEBE);
 				return 1;
 			}
 		}
 	}
 	printf("Pid:%d Pagina:%d No se encuentra en TLB\n",pid,nroPagina);
+	pthread_mutex_unlock(&semTELEBE);
 	return 0;
 
 
@@ -518,6 +529,7 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 	t_pagina *pagina;
 	int i=0,j=0;
 
+	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
@@ -529,6 +541,7 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 
 				if(pagina->pagina==nroPagina && pagina->bitMP==1){
 					*marco = pagina->marco;
+					pthread_mutex_unlock(&semListaMproc);
 					return 1;
 
 				}
@@ -537,6 +550,8 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 		}
 		i++;
 	}
+
+	pthread_mutex_unlock(&semListaMproc);
 
 	return 0;
 
@@ -613,6 +628,7 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 	int i=0,j=0;
 
 	pthread_mutex_lock(&semMemPrincipal);
+	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -641,6 +657,7 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 		}
 		i++;
 	}
+	pthread_mutex_unlock(&semListaMproc);
 	pthread_mutex_unlock(&semMemPrincipal);
 
 }
@@ -654,7 +671,7 @@ void actualizarTLB(int pid,int nroPagina){
 	int i=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
 	int contAgrego=0,posActual=nroPagina,bandera=0,contPag=0;
 
-
+	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -671,14 +688,14 @@ void actualizarTLB(int pid,int nroPagina){
 
 					if(pagina->bitMP==1 && contAgrego<entradasTLB){
 
-						sem_wait(&semTLB);
+						pthread_mutex_lock(&semTELEBE);
 						telebe = list_get(lista_tlb,contAgrego);
 
 						telebe->pid=pid;
 						telebe->pagina=posActual;
 						telebe->marco=pagina->marco;
 
-						sem_post(&semTLB);
+						pthread_mutex_unlock(&semTELEBE);
 						contAgrego++;
 
 					}
@@ -702,12 +719,17 @@ void actualizarTLB(int pid,int nroPagina){
 		i++;
 	}
 
+	pthread_mutex_unlock(&semListaMproc);
+
 }
 
 void funcionLimpiarTablasPaginas(){
 	t_mProc* mProc;
 	t_pagina* unaPagina;
 	int i=0,j;
+
+	pthread_mutex_lock(&semListaMproc);
+
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 		j=0;
@@ -719,6 +741,9 @@ void funcionLimpiarTablasPaginas(){
 		}
 		i++;
 	}
+
+	pthread_mutex_unlock(&semListaMproc);
+
 }
 
 
@@ -730,6 +755,9 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 
 	int i=0,j;
 	*pid=-1;
+
+	pthread_mutex_lock(&semListaMproc);
+
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 		j=0;
@@ -746,6 +774,9 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 		}
 		i++;
 	}
+
+	pthread_mutex_unlock(&semListaMproc);
+
 	if(*pid==-1){
 		printf("C:%d\n",*pid);
 		//abort();
@@ -757,6 +788,8 @@ void actualizarTablaPagina(int pid,int pagina){
 	t_pagina* unaPagina;
 
 	int i=0,j;
+
+	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -776,20 +809,30 @@ void actualizarTablaPagina(int pid,int pagina){
 		}
 		i++;
 	}
+
+	pthread_mutex_unlock(&semListaMproc);
 }
 
 int contarMarcosPorProceso(int pid){
 
 	t_mProc *mProc;
-	int i=0;
+	int i=0,aux=0;
+
+	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 		if(mProc->pid==pid)
-			return mProc->cantMarcosPorProceso;
+
+			aux=mProc->cantMarcosPorProceso;
+			pthread_mutex_unlock(&semListaMproc);
+
+			return aux;
 
 		i++;
 	}
+
+	pthread_mutex_unlock(&semListaMproc);
 
 	return -1;
 
@@ -800,17 +843,21 @@ void actualizarCantidadMarcosPorProceso(int pid){
 	t_mProc *mProc;
 	int i=0;
 
+	pthread_mutex_lock(&semListaMproc);
+
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 
 		if(mProc->pid==pid){
 			mProc->cantMarcosPorProceso++;
+			pthread_mutex_unlock(&semListaMproc);
 			return;
 		}
 
 		i++;
 	}
 
+	pthread_mutex_unlock(&semListaMproc);
 
 }
 
@@ -1046,6 +1093,8 @@ void LRU(int *marco, int pid){
 	t_mProc *mProc;
 	t_pagina *pagina;
 
+	pthread_mutex_lock(&semListaMproc);
+
 	marquito=primeraPasada(pid);
 	if(marquito==-1){
 
@@ -1113,6 +1162,7 @@ void LRU(int *marco, int pid){
 	}
 
 
+	pthread_mutex_unlock(&semListaMproc);
 
 
 
@@ -1262,6 +1312,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 void imprimirTLB(){
 	int i=0;
 	t_tlb* tlb;
+	pthread_mutex_lock(&semTELEBE);
 	if(!strcmp(g_TLB_Habilitada,"SI")){
 		printf("*********************************\n");
 		printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
@@ -1273,6 +1324,7 @@ void imprimirTLB(){
 		}
 		printf("*********************************\n");
 	}
+	pthread_mutex_unlock(&semTELEBE);
 }
 
 void implementoLeerCpu(int socket,char *buffer){
@@ -1381,6 +1433,8 @@ int eliminarProceso(int pid){
 	t_pagina *pagina;
 	int i=0;
 
+	pthread_mutex_lock(&semListaMproc);
+
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 
@@ -1405,11 +1459,13 @@ int eliminarProceso(int pid){
 			if(eliminarDeSwap(pid)){
 
 				//Se elimino con exito
+				pthread_mutex_unlock(&semListaMproc);
 				return 1;
 
 			}else{
 
 				//No se elimino un carajo
+				pthread_mutex_unlock(&semListaMproc);
 				return 0;
 
 			}
@@ -1427,6 +1483,7 @@ void eliminarDeLaTlbEnFinalizar(int pid){
 
 	t_tlb *tlb;
 	int i=0;
+	pthread_mutex_lock(&semTELEBE);
 
 	while(i<list_size(lista_tlb)){
 
@@ -1439,6 +1496,8 @@ void eliminarDeLaTlbEnFinalizar(int pid){
 		}
 		i++;
 	}
+
+	pthread_mutex_unlock(&semTELEBE);
 
 }
 

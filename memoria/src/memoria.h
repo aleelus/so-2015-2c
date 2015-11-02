@@ -36,7 +36,8 @@
 
 sem_t semTLB,semMP,semSwap,semLog;
 
-pthread_mutex_t semMemPrincipal = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t semMemPrincipal = PTHREAD_MUTEX_INITIALIZER, semTELEBE = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t semListaMproc = PTHREAD_MUTEX_INITIALIZER;;
 
 // CONSTANTES //
 //Ruta del config

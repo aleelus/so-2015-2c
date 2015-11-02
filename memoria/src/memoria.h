@@ -36,6 +36,8 @@
 
 sem_t semTLB,semMP,semSwap,semLog;
 
+pthread_mutex_t semMemPrincipal = PTHREAD_MUTEX_INITIALIZER;
+
 // CONSTANTES //
 //Ruta del config
 #define PATH_CONFIG "config.cfg"

@@ -79,6 +79,7 @@ void vaciarTLB(){
 
 void bajarMarcosASwapYLimpiarMP(){
 	int i=0,pid,pagina;
+	pthread_mutex_lock(&semMemPrincipal);
 	while(i<g_Cantidad_Marcos){
 		if(a_Memoria[i].bitModificado==1){
 			funcionBuscarPidPagina(i,&pid,&pagina);
@@ -91,6 +92,7 @@ void bajarMarcosASwapYLimpiarMP(){
 		a_Memoria[i].marcoEnUso=0;
 		i++;
 	}
+	pthread_mutex_unlock(&semMemPrincipal);
 }
 
 int Dump()
@@ -185,7 +187,11 @@ void iniciarListamProc(){
 void iniciarMemoriaPrincipal(){
 	int i;
 
-	if(g_Cantidad_Marcos>0) a_Memoria = (t_mp*)malloc(sizeof(t_mp)*g_Cantidad_Marcos);
+	if(g_Cantidad_Marcos>0){
+		pthread_mutex_lock(&semMemPrincipal);
+		a_Memoria = (t_mp*)malloc(sizeof(t_mp)*g_Cantidad_Marcos);
+		pthread_mutex_unlock(&semMemPrincipal);
+	}
 
 	if(!strcmp(g_Algoritmo,"LRU")){
 
@@ -193,6 +199,7 @@ void iniciarMemoriaPrincipal(){
 
 	}
 	if(g_Cantidad_Marcos>0){
+		pthread_mutex_lock(&semMemPrincipal);
 		for(i=0;i<g_Cantidad_Marcos;i++){
 			a_Memoria[i].pid= -1;
 			a_Memoria[i].pag = -1;
@@ -203,6 +210,7 @@ void iniciarMemoriaPrincipal(){
 			memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 		}
 		a_Memoria[0].bitPuntero = 1;
+		pthread_mutex_unlock(&semMemPrincipal);
 	}
 }
 
@@ -604,6 +612,8 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 	t_lru *lru;
 	int i=0,j=0;
 
+	pthread_mutex_lock(&semMemPrincipal);
+
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
 
@@ -631,6 +641,7 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 		}
 		i++;
 	}
+	pthread_mutex_unlock(&semMemPrincipal);
 
 }
 
@@ -1113,9 +1124,13 @@ void hayLugarEnMPSinoLoHago(int* marco,int pid){
 	int pidi,pagina;
 	char* contenido;
 	if(!strcmp(g_Algoritmo,"FIFO")){
+		pthread_mutex_lock(&semMemPrincipal);
 		FIFO(marco,pid);
+		pthread_mutex_unlock(&semMemPrincipal);
 	}else if(!strcmp(g_Algoritmo,"LRU")){
+		pthread_mutex_lock(&semMemPrincipal);
 		LRU(marco,pid);
+		pthread_mutex_unlock(&semMemPrincipal);
 	}else if (!strcmp(g_Algoritmo,"CLOCK")){
 		CLOCK(marco,&pagina,&pidi,&contenido);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
@@ -1288,7 +1303,9 @@ void implementoLeerCpu(int socket,char *buffer){
 
 			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 				//Encontro la pagina en la tabla de paginas
+				pthread_mutex_lock(&semMemPrincipal);
 				contenido=buscarEnMemoriaPrincipal(marco);
+				pthread_mutex_unlock(&semMemPrincipal);
 			}else{
 				//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 				contenido=pedirContenidoASwap(pid,nroPagina);

@@ -125,6 +125,8 @@ typedef struct {
 	int marco;
 	int bitMP;
 	int bitPuntero;
+	int bitModificado;
+	int bitUso;
 } t_pagina;
 
 //TLB
@@ -152,10 +154,7 @@ t_list* lista_mProc;
 //Memoria Principal
 typedef struct {
 	int pag;
-	int bitModificado; //Algoritmo
-	int bitUso;	       //Algoritmo
-	int marcoEnUso;   // Interno Nuestro
-	int bitPuntero;
+	int marcoEnUso;
 	int pid;
 	char* contenido;
 } t_mp;

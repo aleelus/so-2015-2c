@@ -80,20 +80,41 @@ void vaciarTLB(){
 }
 
 void bajarMarcosASwapYLimpiarMP(){
-	int i=0,pid,pagina;
+	int i=0,k=0;
+	t_mProc *mProc;
+	t_pagina *pagina;
+
+
 	pthread_mutex_lock(&semMemPrincipal);
-	while(i<g_Cantidad_Marcos){
-		if(a_Memoria[i].bitModificado==1){
-			funcionBuscarPidPagina(i,&pid,&pagina);
-			grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
+	pthread_mutex_lock(&semListaMproc);
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+
+		k=0;
+		while(k<list_size(mProc->paginas)){
+			pagina = list_get(mProc->paginas,k);
+
+			if(pagina->bitModificado==1){
+
+				grabarContenidoASwap(mProc->pid,pagina->pagina,a_Memoria[pagina->marco].contenido);
+
+			}
+			memset(a_Memoria[pagina->marco].contenido,0,g_Tamanio_Marco);
+			a_Memoria[pagina->marco].pag=-1;
+			a_Memoria[pagina->marco].pid=-1;
+			pagina->bitModificado=0;
+			pagina->bitPuntero=0;
+			pagina->bitUso=0;
+			pagina->bitMP=0;
+
+			k++;
 		}
-		memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-		a_Memoria[i].bitModificado=0;
-		a_Memoria[i].bitPuntero=0;
-		a_Memoria[i].bitUso=0;
-		a_Memoria[i].marcoEnUso=0;
 		i++;
 	}
+
+
+	pthread_mutex_unlock(&semListaMproc);
 	pthread_mutex_unlock(&semMemPrincipal);
 }
 
@@ -207,13 +228,10 @@ void iniciarMemoriaPrincipal(){
 		for(i=0;i<g_Cantidad_Marcos;i++){
 			a_Memoria[i].pid= -1;
 			a_Memoria[i].pag = -1;
-			a_Memoria[i].bitModificado = 0;
-			a_Memoria[i].bitUso = 0;
 			a_Memoria[i].contenido = malloc(g_Tamanio_Marco);
-			a_Memoria[i].bitPuntero = 0;
+
 			memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 		}
-		a_Memoria[0].bitPuntero = 1;
 		pthread_mutex_unlock(&semMemPrincipal);
 	}
 }
@@ -412,7 +430,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 	int posActual=2,pid,cantidadPaginas=0,i=0;
 	char *bufferAux,*bufferRespuestaCPU=string_new();
 	t_mProc *mProc = malloc (sizeof(t_mProc));
-	t_pagina *pagina;
+
 
 	//Id Proceso
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
@@ -427,13 +445,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 	mProc->paginas=list_create();
 	mProc->cantMarcosPorProceso=0;
 	mProc->totalPaginas=cantidadPaginas;
-	/*for(i=0;i<cantidadPaginas;i++){
-		pagina=malloc(sizeof(t_pagina));
-		pagina->bitMP=-1;
-		pagina->marco=-1;
-		pagina->pagina=i;
-		list_add(mProc->paginas,pagina);
-	}*/
+
 
 	printf("********************INICIAR**************************************\n");
 	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n",pid,cantidadPaginas);
@@ -492,23 +504,6 @@ char* buscarEnMemoriaPrincipal(int marco){
 	//Aca falta mas cosas pero no me acuerdo que ajajj
 
 	a_Memoria[marco].marcoEnUso=1;
-
-	return a_Memoria[marco].contenido;
-
-}
-
-char* grabarEnMemoriaPrincipal(int marco, char* contenido){
-
-	//Aca falta mas cosas pero no me acuerdo que ajajj
-
-	a_Memoria[marco].bitUso=1;
-	a_Memoria[marco].bitModificado=1;
-
-	if(a_Memoria[marco].contenido!=NULL){
-		free(a_Memoria[marco].contenido);
-	}
-
-	a_Memoria[marco].contenido = contenido;
 
 	return a_Memoria[marco].contenido;
 
@@ -880,7 +875,7 @@ void actualizarCantidadMarcosPorProceso(int pid){
 	pthread_mutex_unlock(&semListaMproc);
 
 }
-
+/*
 void actualizarPunteroFIFO(int pid,int i){
 	int k = 0,entro=0;
 	k=i-1;
@@ -906,7 +901,7 @@ void actualizarPunteroFIFO(int pid,int i){
 		else k++;
 	}
 
-}
+}*/
 
 int preguntarDisponibilidadDeMarcos(int pid){
 
@@ -1005,10 +1000,11 @@ int FIFO2(int *marco,int pid,int nroPagina){
 
 						if(tablaPagina->bitPuntero==1 && tablaPagina->bitMP==1){
 
-							nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
 
 							tablaPagina->bitPuntero=0;
 							tablaPagina->bitMP=0;
+							nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
+
 
 							if(k==list_size(mProc->paginas)-1){
 								auxPagina=list_get(mProc->paginas,0);
@@ -1057,7 +1053,7 @@ int FIFO2(int *marco,int pid,int nroPagina){
 }
 
 
-
+/*
 int FIFO(int *marco, int pid){
 	int i=0;
 	int pidi, pagina;
@@ -1139,8 +1135,8 @@ int FIFO(int *marco, int pid){
 
 	//printf("SALIO\n");
 	return valido;
-}
-
+}*/
+/*
 void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
 	int i=0,bandera=0;
 	while(i<g_Cantidad_Marcos){
@@ -1175,7 +1171,8 @@ void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
 		}
 	}
 }
-
+*/
+/*
 void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	int i=0,bandera=0;
 	while(i<g_Cantidad_Marcos){
@@ -1260,7 +1257,7 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 		}
 	}
 }
-
+*/
 int primeraPasada(int pid){
 
 
@@ -1434,9 +1431,9 @@ void hayLugarEnMPSinoLoHago(int* marco,int pid,int nroPagina){
 		LRU(marco,pid);
 		pthread_mutex_unlock(&semMemPrincipal);
 	}else if (!strcmp(g_Algoritmo,"CLOCK")){
-		CLOCK(marco,&pagina,&pidi,&contenido);
+		//CLOCK(marco,&pagina,&pidi,&contenido);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
-		CLOCKMEJORADO(marco,&pagina,&pidi,&contenido);
+		//CLOCKMEJORADO(marco,&pagina,&pidi,&contenido);
 	}
 }
 
@@ -1533,7 +1530,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 			}
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
 			actualizarTLB(pid,nroPagina);
-			//grabarEnMemoriaPrincipal(marco,contenido);
+
 			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:");
 			imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 			printf("\n");

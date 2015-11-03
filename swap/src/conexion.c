@@ -168,10 +168,15 @@ void EnviarRespuesta(operacion, fallo, pid){
 				//string_append(&fail,READ_FAIL );
 
 				//string_append(&rsp,"42");
+				char *aux = realloc(rsp, __sizePagina__+1);
+				if (aux == NULL){
+					ErrorFatal("No se puede reallocar esta bosta");
+				}
+				rsp = aux;
 				int paginaSolicitada = fallo;/*Esto es innecesario, lo hago por un tema de comprension :)*/
 				int ptr = getPtrPaginaProcesoSolic(pid, paginaSolicitada);
 				char* contenido = getContenido(ptr);
-				char *aux = malloc(__sizePagina__+1);
+				aux = malloc(__sizePagina__+1);
 				sprintf(aux, "%d",READ_FAIL );
 				//string_append(&rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux);
 				memcpy(rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux, __sizePagina__ );

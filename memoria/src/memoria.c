@@ -19,9 +19,9 @@ int main(void) {
 	//Semaforos
 	sem_init(&semTLB,0,1);
 	sem_init(&semMP,0,1);
-	sem_init(&semSwap,0,1);
 	sem_init(&semLog,0,1);
-
+	pthread_mutex_unlock(&semSwap);
+	//pthread_mutex_lock(&sem);
 
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
@@ -382,10 +382,12 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
 	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
+	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
 
 	RecibirDatos(socket_Swap,&bufferRespuesta);
+	pthread_mutex_unlock(&semSwap);
 
 	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
 
@@ -578,10 +580,13 @@ int grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 	printf("* Buffer a Swap ("COLOR_VERDE"Escribir"DEFAULT"):");
 	imprimirContenido(buffer,tamanio+g_Tamanio_Marco);
 	printf("\n");
+	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	RecibirDatos(socket_Swap,&bufferRespuesta);
+	pthread_mutex_unlock(&semSwap);
+
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -608,10 +613,12 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
 	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
+	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	long unsigned tamanio=RecibirDatos(socket_Swap,&bufferRespuesta);
+	pthread_mutex_unlock(&semSwap);
 	if(tamanio==g_Tamanio_Marco){
 		return bufferRespuesta;
 	} else {
@@ -660,6 +667,7 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 	pthread_mutex_unlock(&semListaMproc);
 	pthread_mutex_unlock(&semMemPrincipal);
 
+	imprimirMemoria();
 }
 
 void actualizarTLB(int pid,int nroPagina){
@@ -866,6 +874,7 @@ int FIFO(int *marco, int pid){
 	int pidi, pagina;
 	int valido=0;
 	int bandera=0;
+	int entro=0;
 	int cantMarcosPorProceso=-1;
 
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
@@ -876,13 +885,43 @@ int FIFO(int *marco, int pid){
 	while(i<g_Cantidad_Marcos){
 
 		if(a_Memoria[i].pag<0 && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
+			printf("PAGINA:%d\n",a_Memoria[i].pag);
 			*marco=i;
 			actualizarCantidadMarcosPorProceso(pid);
 			bandera=1;
+			a_Memoria[i].bitPuntero = 0;
+			if(i==g_Cantidad_Marcos-1){
+				k=0;
+				while(k<g_Cantidad_Marcos){
+					if(a_Memoria[k].pid==pid)
+						a_Memoria[k].bitPuntero = 1;
+					k++;
+				}
+			} else {
+				if(cantMarcosPorProceso==0){
+					a_Memoria[i].bitPuntero=1;
+				} else {
+					a_Memoria[i].bitPuntero=0;
+					k=i+1;
+					while(k<g_Cantidad_Marcos){
+						if(a_Memoria[k].pid==pid){
+							a_Memoria[k].bitPuntero = 1;
+							entro=1;
+							k=g_Cantidad_Marcos;
+						}
+						if(!entro) k=0;
+						else k++;
+					}
+				}
+			}
 			i=g_Cantidad_Marcos;
 		}
 		i++;
 	}
+
+
+
+	entro=0;
 
 
 	if(!bandera){
@@ -893,10 +932,12 @@ int FIFO(int *marco, int pid){
 					if(a_Memoria[i].pag >= 0){
 						funcionBuscarPidPagina(i,&pidi,&pagina);
 						pagina=a_Memoria[i].pag;
+						printf("PAGINA A SWAPEAR:%d\n",pagina);
 						valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
 						if(valido) actualizarTablaPagina(pidi,pagina);
 						memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 						*marco=i;
+						printf("MARCO ASIGNADO PARA REEMPLAZAR:%d\n",i);
 					} else {
 
 						// HAY Q VER ESTE ELSE XQ CREO Q NO VA A ENTRAR NUNCA MAS CON LO DE ARRIBA
@@ -916,9 +957,13 @@ int FIFO(int *marco, int pid){
 
 						k=i+1;
 						while(k<g_Cantidad_Marcos){
-							if(a_Memoria[k].pid==pid)
+							if(a_Memoria[k].pid==pid){
 								a_Memoria[k].bitPuntero = 1;
-							k++;
+								entro=1;
+								k=g_Cantidad_Marcos;
+							}
+							if(!entro) k=0;
+							else k++;
 						}
 
 					}
@@ -1169,6 +1214,20 @@ void LRU(int *marco, int pid){
 }
 
 
+void imprimirMemoria(){
+	int i=0;
+	printf("|MARCO-PID-PAGINA-PUNTERO|\n");
+	while(i<g_Cantidad_Marcos){
+		pthread_mutex_lock(&semMemPrincipal);
+		if(a_Memoria[i].pag>=0){
+			printf("|%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,a_Memoria[i].bitPuntero);
+		}
+		pthread_mutex_unlock(&semMemPrincipal);
+		i++;
+	}
+	printf("\n");
+}
+
 
 void hayLugarEnMPSinoLoHago(int* marco,int pid){
 	int pidi,pagina;
@@ -1314,7 +1373,7 @@ void imprimirTLB(){
 	t_tlb* tlb;
 	pthread_mutex_lock(&semTELEBE);
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		printf("*********************************\n");
+		printf("***************TLB***************\n");
 		printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
 		printf("*********************************\n");
 		while(i<list_size(lista_tlb)){
@@ -1405,9 +1464,12 @@ int eliminarDeSwap(int pid){
 	string_append(&bufferASwap,"34");
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 
+	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
 	RecibirDatos(socket_Swap,&bufferRespuesta);
+	pthread_mutex_unlock(&semSwap);
+
 
 	printf("* ("COLOR_VERDE"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
 

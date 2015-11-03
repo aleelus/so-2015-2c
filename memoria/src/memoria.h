@@ -34,10 +34,11 @@
 #define FINALIZAR 4
 
 
-sem_t semTLB,semMP,semSwap,semLog;
+sem_t semTLB,semMP,semLog;
 
 pthread_mutex_t semMemPrincipal = PTHREAD_MUTEX_INITIALIZER, semTELEBE = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t semListaMproc = PTHREAD_MUTEX_INITIALIZER;;
+pthread_mutex_t semListaMproc = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t semSwap = PTHREAD_MUTEX_INITIALIZER;
 
 // CONSTANTES //
 //Ruta del config
@@ -114,6 +115,7 @@ void funcionLimpiarTablasPaginas();
 void funcionBuscarPidPagina(int marco,int * pid, int * pagina);
 int grabarContenidoASwap(int pid,int nroPagina,char* contenido);
 void imprimirContenido(char* contenido, long unsigned tamanio);
+void imprimirMemoria();
 //Estructuras
 
 //Pagina

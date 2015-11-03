@@ -134,6 +134,8 @@ typedef struct {
 	int pid;
 } t_tlb;
 
+int cantAciertos,cantTotalAciertos;
+
 t_list* lista_tlb;
 
 //mProc

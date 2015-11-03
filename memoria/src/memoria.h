@@ -40,6 +40,7 @@ pthread_mutex_t semMemPrincipal = PTHREAD_MUTEX_INITIALIZER, semTELEBE = PTHREAD
 pthread_mutex_t semListaMproc = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t semSwap = PTHREAD_MUTEX_INITIALIZER;
 
+
 // CONSTANTES //
 //Ruta del config
 #define PATH_CONFIG "config.cfg"
@@ -123,6 +124,7 @@ typedef struct {
 	int pagina;
 	int marco;
 	int bitMP;
+	int bitPuntero;
 } t_pagina;
 
 //TLB
@@ -138,6 +140,8 @@ t_list* lista_tlb;
 typedef struct {
 	int pid;
 	int cantMarcosPorProceso;
+	int totalPaginas;
+
 	t_list* paginas;
 } t_mProc;
 

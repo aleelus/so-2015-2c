@@ -1494,18 +1494,20 @@ void imprimirMemoria(){
 	}
 	printf("\n");
 
-	printf("|LISTA LRU|\n");
-	i=0;
-	while(i<list_size(lista_lru)){
-		lru = list_get(lista_lru,i);
+	if(!strcmp(g_Algoritmo,"LRU")){
+		printf("|LISTA LRU|\n");
+		i=0;
+		while(i<list_size(lista_lru)){
+			lru = list_get(lista_lru,i);
 
 
-		printf("|%d-%d| ",lru->pid,lru->pagina);
+			printf("|%d-%d| ",lru->pid,lru->pagina);
 
 
-		i++;
+			i++;
+		}
+		printf("\n");
 	}
-	printf("\n");
 
 }
 

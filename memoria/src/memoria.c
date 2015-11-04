@@ -204,18 +204,18 @@ void Seniales(){
 }
 
 void iniciarListamProc(){
-	pthread_mutex_lock(&semListaMproc);
+
 	lista_mProc = list_create();
-	pthread_mutex_unlock(&semListaMproc);
+
 }
 
 void iniciarMemoriaPrincipal(){
 	int i;
 
 	if(g_Cantidad_Marcos>0){
-		pthread_mutex_lock(&semMemPrincipal);
+
 		a_Memoria = (t_mp*)malloc(sizeof(t_mp)*g_Cantidad_Marcos);
-		pthread_mutex_unlock(&semMemPrincipal);
+
 	}
 
 	if(!strcmp(g_Algoritmo,"LRU")){
@@ -224,7 +224,7 @@ void iniciarMemoriaPrincipal(){
 
 	}
 	if(g_Cantidad_Marcos>0){
-		pthread_mutex_lock(&semMemPrincipal);
+
 		for(i=0;i<g_Cantidad_Marcos;i++){
 			a_Memoria[i].pid= -1;
 			a_Memoria[i].pag = -1;
@@ -232,12 +232,12 @@ void iniciarMemoriaPrincipal(){
 
 			memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
 		}
-		pthread_mutex_unlock(&semMemPrincipal);
+
 	}
 }
 
 void iniciarTLB(){
-	pthread_mutex_lock(&semTELEBE);
+
 
 	printf(COLOR_CYAN"\t SETEO\n"DEFAULT);
 
@@ -261,7 +261,7 @@ void iniciarTLB(){
 	printf("*"COLOR_CYAN" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
 	printf("*"COLOR_CYAN" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
 
-	pthread_mutex_unlock(&semTELEBE);
+
 }
 
 void HiloOrquestadorDeConexiones() {
@@ -427,7 +427,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 
 	//2 1 111 112
 
-	int posActual=2,pid,cantidadPaginas=0,i=0;
+	int posActual=2,pid,cantidadPaginas=0;
 	char *bufferAux,*bufferRespuestaCPU=string_new();
 	t_mProc *mProc = malloc (sizeof(t_mProc));
 
@@ -452,9 +452,9 @@ void implementoIniciarCpu(int socket,char *buffer){
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
 		//Agrego nuevo proceso a la lista
-		pthread_mutex_lock(&semListaMproc);
+
 		list_add(lista_mProc,mProc);
-		pthread_mutex_unlock(&semListaMproc);
+
 
 		string_append(&bufferRespuestaCPU,"1");
 		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
@@ -532,7 +532,6 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 	t_pagina *pagina;
 	int i=0,j=0;
 
-	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
@@ -544,7 +543,7 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 
 				if(pagina->pagina==nroPagina && pagina->bitMP==1){
 					*marco = pagina->marco;
-					pthread_mutex_unlock(&semListaMproc);
+
 					return 1;
 
 				}
@@ -554,7 +553,6 @@ int buscarEnTablaDePaginas(int pid,int nroPagina,int *marco){
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
 
 	return 0;
 
@@ -584,9 +582,12 @@ int grabarContenidoASwap(int pid,int nroPagina,char* contenido){
 	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
+
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	RecibirDatos(socket_Swap,&bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
+
+
 
 
 	if(strcmp(bufferRespuesta,"1")==0){
@@ -614,11 +615,14 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
 	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
+
 	pthread_mutex_lock(&semSwap);
+
 	EnviarDatos(socket_Swap,buffer,strlen(buffer));
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	long unsigned tamanio=RecibirDatos(socket_Swap,&bufferRespuesta);
+
 	pthread_mutex_unlock(&semSwap);
 	if(tamanio==g_Tamanio_Marco){
 		return bufferRespuesta;
@@ -632,11 +636,8 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 
 	t_mProc *mProc;
 	t_pagina *pagina;
-	t_lru *lru;
 	int i=0,j=0;
 
-	pthread_mutex_lock(&semMemPrincipal);
-	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -651,12 +652,6 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 					a_Memoria[pagina->marco].marcoEnUso=1;
 					a_Memoria[pagina->marco].pag=nroPagina;// HAY Q VER ESTA LINEA
 					a_Memoria[pagina->marco].pid=pid;
-					if(!strcmp(g_Algoritmo,"LRU")){
-						lru = malloc(sizeof(t_lru));
-						lru->pagina=nroPagina;
-						lru->pid=pid;
-						list_add(lista_lru,lru);
-					}
 					memcpy(a_Memoria[marco].contenido,contenido,tamanioContenido);
 					free(contenido);
 					break;
@@ -669,10 +664,7 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 	}
 
 
-	pthread_mutex_unlock(&semListaMproc);
-	pthread_mutex_unlock(&semMemPrincipal);
 
-	imprimirMemoria();
 
 
 }
@@ -686,7 +678,6 @@ void actualizarTLB(int pid,int nroPagina){
 	int i=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
 	int contAgrego=0,posActual=nroPagina,bandera=0,contPag=0;
 
-	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -734,7 +725,6 @@ void actualizarTLB(int pid,int nroPagina){
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
 
 }
 
@@ -771,7 +761,6 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 	int i=0,j;
 	*pid=-1;
 
-	pthread_mutex_lock(&semListaMproc);
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -790,7 +779,6 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina){
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
 
 	if(*pid==-1){
 		printf("C:%d\n",*pid);
@@ -804,7 +792,7 @@ void actualizarTablaPagina(int pid,int pagina){
 
 	int i=0,j;
 
-	pthread_mutex_lock(&semListaMproc);
+
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -825,7 +813,6 @@ void actualizarTablaPagina(int pid,int pagina){
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
 }
 
 int contarMarcosPorProceso(int pid){
@@ -833,21 +820,21 @@ int contarMarcosPorProceso(int pid){
 	t_mProc *mProc;
 	int i=0,aux=0;
 
-	pthread_mutex_lock(&semListaMproc);
+
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 		if(mProc->pid==pid)
 
 			aux=mProc->cantMarcosPorProceso;
-			pthread_mutex_unlock(&semListaMproc);
+
 
 			return aux;
 
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
+
 
 	return -1;
 
@@ -858,21 +845,21 @@ void actualizarCantidadMarcosPorProceso(int pid){
 	t_mProc *mProc;
 	int i=0;
 
-	pthread_mutex_lock(&semListaMproc);
+
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 
 		if(mProc->pid==pid){
 			mProc->cantMarcosPorProceso++;
-			pthread_mutex_unlock(&semListaMproc);
+
 			return;
 		}
 
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
+
 
 }
 /*
@@ -905,11 +892,13 @@ void actualizarPunteroFIFO(int pid,int i){
 
 int preguntarDisponibilidadDeMarcos(int pid){
 
-	int i=0,cont=0;
+	int i=0,cont=0,resta=0;
 	int cantMarcosPorProceso=-1;
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
 
-	while(i<g_Cantidad_Marcos && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
+	resta=g_Maximo_Marcos_Por_Proceso - cantMarcosPorProceso;
+
+	while(i<g_Cantidad_Marcos && cont<resta){
 
 		if(a_Memoria[i].pag<0 ){
 			cont++;
@@ -945,6 +934,8 @@ void nuevaPagina(t_mProc *mProc,t_pagina *auxPagina,int nroPagina,int pid,int *m
 	auxPagina->pagina=nroPagina;
 	*marco=dameMarco();
 	auxPagina->marco=*marco;
+
+
 
 	list_add(mProc->paginas,auxPagina);
 	actualizarCantidadMarcosPorProceso(pid);
@@ -990,6 +981,7 @@ int FIFO2(int *marco,int pid,int nroPagina){
 
 				if(preguntarDisponibilidadDeMarcos(pid)>0){
 
+					tablaPagina=NULL;
 					nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
 
 				}else{
@@ -1258,10 +1250,29 @@ void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
 	}
 }
 */
-int primeraPasada(int pid){
+
+
+t_mProc * buscarPidEnListaMproc(int pid){
+	int j=0;
+	t_mProc *mProc;
+	while(j<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,j);
+		if(mProc->pid == pid)
+			return mProc;
+		j++;
+	}
+
+	return NULL;
+}
+
+
+int primeraPasada(int pid,int nroPagina,int *marco){
 
 
 	int cantMarcosPorProceso=-1;
+	t_mProc *mProc;
+	t_pagina *pagina=malloc(sizeof(t_pagina));
+	t_lru *lru;
 	int i=0;
 
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
@@ -1269,7 +1280,20 @@ int primeraPasada(int pid){
 	while(i<g_Cantidad_Marcos){
 
 		if(a_Memoria[i].pag<0 && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
-			actualizarCantidadMarcosPorProceso(pid);
+
+
+			mProc=buscarPidEnListaMproc(pid);
+			if(mProc!=NULL){
+				nuevaPagina(mProc,pagina,nroPagina,pid,marco);
+				lru = malloc(sizeof(t_lru));
+				lru->pagina=nroPagina;
+				lru->pid=pid;
+				list_add(lista_lru,lru);
+			}else{
+				printf("ERROR AL BUSCAR EL PID\n");
+			}
+
+
 
 			return i;
 		}
@@ -1282,22 +1306,53 @@ int primeraPasada(int pid){
 }
 
 
+void imprimirTablaDePaginas(){
 
-void LRU(int *marco, int pid){
+	int i=0,j=0;
+	t_pagina *pagina;
+	t_mProc *mProc;
+	printf("|TABLA DE PAGINAS|\n");
+	printf("|MARCO-PID-PAGINA|\n");
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+
+		j=0;
+		while(j<list_size(mProc->paginas)){
+			pagina=list_get(mProc->paginas,j);
+
+			printf(" |%d-%d-%d| ",pagina->marco,mProc->pid,pagina->pagina);
+			j++;
+		}
+
+		i++;
+	}
+	printf("\n");
+
+}
+
+
+void LRU(int *marco, int pid,int nroPagina,char *contenido){
 
 
 	//ASIGNACION FIJA Y REEMPLAZO LOCAL
+
+
 
 	int i=0,j=0,k=0,contLRU=0,valido=-1;
 	int cont=0,maximo=-1;
 	int marquito,pag=-1;
 	t_lru *lru;
-	t_mProc *mProc;
+	t_mProc *mProc,*copiaMproc;
 	t_pagina *pagina;
 
-	pthread_mutex_lock(&semListaMproc);
 
-	marquito=primeraPasada(pid);
+
+	marquito=primeraPasada(pid,nroPagina,marco);
+
+
+
+	printf("MARQUITO : %d \n",marquito);
+
 	if(marquito==-1){
 
 		while(i<list_size(lista_mProc)){
@@ -1308,12 +1363,13 @@ void LRU(int *marco, int pid){
 				while(j<list_size(mProc->paginas)){
 					pagina = list_get(mProc->paginas,j);
 
+
 					cont=0;
 					contLRU=0;
 					if(pagina->bitMP == 1){
 						for(k=list_size(lista_lru)-1;k>=0;k--){
 
-							if(contLRU<g_Cantidad_Marcos){
+							if(contLRU<=g_Cantidad_Marcos-1){
 								lru=list_get(lista_lru,k);
 								if(lru-> pid == pid && a_Memoria[pagina->marco].pid == pid){
 
@@ -1322,15 +1378,8 @@ void LRU(int *marco, int pid){
 									}
 
 								}
-							}else{
-
-								while(list_size(lista_lru)>g_Cantidad_Marcos){
-									lru=list_remove(lista_lru,0);
-									free(lru);
-								}
-
-
 							}
+
 							contLRU++;
 
 						}
@@ -1342,29 +1391,58 @@ void LRU(int *marco, int pid){
 						pag= pagina->pagina;
 						*marco=pagina->marco;
 
+
+
 					}
 					j++;
 				}
-
+				copiaMproc=mProc;
 			}
 			i++;
 		}
 
-		if(a_Memoria[*marco].pag >= 0){//siempre va a entrar creo
-			valido=grabarContenidoASwap(pid,pag,a_Memoria[*marco].contenido);
-			if(valido) actualizarTablaPagina(pid,pag);
-			memset(a_Memoria[*marco].contenido,0,g_Tamanio_Marco);
+
+
+
+		printf("PID : %d ----- PAG: %d  ---   MARCO: %d\n",pid,pag,*marco);
+		printf("LISTA LRU : %d\n",list_size(lista_lru));
+
+		pagina = malloc(sizeof(t_pagina));
+		pagina->bitMP=1;
+		pagina->bitPuntero=0;
+		pagina->pagina=nroPagina;
+		pagina->marco=*marco;
+		list_add(copiaMproc->paginas,pagina);
+		actualizarCantidadMarcosPorProceso(pid);
+
+
+
+		valido=grabarContenidoASwap(pid,pag,a_Memoria[*marco].contenido);
+		if(valido) actualizarTablaPagina(pid,pag);
+		memset(a_Memoria[*marco].contenido,0,g_Tamanio_Marco);
+
+		memcpy(a_Memoria[*marco].contenido,contenido,g_Tamanio_Marco);
+		a_Memoria[*marco].pag=nroPagina;
+
+		a_Memoria[*marco].pid=pid;
+
+
+		if(list_size(lista_lru)>=g_Cantidad_Marcos){
+
+			lru=list_remove(lista_lru,0);
+			free(lru);
+
+			lru = malloc(sizeof(t_lru));
+			lru->pagina=nroPagina;
+			lru->pid=pid;
+			list_add(lista_lru,lru);
+
+
 		}
-
-
-	}else{
-
-		*marco=marquito;
 
 	}
 
 
-	pthread_mutex_unlock(&semListaMproc);
 
 
 
@@ -1401,7 +1479,8 @@ t_pagina* buscarDatosEnTP(int marco){
 void imprimirMemoria(){
 	int i=0;
 	t_pagina *pagina;
-	pthread_mutex_lock(&semMemPrincipal);
+	t_lru *lru;
+
 	printf("|MARCO-PID-PAGINA-PUNTERO|\n");
 	while(i<g_Cantidad_Marcos){
 
@@ -1414,22 +1493,32 @@ void imprimirMemoria(){
 		i++;
 	}
 	printf("\n");
-	pthread_mutex_unlock(&semMemPrincipal);
+
+	printf("|LISTA LRU|\n");
+	i=0;
+	while(i<list_size(lista_lru)){
+		lru = list_get(lista_lru,i);
+
+
+		printf("|%d-%d| ",lru->pid,lru->pagina);
+
+
+		i++;
+	}
+	printf("\n");
+
 }
 
 
-void hayLugarEnMPSinoLoHago(int* marco,int pid,int nroPagina){
-	int pidi,pagina;
-	char* contenido;
+void hayLugarEnMPSinoLoHago(int* marco,int pid,int nroPagina,char *contenido){
+
+	//char* contenido;
 	if(!strcmp(g_Algoritmo,"FIFO")){
-		pthread_mutex_lock(&semMemPrincipal);
-		//FIFO(marco,pid);
 		FIFO2(marco,pid,nroPagina);
-		pthread_mutex_unlock(&semMemPrincipal);
+
 	}else if(!strcmp(g_Algoritmo,"LRU")){
-		pthread_mutex_lock(&semMemPrincipal);
-		LRU(marco,pid);
-		pthread_mutex_unlock(&semMemPrincipal);
+		LRU(marco,pid,nroPagina,contenido);
+
 	}else if (!strcmp(g_Algoritmo,"CLOCK")){
 		//CLOCK(marco,&pagina,&pidi,&contenido);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
@@ -1511,7 +1600,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 		memcpy(contenido,bufferAux,tamanioC);
 
 		printf("***********************ESCRIBIR**********************************\n");
-		printf("* CPU solicita escribir Pid:%d Pagina:%d Contenido:",pid,nroPagina);
+		printf("* CPU solicita escribir Pid:"COLOR_VERDE"%d"DEFAULT" Pagina:"COLOR_VERDE"%d"DEFAULT" Contenido:",pid,nroPagina);
 		imprimirContenido(contenido,tamanioC);
 		printf("\n");
 		printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
@@ -1524,7 +1613,7 @@ void implementoEscribirCpu(int socket,char *buffer){
 				}else{
 					//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
 					// hacemos boleta a alguien
-					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina);
+					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina,contenido);
 				}
 				//sleep(g_Retardo_Memoria);
 			}
@@ -1594,7 +1683,7 @@ void implementoLeerCpu(int socket,char *buffer){
 	nroPagina=atoi(bufferAux);
 
 	printf("**************************LEER***********************************\n");
-	printf("* CPU Solicita leer Pid:%d Pagina:%d\n",pid,nroPagina);
+	printf("* CPU Solicita leer Pid:"COLOR_VERDE"%d"DEFAULT" Pagina:"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina);
 	//printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if(g_Cantidad_Marcos>0){
 		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
@@ -1602,16 +1691,18 @@ void implementoLeerCpu(int socket,char *buffer){
 			contenido=buscarEnMemoriaPrincipal(marco);
 		}else{
 
+			imprimirTablaDePaginas();
+
 			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 				//Encontro la pagina en la tabla de paginas
-				pthread_mutex_lock(&semMemPrincipal);
+				printf("ENCUENTRA EN LA TABLA DE PAGINAAAAAAAAAAAAAAAAAAAAA\n");
 				contenido=buscarEnMemoriaPrincipal(marco);
-				pthread_mutex_unlock(&semMemPrincipal);
+
 			}else{
 				//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 				contenido=pedirContenidoASwap(pid,nroPagina);
 				if(contenido!=NULL){
-					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina);
+					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina,contenido);
 					actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 				} else {
 					printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
@@ -1626,6 +1717,7 @@ void implementoLeerCpu(int socket,char *buffer){
 		printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 		printf("\n");
+
 		if(contenido!=NULL){
 			EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 		} else {
@@ -1642,6 +1734,9 @@ void implementoLeerCpu(int socket,char *buffer){
 			EnviarDatos(socket,"0",strlen("0"));
 		}
 	}
+
+	imprimirMemoria();
+
 		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
 }
 
@@ -1685,7 +1780,7 @@ int eliminarProceso(int pid){
 	t_pagina *pagina;
 	int i=0;
 
-	pthread_mutex_lock(&semListaMproc);
+
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -1699,9 +1794,11 @@ int eliminarProceso(int pid){
 
 				if(pagina->bitMP == 1){
 
+
 					a_Memoria[pagina->marco].marcoEnUso=0;
 					a_Memoria[pagina->marco].pag = -1;
 					memset(a_Memoria[pagina->marco].contenido,0,g_Tamanio_Marco);
+
 				}
 
 			}
@@ -1711,13 +1808,13 @@ int eliminarProceso(int pid){
 			if(eliminarDeSwap(pid)){
 
 				//Se elimino con exito
-				pthread_mutex_unlock(&semListaMproc);
+
 				return 1;
 
 			}else{
 
 				//No se elimino un carajo
-				pthread_mutex_unlock(&semListaMproc);
+
 				return 0;
 
 			}
@@ -1771,7 +1868,7 @@ void implementoFinalizarCpu(int socket,char *buffer){
 
 
 	printf("***************************FINALIZAR*****************************\n");
-	printf("* CPU Solicita finalizar Pid:%d\n",pid);
+	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE"%d"DEFAULT"\n",pid);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
 	if(g_Entradas_TLB>0)
@@ -1800,12 +1897,16 @@ void implementoCPU(int socket,char* buffer){
 
 	switch (operacion) {
 	case INICIAR:
+		pthread_mutex_lock(&semMemPrincipal);
 		implementoIniciarCpu(socket,buffer);
+		pthread_mutex_unlock(&semMemPrincipal);
 		//Reservar memoria en Swap
 		//Devolver un Ok a CPU
 		break;
 	case LEER:
+		pthread_mutex_lock(&semMemPrincipal);
 		implementoLeerCpu(socket,buffer);
+		pthread_mutex_unlock(&semMemPrincipal);
 		//fijarse si la pagina esta en la TLB
 		//si esta, tomar el marco y devolver el contenido a la cpu
 		//si no esta, buscarla en la memoria principal y ver si esa pagina esta en swap
@@ -1814,8 +1915,9 @@ void implementoCPU(int socket,char* buffer){
 		//el algoritmo de reemplazo, luego devolverle el contenido a la cpu
 		break;
 	case ESCRIBIR:
+		pthread_mutex_lock(&semMemPrincipal);
 		implementoEscribirCpu(socket,buffer);
-
+		pthread_mutex_unlock(&semMemPrincipal);
 
 
 
@@ -1828,8 +1930,9 @@ void implementoCPU(int socket,char* buffer){
 		//decidir si le devolvemos un ok o el contenido grabado a la cpu
 		break;
 	case FINALIZAR:
-
+		pthread_mutex_lock(&semMemPrincipal);
 		implementoFinalizarCpu(socket,buffer);
+		pthread_mutex_unlock(&semMemPrincipal);
 		//limpiar los marcos reservados de swap del proceso y luego borrar la tabla de paginas y devolver
 		// un ok a la cpu
 		break;

@@ -78,4 +78,6 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip);
  * */
 int instruccionValida(char* instruccion, int* posicionEnElArray);
 
+#define COLOR_CYAN "\x1b[36m"
+
 #endif /* INTERPRETE_H_ */

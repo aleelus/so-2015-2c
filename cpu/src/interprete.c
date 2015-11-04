@@ -89,20 +89,22 @@ void recolectarInstrucciones(char* pathDelArchivoDeInstrucciones, int pid) {
 
 		int length = strlenHastaUnChar(contenidoDelArchivo,';');//Saca el size del contenidoDelArchivo hasta el ;
 
-		contenidoAux = calloc(length,sizeof(char));
+		contenidoAux = calloc(length+1,sizeof(char));
 		contenidoAux = memcpy(contenidoAux,contenidoDelArchivo,length);
 
 		separarInstruccionDeParametros(contenidoAux, proceso, length);
 
+		free(contenidoAux);
+
 	}
 
 	if(contenidoDelArchivo != NULL){
-		free(contenidoDelArchivo);//TODO este free no estaba, pero me parece que faltaba, pero rompe cuando se ejecuta
+		free(contenidoDelArchivo);
 	}
 
 	fclose(archivoDeInstrucciones);
 
-	free(contenidoAux);
+	//free(contenidoAux);
 }
 
 int instruccionValida(char* instruccion, int* posicionEnElArray) {
@@ -239,7 +241,7 @@ void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid,
 }
 
 void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
-	puts("Ejecutando mCod");
+	printf("*"COLOR_CYAN" Ejecutando mCod \n");
 	int i = ip;
 	int posicionEnElArray = -1;
 	int existeInstruccion = 0;

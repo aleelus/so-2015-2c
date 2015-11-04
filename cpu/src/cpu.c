@@ -83,7 +83,7 @@ int main(void) {
 
 	inicializarListaDeProcesos();
 
-	inicializarVectorDeSockets();
+	//inicializarVectorDeSockets();
 
 	int iThreadCrearHilos = pthread_create(&hCrearHilos, NULL,(void*) CrearHilos, NULL );
 
@@ -110,7 +110,7 @@ void CrearHilos(){
 void CrearCPU(){
 	//HiloCPU
 	pthread_t hHiloCPU;
-	printf("Creacion de CPU\n");
+	printf("*"COLOR_VERDE" Creacion de CPU\n");
 
 	int iThreadCPU = pthread_create(&hHiloCPU, NULL,(void*) ProcesoCPU, NULL );
 	if (iThreadCPU) {

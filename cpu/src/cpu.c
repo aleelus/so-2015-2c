@@ -110,7 +110,7 @@ void CrearHilos(){
 void CrearCPU(){
 	//HiloCPU
 	pthread_t hHiloCPU;
-	printf("*"COLOR_VERDE" Creacion de CPU\n");
+	printf("*"COLOR_VERDE" Creacion de CPU\n"DEFAULT);
 
 	int iThreadCPU = pthread_create(&hHiloCPU, NULL,(void*) ProcesoCPU, NULL );
 	if (iThreadCPU) {

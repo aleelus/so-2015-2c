@@ -241,7 +241,7 @@ void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid,
 }
 
 void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
-	printf("*"COLOR_CYAN" Ejecutando mCod \n");
+	printf("*"COLOR_CYAN" Ejecutando mCod \n"DEFAULT);
 	int i = ip;
 	int posicionEnElArray = -1;
 	int existeInstruccion = 0;

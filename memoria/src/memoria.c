@@ -25,6 +25,8 @@ int main(void) {
 	//pthread_mutex_unlock(&semSwap);
 	//pthread_mutex_lock(&sem);
 
+
+
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
 
@@ -239,11 +241,11 @@ void iniciarMemoriaPrincipal(){
 void iniciarTLB(){
 
 
-	printf(COLOR_CYAN"\t SETEO\n"DEFAULT);
+	printf(COLOR_CYAN""NEGRITA"\t SETEO\n");
 
 	lista_tlb = list_create();
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		printf("*"COLOR_CYAN" TLB Habilitada - Entradas:%d\n"DEFAULT,g_Entradas_TLB);
+		printf("*"COLOR_CYAN""NEGRITA" TLB Habilitada - Entradas:%d\n"DEFAULT,g_Entradas_TLB);
 		int i;
 		for(i=0;i<g_Entradas_TLB;i++){
 			t_tlb* tlb = malloc(sizeof(t_tlb));
@@ -253,13 +255,14 @@ void iniciarTLB(){
 			list_add(lista_tlb,tlb);
 		}
 	} else {
-		printf(COLOR_CYAN"* TLB No Habilitada\n"DEFAULT);
+		printf("*"COLOR_CYAN" TLB No Habilitada\n"DEFAULT);
 	}
-	printf("*"COLOR_CYAN" Algoritmo ultilizado: %s\n"DEFAULT,g_Algoritmo);
-	printf("*"COLOR_CYAN" Maximo marcos por proceso: %d\n"DEFAULT,g_Maximo_Marcos_Por_Proceso);
-	printf("*"COLOR_CYAN" Cantidad de marcos: %d\n"DEFAULT,g_Cantidad_Marcos);
-	printf("*"COLOR_CYAN" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
-	printf("*"COLOR_CYAN" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
+	printf("*"COLOR_CYAN""NEGRITA" Algoritmo ultilizado: %s\n"DEFAULT,g_Algoritmo);
+	printf("*"COLOR_CYAN""NEGRITA" Maximo marcos por proceso: %d\n"DEFAULT,g_Maximo_Marcos_Por_Proceso);
+	printf("*"COLOR_CYAN""NEGRITA" Cantidad de marcos: %d\n"DEFAULT,g_Cantidad_Marcos);
+	printf("*"COLOR_CYAN""NEGRITA" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
+	printf("*"COLOR_CYAN""NEGRITA" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
+
 
 
 }
@@ -401,7 +404,7 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
-	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
 	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
@@ -409,7 +412,7 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	RecibirDatos(socket_Swap,&bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
 
-	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -447,7 +450,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 	mProc->totalPaginas=cantidadPaginas;
 
 
-	printf("********************INICIAR**************************************\n");
+	printf("********************"NEGRITA"INICIAR"DEFAULT"**************************************\n");
 	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n",pid,cantidadPaginas);
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
@@ -457,7 +460,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 
 
 		string_append(&bufferRespuestaCPU,"1");
-		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
+		printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
 
 	}else{
 
@@ -486,13 +489,13 @@ int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
 			if(telebe->pid == pid && telebe->pagina==nroPagina){
 				*marco = telebe->marco;
 				cantAciertos++;
-				printf("* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE"%d"DEFAULT"/"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
+				printf("* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
 				pthread_mutex_unlock(&semTELEBE);
 				return 1;
 			}
 		}
 	}
-	printf("* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE"%d"DEFAULT"/"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
+	printf("* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
 	pthread_mutex_unlock(&semTELEBE);
 	return 0;
 
@@ -614,7 +617,7 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
-	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
+	printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
 
 	pthread_mutex_lock(&semSwap);
 
@@ -1103,22 +1106,29 @@ void imprimirTablaDePaginas(){
 	int i=0,j=0;
 	t_pagina *pagina;
 	t_mProc *mProc;
-	printf("|TABLA DE PAGINAS|\n");
-	printf("|MARCO-PID-PAGINA|\n");
+
+
+	printf("*****"NEGRITA"Tabla de Paginas"DEFAULT"****\n");
+	printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t*\n");
+	printf("**************************\n");
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 
 		j=0;
 		while(j<list_size(mProc->paginas)){
 			pagina=list_get(mProc->paginas,j);
-
-			printf(" |%d-%d-%d| ",pagina->marco,mProc->pid,pagina->pagina);
+			printf("*  %d\t%d\t%d\t*\n",pagina->marco,mProc->pid,pagina->pagina);
 			j++;
 		}
-
 		i++;
 	}
-	printf("\n");
+	printf("*************************\n");
+
+
+
+
+
+
 
 }
 
@@ -1143,7 +1153,7 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 
 
 
-	printf("MARQUITO : %d \n",marquito);
+//	printf("MARQUITO : %d \n",marquito);
 
 	if(marquito==-1){
 
@@ -1196,8 +1206,8 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 
 
 
-		printf("PID : %d ----- PAG: %d  ---   MARCO: %d\n",pid,pag,*marco);
-		printf("LISTA LRU : %d\n",list_size(lista_lru));
+	//	printf("PID : %d ----- PAG: %d  ---   MARCO: %d\n",pid,pag,*marco);
+		//printf("LISTA LRU : %d\n",list_size(lista_lru));
 
 		pagina = malloc(sizeof(t_pagina));
 		pagina->bitMP=1;
@@ -1274,6 +1284,27 @@ void imprimirMemoria(){
 	t_lru *lru;
 
 	if(!strcmp(g_Algoritmo,"FIFO")||!strcmp(g_Algoritmo,"LRU")){
+
+
+
+
+		printf("********"NEGRITA"Memoria Principal"DEFAULT"********\n");
+		printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Punt"DEFAULT"\t*\n");
+		printf("*********************************\n");
+		while(i<g_Cantidad_Marcos){
+
+
+			if(a_Memoria[i].pag>=0){
+				pagina = buscarDatosEnTP(i);
+				if(pagina!=NULL)
+					printf("*  %d\t%d\t%d\t%d\t*\n",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero);
+			}
+			i++;
+		}
+		printf("*********************************\n");
+
+
+/*
 		printf("|MARCO-PID-PAGINA-PUNTERO|\n");
 		while(i<g_Cantidad_Marcos){
 
@@ -1285,7 +1316,7 @@ void imprimirMemoria(){
 
 			i++;
 		}
-		printf("\n");
+		printf("\n");*/
 	}
 
 	if(!strcmp(g_Algoritmo,"CLOCK")){
@@ -1588,11 +1619,11 @@ void implementoEscribirCpu(int socket,char *buffer){
 		bufferAux= DigitosNombreArchivo(buffer,&posActual);
 		memcpy(contenido,bufferAux,tamanioC);
 
-		printf("***********************ESCRIBIR**********************************\n");
-		printf("* CPU solicita escribir Pid:"COLOR_VERDE"%d"DEFAULT" Pagina:"COLOR_VERDE"%d"DEFAULT" Contenido:",pid,nroPagina);
+		printf("***********************"NEGRITA"ESCRIBIR"DEFAULT"**********************************\n");
+		printf("* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:",pid,nroPagina);
 		imprimirContenido(contenido,tamanioC);
 		printf("\n");
-		printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
+		printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") ");
 		if(g_Cantidad_Marcos>0){
 			if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 				//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
@@ -1609,10 +1640,10 @@ void implementoEscribirCpu(int socket,char *buffer){
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
 			actualizarTLB(pid,nroPagina);
 
-			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:");
+			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:");
 			imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 			printf("\n");
-			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
+			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",marco);
 			EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 			//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 		} else {
@@ -1641,8 +1672,8 @@ void imprimirTLB(){
 	t_tlb* tlb;
 	pthread_mutex_lock(&semTELEBE);
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		printf("***************TLB***************\n");
-		printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
+		printf("***************"NEGRITA"TLB"DEFAULT"***************\n");
+		printf("* "COLOR_VERDE""NEGRITA"Pos"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t*\n");
 		printf("*********************************\n");
 		while(i<list_size(lista_tlb)){
 			tlb = list_get(lista_tlb,i);
@@ -1671,8 +1702,8 @@ void implementoLeerCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	nroPagina=atoi(bufferAux);
 
-	printf("**************************LEER***********************************\n");
-	printf("* CPU Solicita leer Pid:"COLOR_VERDE"%d"DEFAULT" Pagina:"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina);
+	printf("**************************"NEGRITA"LEER"DEFAULT"***********************************\n");
+	printf("* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT"\n",pid,nroPagina);
 	//printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if(g_Cantidad_Marcos>0){
 		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
@@ -1680,11 +1711,11 @@ void implementoLeerCpu(int socket,char *buffer){
 			contenido=buscarEnMemoriaPrincipal(marco);
 		}else{
 
-			imprimirTablaDePaginas();
+			//imprimirTablaDePaginas();
 
 			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 				//Encontro la pagina en la tabla de paginas
-				printf("ENCUENTRA EN LA TABLA DE PAGINAAAAAAAAAAAAAAAAAAAAA\n");
+
 				contenido=buscarEnMemoriaPrincipal(marco);
 
 			}else{
@@ -1694,7 +1725,7 @@ void implementoLeerCpu(int socket,char *buffer){
 					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina,contenido);
 					actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 				} else {
-					printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+					printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
 				}
 			}
 			if(contenido!=NULL){
@@ -1703,7 +1734,7 @@ void implementoLeerCpu(int socket,char *buffer){
 			}
 			//sleep(g_Retardo_Memoria);
 		}
-		printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:");
+		printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 		printf("\n");
 
@@ -1715,7 +1746,7 @@ void implementoLeerCpu(int socket,char *buffer){
 	} else {
 		contenido=pedirContenidoASwap(pid,nroPagina);
 		if(contenido!=NULL){
-			printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en SWAP Contenido:");
+			printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:");
 			imprimirContenido(contenido,g_Tamanio_Marco);
 			printf("\n");
 			EnviarDatos(socket,contenido,g_Tamanio_Marco);
@@ -1745,7 +1776,7 @@ int eliminarDeSwap(int pid){
 	pthread_mutex_unlock(&semSwap);
 
 
-	printf("* ("COLOR_VERDE"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
+	printf("* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -1831,6 +1862,7 @@ void eliminarDeLaTlbEnFinalizar(int pid){
 
 			tlb->marco=-1;
 			tlb->pagina=-1;
+			tlb->pid =-1;
 		}
 		i++;
 	}
@@ -1856,8 +1888,8 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	free(bufferAux);
 
 
-	printf("***************************FINALIZAR*****************************\n");
-	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE"%d"DEFAULT"\n",pid);
+	printf("***************************"NEGRITA"FINALIZAR"DEFAULT"*****************************\n");
+	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
 	if(g_Entradas_TLB>0)

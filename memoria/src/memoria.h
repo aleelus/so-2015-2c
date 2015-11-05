@@ -25,6 +25,8 @@
 #define COLOR_CYAN "\x1b[36m"
 #define COLOR_MAGENTA "\x1b[35m"
 #define DEFAULT   "\x1b[0m"
+#define NEGRITA "\033[1m"
+#define NO_NEGRITA "\033[22m"
 #define YO	"3"
 
 //Tipo de Operacion con CPU

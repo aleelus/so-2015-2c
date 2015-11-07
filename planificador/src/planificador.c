@@ -31,7 +31,7 @@ int main(void) {
 
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "planificador", false, LOG_LEVEL_TRACE);
-
+	pthread_mutex_init(&lockLogger, NULL);
 
 	lista_cpu = list_create();
 
@@ -62,7 +62,7 @@ int main(void) {
 
 	pthread_join(hOrquestadorConexiones, NULL );
 	pthread_join(hConsola, NULL );
-
+	log_destroy(logger);
 	return 0;
 }
 

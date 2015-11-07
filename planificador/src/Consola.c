@@ -44,7 +44,9 @@ int procesarComando(char *comando, char *argumento){
 			if (__DEBUG__){
 				fprintf(stdout, "Se creo el proceso %s con pid %d\n", path, pid);
 			}
+			pthread_mutex_lock(&lockLogger);
 			log_info(logger, "Se creo el proceso %s con pid %d", path, pid);
+			pthread_mutex_unlock(&lockLogger);
 			ejecutarDispatcher();
 			break;
 

@@ -7,6 +7,8 @@
 #include "Utils.h"
 
 const char* estados[] = {"Listo", "Esperando IO", "Bloqueado", "Ejecutando", "Error", "Terminado"};
+volatile int ejecutando = 1;
+
 
 void HiloOrquestadorDeConexiones() {
 
@@ -40,7 +42,9 @@ void HiloOrquestadorDeConexiones() {
 	}
 
 	//Traza("El socket está listo para recibir conexiones. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
+	pthread_mutex_lock(&lockLogger);
 	log_trace(logger, "SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
+	pthread_mutex_unlock(&lockLogger);
 
 	if (__TEST__){
 		int s[3];
@@ -52,15 +56,15 @@ void HiloOrquestadorDeConexiones() {
 		pthread_create(&hClienteTrucho, NULL, (void*) AtiendeCliente, (void*)s[1]);
 		pthread_create(&hClienteTrucho, NULL, (void*) AtiendeCliente, (void*)s[2]);
 	}
-	while (/*g_Ejecutando*/1) {
+	while (ejecutando) {
 		int socket_client;
 
 		size_addr = sizeof(struct sockaddr_in);
 
 		if ((socket_client = accept(socket_host,(struct sockaddr *) &client_addr, &size_addr)) != -1) {
-
+			pthread_mutex_lock(&lockLogger);
 			log_trace(logger, "NUEVA CONEXION ENTRANTE. Se ha conectado el cliente (%s) por el puerto (%d). El número de socket del cliente es: %d", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, socket_client);
-
+			pthread_mutex_unlock(&lockLogger);
 			// Aca hay que crear un nuevo hilo, que será el encargado de atender al cliente
 			pthread_t hNuevoCliente;
 			pthread_create(&hNuevoCliente, NULL, (void*) AtiendeCliente, (void *) socket_client);
@@ -94,10 +98,11 @@ int AtiendeCliente(void * arg) {
 	list_add(lista_cpu,cpu);
 	sem_post(&semListaCpu);
 
+	pthread_mutex_lock(&lockLogger);
 	log_info(logger, "Se conecto CPU con socket: %d", cpu->socket_Cpu);
-
+	pthread_mutex_unlock(&lockLogger);
 	//Bloqueo a la CPU hasta que tenga alguna tarea
-	while(1){
+	while(ejecutando){
 		if (__DEBUG__)
 			printf("CPU BLOQUEADA\n");
 		sem_wait(&cpu->semaforoMensaje);
@@ -121,6 +126,7 @@ int AtiendeCliente(void * arg) {
 		free(bufferR);
 		//Aca se define el envio de mCod a la cpu para que la procese
 	}
+	free(cpu);
 	return 1;
 }
 
@@ -209,10 +215,14 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 			pasarAReady(cpu, proximaInstruccion);
 			break;
 		default:
+			pthread_mutex_lock(&lockLogger);
 			Error(logger, "CPU con socket: %d desconectada.", cpu->socket_Cpu);
+			pthread_mutex_unlock(&lockLogger);
 			break;
 	}
+	pthread_mutex_lock(&lockLogger);
 	log_info(logger, "Resultado del proceso PID: %d:\n\n%s", pid, DigitosNombreArchivo(buffer, &posActual));
+	pthread_mutex_unlock(&lockLogger);
 	if(__DEBUG__){
 		fprintf(stdout, "Resultado del proceso:\n%s\n", DigitosNombreArchivo(buffer, &posActual));
 	}

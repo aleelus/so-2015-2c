@@ -52,6 +52,7 @@ void Dispatcher(void *args){
 		ErrorFatal("Algoritmo de planificacion no disponible");
 		return;
 	}
+	free(algoritmo);
 
 	t_cpu* cpuLibre = cpuDisponible();
 	if (cpuLibre == NULL){
@@ -60,8 +61,10 @@ void Dispatcher(void *args){
 	sem_wait(&(cpuLibre->semaforoProceso));
 	cpuLibre->procesoAsignado = algoritmoPlanificador();
 	if (cpuLibre->procesoAsignado != NULL){
+		pthread_mutex_lock(&lockLogger);
 		log_info(logger, "Proceso seleccionado PID: %d\nEstado colas:", cpuLibre->procesoAsignado->pid );
 		mostrarProcesos(logger->file);
+		pthread_mutex_unlock(&lockLogger);
 		if(__TEST__)
 			mensajeEnviado = 1;
 		else

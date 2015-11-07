@@ -58,7 +58,7 @@
 
 
 const char* estados[];
-
+pthread_mutex_t lockLogger;
 
 /************************ENUMS********************************/
 typedef enum {

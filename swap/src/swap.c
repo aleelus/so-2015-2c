@@ -275,6 +275,10 @@ int reemplazarMarco(char* buffer){
 
 int crearProceso(int pid, int paginasSolicitadas){
 	int totalPaginasLibres = getCantidadPaginasLibres();
+	if(paginasSolicitadas < 0){
+		Error("Cantidad de paginas solicitadas (%d) no válida.", paginasSolicitadas);
+		return -1;
+	}
 	if(paginasSolicitadas > totalPaginasLibres){
 		Error("Proceso mProc PID: %d rechazado por falta de espacio.", pid);
 		return -1;

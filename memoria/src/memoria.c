@@ -25,6 +25,8 @@ int main(void) {
 	//pthread_mutex_unlock(&semSwap);
 	//pthread_mutex_lock(&sem);
 
+
+
 	// Levantamos el archivo de configuracion.
 	LevantarConfig();
 
@@ -239,11 +241,11 @@ void iniciarMemoriaPrincipal(){
 void iniciarTLB(){
 
 
-	printf(COLOR_CYAN"\t SETEO\n"DEFAULT);
+	printf(COLOR_CYAN""NEGRITA"\t SETEO\n");
 
 	lista_tlb = list_create();
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		printf("*"COLOR_CYAN" TLB Habilitada - Entradas:%d\n"DEFAULT,g_Entradas_TLB);
+		printf("*"COLOR_CYAN""NEGRITA" TLB Habilitada - Entradas:%d\n"DEFAULT,g_Entradas_TLB);
 		int i;
 		for(i=0;i<g_Entradas_TLB;i++){
 			t_tlb* tlb = malloc(sizeof(t_tlb));
@@ -253,13 +255,14 @@ void iniciarTLB(){
 			list_add(lista_tlb,tlb);
 		}
 	} else {
-		printf(COLOR_CYAN"* TLB No Habilitada\n"DEFAULT);
+		printf("*"COLOR_CYAN" TLB No Habilitada\n"DEFAULT);
 	}
-	printf("*"COLOR_CYAN" Algoritmo ultilizado: %s\n"DEFAULT,g_Algoritmo);
-	printf("*"COLOR_CYAN" Maximo marcos por proceso: %d\n"DEFAULT,g_Maximo_Marcos_Por_Proceso);
-	printf("*"COLOR_CYAN" Cantidad de marcos: %d\n"DEFAULT,g_Cantidad_Marcos);
-	printf("*"COLOR_CYAN" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
-	printf("*"COLOR_CYAN" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
+	printf("*"COLOR_CYAN""NEGRITA" Algoritmo ultilizado: %s\n"DEFAULT,g_Algoritmo);
+	printf("*"COLOR_CYAN""NEGRITA" Maximo marcos por proceso: %d\n"DEFAULT,g_Maximo_Marcos_Por_Proceso);
+	printf("*"COLOR_CYAN""NEGRITA" Cantidad de marcos: %d\n"DEFAULT,g_Cantidad_Marcos);
+	printf("*"COLOR_CYAN""NEGRITA" Tamaño de marco: %d\n"DEFAULT,g_Tamanio_Marco);
+	printf("*"COLOR_CYAN""NEGRITA" Retardo: %d\n"DEFAULT,g_Retardo_Memoria);
+
 
 
 }
@@ -401,7 +404,7 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferASwap,obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
-	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
 	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap,bufferASwap,strlen(bufferASwap));
 
@@ -409,7 +412,7 @@ int envioDeInfoIniciarASwap(int pid,int cantidadPaginas){
 	RecibirDatos(socket_Swap,&bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
 
-	printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -447,7 +450,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 	mProc->totalPaginas=cantidadPaginas;
 
 
-	printf("********************INICIAR**************************************\n");
+	printf("********************"NEGRITA"INICIAR"DEFAULT"**************************************\n");
 	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n",pid,cantidadPaginas);
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if(envioDeInfoIniciarASwap(pid,cantidadPaginas)){
@@ -457,7 +460,7 @@ void implementoIniciarCpu(int socket,char *buffer){
 
 
 		string_append(&bufferRespuestaCPU,"1");
-		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
+		printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid,cantidadPaginas);
 
 	}else{
 
@@ -486,13 +489,13 @@ int buscarPaginaEnTLB(int pid,int nroPagina,int *marco){
 			if(telebe->pid == pid && telebe->pagina==nroPagina){
 				*marco = telebe->marco;
 				cantAciertos++;
-				printf("* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE"%d"DEFAULT"/"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
+				printf("* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
 				pthread_mutex_unlock(&semTELEBE);
 				return 1;
 			}
 		}
 	}
-	printf("* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE"%d"DEFAULT"/"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
+	printf("* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid,nroPagina,cantAciertos,cantTotalAciertos);
 	pthread_mutex_unlock(&semTELEBE);
 	return 0;
 
@@ -614,7 +617,7 @@ char * pedirContenidoASwap(int pid,int nroPagina){
 	string_append(&buffer,obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer,obtenerSubBuffer(string_itoa(nroPagina)));
 
-	printf("* ("COLOR_VERDE"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
+	printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
 
 	pthread_mutex_lock(&semSwap);
 
@@ -1044,214 +1047,6 @@ int FIFO2(int *marco,int pid,int nroPagina){
 
 }
 
-
-/*
-int FIFO(int *marco, int pid){
-	int i=0;
-	int pidi, pagina;
-	int valido=0;
-	int bandera=0;
-
-	int cantMarcosPorProceso=-1;
-
-	cantMarcosPorProceso = contarMarcosPorProceso(pid);
-
-
-
-	i=0;
-	while(i<g_Cantidad_Marcos){
-
-		printf("LA I: %d\n",i);
-
-		if(a_Memoria[i].pag<0 && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
-			printf("PAGINA:%d\n",a_Memoria[i].pag);
-
-			*marco=i;
-			actualizarCantidadMarcosPorProceso(pid);
-			bandera=1;
-
-			if(cantMarcosPorProceso==0){
-				a_Memoria[i].bitPuntero=1;
-			}else{
-				actualizarPunteroFIFO(pid,i);
-			}
-			break;
-		}
-
-		i++;
-	}
-
-
-
-
-
-	if(!bandera){
-		i=0;
-		while(i<g_Cantidad_Marcos){
-			if(a_Memoria[i].pid==pid ){
-				if(a_Memoria[i].bitPuntero == 1){
-					if(a_Memoria[i].pag >= 0){
-						funcionBuscarPidPagina(i,&pidi,&pagina);
-						pagina=a_Memoria[i].pag;
-						printf("PAGINA A SWAPEAR:%d\n",pagina);
-						valido=grabarContenidoASwap(pid,pagina,a_Memoria[i].contenido);
-						if(valido) actualizarTablaPagina(pidi,pagina);
-						memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-						*marco=i;
-						printf("MARCO ASIGNADO PARA REEMPLAZAR:%d\n",i);
-					}
-
-					bandera=1;
-
-					if(i==g_Cantidad_Marcos-1){
-						printf("PRIMER IFFFFFFFFFFFFFFFFFFFFFFF\n");
-
-						actualizarPunteroFIFO(pid,i);
-
-					} else {
-						if(cantMarcosPorProceso==0){
-							a_Memoria[i].bitPuntero=1;
-						} else {
-							actualizarPunteroFIFO(pid,i);
-						}
-					}
-					break;
-				}
-			}
-			//printf("%d %d\n",i,g_Cantidad_Marcos);
-
-			i++;
-		}
-	}
-
-
-	//printf("SALIO\n");
-	return valido;
-}*/
-/*
-void CLOCK(int *marco,int* pagina,int* pid,char** contenido){
-	int i=0,bandera=0;
-	while(i<g_Cantidad_Marcos){
-		if(a_Memoria[i].bitPuntero == 1){
-			if(a_Memoria[i].bitUso == 1){
-				a_Memoria[i].bitUso = 0;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-			} else if(a_Memoria[i].bitUso == 0){
-				funcionBuscarPidPagina(i,pid,pagina);
-				*contenido = a_Memoria[i].contenido;
-				grabarContenidoASwap(*pid,*pagina,*contenido);
-				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-				*marco=i;
-				a_Memoria[i].bitUso = 1;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-				i=g_Cantidad_Marcos;
-				bandera=1;
-			}
-		}
-		if(bandera==0){
-			i=0;
-		} else {
-			i++;
-		}
-	}
-}
-*/
-/*
-void CLOCKMEJORADO(int *marco,int* pagina,int* pid,char** contenido){
-	int i=0,bandera=0;
-	while(i<g_Cantidad_Marcos){
-		if(a_Memoria[i].bitPuntero == 1){
-			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 0){
-				funcionBuscarPidPagina(i,pid,pagina);
-				*contenido = a_Memoria[i].contenido;
-				grabarContenidoASwap(*pid,*pagina,*contenido);
-				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-				*marco=i;
-				a_Memoria[i].bitUso = 1;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-				i=g_Cantidad_Marcos;
-				bandera=1;
-			} else {
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-			}
-			i++;
-		}
-	}
-	i=0;
-	while(i<g_Cantidad_Marcos&&!bandera){
-		if(a_Memoria[i].bitPuntero == 1){
-			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 1){
-				funcionBuscarPidPagina(i,pid,pagina);
-				*contenido = a_Memoria[i].contenido;
-				grabarContenidoASwap(*pid,*pagina,*contenido);
-				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-				*marco=i;
-				a_Memoria[i].bitUso = 1;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-				i=g_Cantidad_Marcos;
-				bandera=1;
-			} else {
-				a_Memoria[i].bitUso = 0;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-			}
-			i++;
-		}
-	}
-
-	while(i<g_Cantidad_Marcos&&!bandera){
-		if(a_Memoria[i].bitPuntero == 1){
-			if(a_Memoria[i].bitUso == 0 && a_Memoria[i].bitModificado == 0){
-				funcionBuscarPidPagina(i,pid,pagina);
-				*contenido = a_Memoria[i].contenido;
-				grabarContenidoASwap(*pid,*pagina,*contenido);
-				memset(a_Memoria[i].contenido,0,g_Tamanio_Marco);
-				*marco=i;
-				a_Memoria[i].bitUso = 1;
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-				i=g_Cantidad_Marcos;
-				bandera=1;
-			} else {
-				if(i==g_Cantidad_Marcos-1){
-					a_Memoria[0].bitPuntero = 1;
-				} else {
-					a_Memoria[i+1].bitPuntero = 1;
-				}
-			}
-			i++;
-		}
-	}
-}
-*/
-
-
 t_mProc * buscarPidEnListaMproc(int pid){
 	int j=0;
 	t_mProc *mProc;
@@ -1311,22 +1106,29 @@ void imprimirTablaDePaginas(){
 	int i=0,j=0;
 	t_pagina *pagina;
 	t_mProc *mProc;
-	printf("|TABLA DE PAGINAS|\n");
-	printf("|MARCO-PID-PAGINA|\n");
+
+
+	printf("*****"NEGRITA"Tabla de Paginas"DEFAULT"****\n");
+	printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t*\n");
+	printf("**************************\n");
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 
 		j=0;
 		while(j<list_size(mProc->paginas)){
 			pagina=list_get(mProc->paginas,j);
-
-			printf(" |%d-%d-%d| ",pagina->marco,mProc->pid,pagina->pagina);
+			printf("*  %d\t%d\t%d\t*\n",pagina->marco,mProc->pid,pagina->pagina);
 			j++;
 		}
-
 		i++;
 	}
-	printf("\n");
+	printf("*************************\n");
+
+
+
+
+
+
 
 }
 
@@ -1351,7 +1153,7 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 
 
 
-	printf("MARQUITO : %d \n",marquito);
+//	printf("MARQUITO : %d \n",marquito);
 
 	if(marquito==-1){
 
@@ -1404,8 +1206,8 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 
 
 
-		printf("PID : %d ----- PAG: %d  ---   MARCO: %d\n",pid,pag,*marco);
-		printf("LISTA LRU : %d\n",list_size(lista_lru));
+	//	printf("PID : %d ----- PAG: %d  ---   MARCO: %d\n",pid,pag,*marco);
+		//printf("LISTA LRU : %d\n",list_size(lista_lru));
 
 		pagina = malloc(sizeof(t_pagina));
 		pagina->bitMP=1;
@@ -1481,18 +1283,58 @@ void imprimirMemoria(){
 	t_pagina *pagina;
 	t_lru *lru;
 
-	printf("|MARCO-PID-PAGINA-PUNTERO|\n");
-	while(i<g_Cantidad_Marcos){
+	if(!strcmp(g_Algoritmo,"FIFO")||!strcmp(g_Algoritmo,"LRU")){
 
-		if(a_Memoria[i].pag>=0){
-			pagina = buscarDatosEnTP(i);
-			if(pagina!=NULL)
-				printf("|%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero);
+
+
+
+		printf("********"NEGRITA"Memoria Principal"DEFAULT"********\n");
+		printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Punt"DEFAULT"\t*\n");
+		printf("*********************************\n");
+		while(i<g_Cantidad_Marcos){
+
+
+			if(a_Memoria[i].pag>=0){
+				pagina = buscarDatosEnTP(i);
+				if(pagina!=NULL)
+					printf("*  %d\t%d\t%d\t%d\t*\n",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero);
+			}
+			i++;
 		}
+		printf("*********************************\n");
 
-		i++;
+
+/*
+		printf("|MARCO-PID-PAGINA-PUNTERO|\n");
+		while(i<g_Cantidad_Marcos){
+
+			if(a_Memoria[i].pag>=0){
+				pagina = buscarDatosEnTP(i);
+				if(pagina!=NULL)
+					printf("|%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero);
+			}
+
+			i++;
+		}
+		printf("\n");*/
 	}
-	printf("\n");
+
+	if(!strcmp(g_Algoritmo,"CLOCK")){
+		printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|\n");
+		while(i<g_Cantidad_Marcos){
+
+			if(a_Memoria[i].pag>=0){
+				pagina = buscarDatosEnTP(i);
+				if(pagina!=NULL)
+					printf("|%d-%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero,pagina->bitUso);
+			}
+
+			i++;
+		}
+		printf("\n");
+
+	}
+
 
 	if(!strcmp(g_Algoritmo,"LRU")){
 		printf("|LISTA LRU|\n");
@@ -1511,6 +1353,182 @@ void imprimirMemoria(){
 
 }
 
+int marcosUsados(int pid){
+	int i=0,contador=0;
+
+	while(i<g_Cantidad_Marcos){
+		if(a_Memoria[i].pid == pid){
+			contador++;
+		}
+		i++;
+	}
+
+	return contador;
+}
+
+void asignarMarco(int pid,int pag,int *marco,int mOcup){
+
+	a_Memoria[*marco].marcoEnUso = 1;
+	a_Memoria[*marco].pid= pid;
+	a_Memoria[*marco].pag= pag;
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0;
+
+
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid){
+
+			pagina = malloc(sizeof(t_pagina));
+			pagina->pagina = pag;
+			pagina->bitMP = 1;
+			pagina->bitModificado = 1;
+			pagina->bitUso = 1;
+			pagina->marco = *marco;
+			pagina->bitPuntero = 0;
+			if(mOcup==0) pagina->bitPuntero = 1;
+
+			list_add(mProc->paginas,pagina);
+
+			break;
+
+		}
+		i++;
+	}
+
+}
+
+int damePuntero(t_list* paginas){
+	int j=0;
+	t_pagina *pagina;
+	while(j<list_size(paginas)){
+		pagina = list_get(paginas,j);
+		if(pagina->bitPuntero==1) return j;
+		j++;
+	}
+	return -1;
+}
+
+int damePaginaVictima(int pid,int* marco){
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0,j=0,cantPag,encontrado=0,victima;
+	int bandera=0;
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid){
+			cantPag = list_size(mProc->paginas);
+
+			j=damePuntero(mProc->paginas);
+			if(j>-1){
+				while(j<cantPag){
+					pagina = list_get(mProc->paginas,j);
+					if(pagina->bitUso == 1){
+						pagina->bitUso = 0;
+					} else {
+						encontrado=1;
+						victima = pagina->pagina;
+						*marco = pagina->marco;
+					}
+
+
+					if(encontrado){
+						pagina->bitPuntero = 0;
+						j++;
+						if(j<cantPag){
+							pagina = list_get(mProc->paginas,j);
+							pagina->bitPuntero = 1;
+
+						} else {
+							pagina = list_get(mProc->paginas,0);
+							pagina->bitPuntero = 1;
+
+						}
+						return victima;
+					}
+
+					j++;
+					if(j==cantPag && bandera<2){
+						j=0;
+						bandera++;;
+					}
+				}
+			} else {
+				printf("NO HAY PUNTERO MAL:%d\n",pid);
+				abort();
+			}
+		}
+		i++;
+	}
+
+	return -1;
+
+}
+
+
+int recorrerYDarmeMarco(int pid){
+	int pagina,marco=-1;
+	if(!strcmp(g_Algoritmo,"CLOCK")){
+		pagina=damePaginaVictima(pid,&marco);
+		printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n",pagina,marco);
+		grabarContenidoASwap(pid,pagina,a_Memoria[marco].contenido);
+		actualizarTablaPagina(pid,pagina);
+		memset(a_Memoria[marco].contenido,0,g_Tamanio_Marco);
+	}
+	return marco;
+}
+
+void poneElBitUso(int pid,int pag){
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0,j=0,cantPag;
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid){
+			cantPag = list_size(mProc->paginas);
+			j=0;
+			while(j<cantPag){
+				pagina = list_get(mProc->paginas,j);
+				if(pagina->pagina == pag){
+					pagina->bitUso = 1;
+					j=cantPag;
+				}
+				j++;
+			}
+		break;
+		}
+		i++;
+	}
+}
+
+
+int CLOCK(int *marco,int pagina,int pid){
+	int mOcup=-1;
+
+	*marco=dameMarco();
+	if(*marco!=-1){
+		mOcup=marcosUsados(pid);
+		if(mOcup<g_Maximo_Marcos_Por_Proceso){
+			asignarMarco(pid,pagina,marco,mOcup);
+		} else {
+			*marco=recorrerYDarmeMarco(pid);
+			asignarMarco(pid,pagina,marco,mOcup);
+		}
+	} else {
+		*marco=recorrerYDarmeMarco(pid);
+
+		asignarMarco(pid,pagina,marco,mOcup);
+
+	}
+
+	return 1;
+}
+
+
 
 void hayLugarEnMPSinoLoHago(int* marco,int pid,int nroPagina,char *contenido){
 
@@ -1522,7 +1540,7 @@ void hayLugarEnMPSinoLoHago(int* marco,int pid,int nroPagina,char *contenido){
 		LRU(marco,pid,nroPagina,contenido);
 
 	}else if (!strcmp(g_Algoritmo,"CLOCK")){
-		//CLOCK(marco,&pagina,&pidi,&contenido);
+		CLOCK(marco,nroPagina,pid);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
 		//CLOCKMEJORADO(marco,&pagina,&pidi,&contenido);
 	}
@@ -1601,11 +1619,11 @@ void implementoEscribirCpu(int socket,char *buffer){
 		bufferAux= DigitosNombreArchivo(buffer,&posActual);
 		memcpy(contenido,bufferAux,tamanioC);
 
-		printf("***********************ESCRIBIR**********************************\n");
-		printf("* CPU solicita escribir Pid:"COLOR_VERDE"%d"DEFAULT" Pagina:"COLOR_VERDE"%d"DEFAULT" Contenido:",pid,nroPagina);
+		printf("***********************"NEGRITA"ESCRIBIR"DEFAULT"**********************************\n");
+		printf("* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:",pid,nroPagina);
 		imprimirContenido(contenido,tamanioC);
 		printf("\n");
-		printf("* ("COLOR_VERDE"Escribir"DEFAULT") ");
+		printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") ");
 		if(g_Cantidad_Marcos>0){
 			if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 				//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
@@ -1622,10 +1640,10 @@ void implementoEscribirCpu(int socket,char *buffer){
 			actualizarMemoriaPrincipal(pid,nroPagina,contenido,tamanioC,marco);
 			actualizarTLB(pid,nroPagina);
 
-			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Contenido:");
+			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:");
 			imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 			printf("\n");
-			printf("* ("COLOR_VERDE"Escribir"DEFAULT") Marco:%d\n",marco);
+			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",marco);
 			EnviarDatos(socket,a_Memoria[marco].contenido,g_Tamanio_Marco);
 			//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 		} else {
@@ -1654,8 +1672,8 @@ void imprimirTLB(){
 	t_tlb* tlb;
 	pthread_mutex_lock(&semTELEBE);
 	if(!strcmp(g_TLB_Habilitada,"SI")){
-		printf("***************TLB***************\n");
-		printf("* "COLOR_VERDE"Pos"DEFAULT"\t"COLOR_VERDE"Pid"DEFAULT"\t"COLOR_VERDE"Pag"DEFAULT"\t"COLOR_VERDE"Marco"DEFAULT"\t*\n");
+		printf("***************"NEGRITA"TLB"DEFAULT"***************\n");
+		printf("* "COLOR_VERDE""NEGRITA"Pos"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t*\n");
 		printf("*********************************\n");
 		while(i<list_size(lista_tlb)){
 			tlb = list_get(lista_tlb,i);
@@ -1684,8 +1702,8 @@ void implementoLeerCpu(int socket,char *buffer){
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	nroPagina=atoi(bufferAux);
 
-	printf("**************************LEER***********************************\n");
-	printf("* CPU Solicita leer Pid:"COLOR_VERDE"%d"DEFAULT" Pagina:"COLOR_VERDE"%d"DEFAULT"\n",pid,nroPagina);
+	printf("**************************"NEGRITA"LEER"DEFAULT"***********************************\n");
+	printf("* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT"\n",pid,nroPagina);
 	//printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if(g_Cantidad_Marcos>0){
 		if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
@@ -1693,11 +1711,11 @@ void implementoLeerCpu(int socket,char *buffer){
 			contenido=buscarEnMemoriaPrincipal(marco);
 		}else{
 
-			imprimirTablaDePaginas();
+			//imprimirTablaDePaginas();
 
 			if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 				//Encontro la pagina en la tabla de paginas
-				printf("ENCUENTRA EN LA TABLA DE PAGINAAAAAAAAAAAAAAAAAAAAA\n");
+
 				contenido=buscarEnMemoriaPrincipal(marco);
 
 			}else{
@@ -1707,7 +1725,7 @@ void implementoLeerCpu(int socket,char *buffer){
 					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina,contenido);
 					actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 				} else {
-					printf("* ("COLOR_VERDE"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+					printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
 				}
 			}
 			if(contenido!=NULL){
@@ -1716,7 +1734,7 @@ void implementoLeerCpu(int socket,char *buffer){
 			}
 			//sleep(g_Retardo_Memoria);
 		}
-		printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en MP. Contenido:");
+		printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 		printf("\n");
 
@@ -1728,7 +1746,7 @@ void implementoLeerCpu(int socket,char *buffer){
 	} else {
 		contenido=pedirContenidoASwap(pid,nroPagina);
 		if(contenido!=NULL){
-			printf("* ("COLOR_VERDE"Leer"DEFAULT") Busco en SWAP Contenido:");
+			printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:");
 			imprimirContenido(contenido,g_Tamanio_Marco);
 			printf("\n");
 			EnviarDatos(socket,contenido,g_Tamanio_Marco);
@@ -1758,7 +1776,7 @@ int eliminarDeSwap(int pid){
 	pthread_mutex_unlock(&semSwap);
 
 
-	printf("* ("COLOR_VERDE"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
+	printf("* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
 
 	if(strcmp(bufferRespuesta,"1")==0){
 
@@ -1844,6 +1862,7 @@ void eliminarDeLaTlbEnFinalizar(int pid){
 
 			tlb->marco=-1;
 			tlb->pagina=-1;
+			tlb->pid =-1;
 		}
 		i++;
 	}
@@ -1869,8 +1888,8 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	free(bufferAux);
 
 
-	printf("***************************FINALIZAR*****************************\n");
-	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE"%d"DEFAULT"\n",pid);
+	printf("***************************"NEGRITA"FINALIZAR"DEFAULT"*****************************\n");
+	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
 	if(g_Entradas_TLB>0)

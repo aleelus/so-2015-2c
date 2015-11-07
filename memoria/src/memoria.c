@@ -689,14 +689,12 @@ void actualizarTLB(int pid,int nroPagina){
 	t_pagina *pagina;
 	t_tlb *telebe;
 	int i=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
-	int contAgrego=0,posActual=nroPagina,bandera=0,contPag=0;
+	int contAgrego=0,posActual=0,bandera=0,contPag=0;
 
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
-
 		if(mProc->pid == pid){
-
 			totalPaginas=list_size(mProc->paginas);
 
 			while(bandera==0){
@@ -711,7 +709,7 @@ void actualizarTLB(int pid,int nroPagina){
 						telebe = list_get(lista_tlb,contAgrego);
 
 						telebe->pid=pid;
-						telebe->pagina=posActual;
+						telebe->pagina=pagina->pagina;
 						telebe->marco=pagina->marco;
 
 						pthread_mutex_unlock(&semTELEBE);
@@ -1740,10 +1738,12 @@ void implementoLeerCpu(int socket,char *buffer){
 			}
 			if(contenido!=NULL){
 				actualizarTLB(pid,nroPagina);
-				imprimirTLB();
+			//	imprimirTLB();
 			}
+
 			//sleep(g_Retardo_Memoria);
 		}
+		imprimirTLB();
 		printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido,g_Tamanio_Marco);
 		printf("\n");

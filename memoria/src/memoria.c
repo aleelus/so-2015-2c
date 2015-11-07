@@ -682,13 +682,32 @@ void actualizarMemoriaPrincipal(int pid,int nroPagina,char *contenido,int tamani
 
 }
 
+int buscarPagina(t_mProc* mProc,int nroPagina){
+
+	t_pagina *pagina;
+	int i=0;
+
+	while(i<list_size(mProc->paginas)){
+		pagina=list_get(mProc->paginas,i);
+
+		if(pagina->pagina==nroPagina)
+			return i;
+
+		i++;
+	}
+
+	return -1;
+
+
+}
+
 void actualizarTLB(int pid,int nroPagina){
 
 
 	t_mProc *mProc;
 	t_pagina *pagina;
 	t_tlb *telebe;
-	int i=0,totalPaginas=0,entradasTLB=g_Entradas_TLB;
+	int i=0,totalPaginas=0,entradasTLB=g_Entradas_TLB,entro=0;
 	int contAgrego=0,posActual=0,bandera=0,contPag=0;
 
 
@@ -699,7 +718,12 @@ void actualizarTLB(int pid,int nroPagina){
 
 			while(bandera==0){
 
+				if(!entro)
+					posActual = buscarPagina(mProc,nroPagina);
+
 				if(posActual<totalPaginas){
+
+
 					pagina=list_get(mProc->paginas,posActual);
 
 
@@ -727,6 +751,7 @@ void actualizarTLB(int pid,int nroPagina){
 
 
 				posActual++;
+				entro=1;
 
 			}
 

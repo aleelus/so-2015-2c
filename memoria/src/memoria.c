@@ -241,7 +241,7 @@ void iniciarMemoriaPrincipal(){
 void iniciarTLB(){
 
 
-	printf(COLOR_CYAN""NEGRITA"\t SETEO\n");
+	printf(COLOR_CYAN""NEGRITA"\t SETEO\n"DEFAULT);
 
 	lista_tlb = list_create();
 	if(!strcmp(g_TLB_Habilitada,"SI")){
@@ -444,6 +444,16 @@ void implementoIniciarCpu(int socket,char *buffer){
 	//Cantidad de Paginas
 	bufferAux= DigitosNombreArchivo(buffer,&posActual);
 	cantidadPaginas=atoi(bufferAux);
+
+	if(cantidadPaginas<=0){
+		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
+		string_append(&bufferRespuestaCPU,"0");
+		EnviarDatos(socket,bufferRespuestaCPU,strlen(bufferRespuestaCPU));
+
+		return;
+
+	}
+
 
 	mProc->paginas=list_create();
 	mProc->cantMarcosPorProceso=0;

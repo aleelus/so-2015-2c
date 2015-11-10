@@ -306,6 +306,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			pthread_mutex_unlock(&semaforoLog);
 
 			free(buffer);
+			free(bufferRespuesta);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 
 			if(boom){
@@ -410,6 +411,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(contenidoLeidoConBarraCerosChar);
 			free(buffer);
 			free(contenidoLeido);
+			free(bufferRespuesta);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 
 			if(esRR && quantum == i - ip + 1){
@@ -487,6 +489,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				free(subBuffer);
 				free(respuestaParaElPlanificador);
 				free(buffer);
+				free(bufferRespuesta);
 				break;
 			}
 
@@ -676,6 +679,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
+			free(bufferRespuesta);
 			sleep(g_Retardo);//lo pide el enunciado u_u
 			break;//Harakiri TODO paro de ejecutar y a donde voy??, tendria que poner a la CPU a la escucha...
 		}

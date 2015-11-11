@@ -860,12 +860,11 @@ int contarMarcosPorProceso(int pid){
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
-		if(mProc->pid==pid)
+		if(mProc->pid==pid){
 			aux=mProc->cantMarcosPorProceso;
 
-
 			return aux;
-
+		}
 		i++;
 	}
 
@@ -886,7 +885,8 @@ void actualizarCantidadMarcosPorProceso(int pid){
 		mProc=list_get(lista_mProc,i);
 
 		if(mProc->pid==pid){
-			mProc->cantMarcosPorProceso++;
+			mProc->cantMarcosPorProceso = mProc->cantMarcosPorProceso +1;
+
 
 			return;
 		}
@@ -931,9 +931,21 @@ int preguntarDisponibilidadDeMarcos(int pid){
 	int cantMarcosPorProceso=-1;
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
 
-	resta=g_Maximo_Marcos_Por_Proceso - cantMarcosPorProceso;
+	t_mProc *mProc;
 
-	while(i<g_Cantidad_Marcos && cont<resta){
+	i=0;
+	while(i<list_size(lista_mProc)){
+		mProc= list_get(lista_mProc,i);
+		if(mProc->pid==pid)
+			i=list_size(lista_mProc);
+		i++;
+	}
+
+
+	resta=mProc->totalPaginas - cantMarcosPorProceso;
+
+	i=0;
+	while(i<g_Cantidad_Marcos && cont<resta && cantMarcosPorProceso<g_Maximo_Marcos_Por_Proceso){
 
 		if(a_Memoria[i].pag<0 ){
 			cont++;
@@ -960,8 +972,9 @@ int dameMarco(){
 }
 
 
-void nuevaPagina(t_mProc *mProc,t_pagina *auxPagina,int nroPagina,int pid,int *marco){
+void nuevaPagina(t_mProc *mProc,int nroPagina,int pid,int *marco){
 
+	t_pagina *auxPagina;
 
 	auxPagina = malloc(sizeof(t_pagina));
 	auxPagina->bitMP=1;
@@ -1016,8 +1029,7 @@ int FIFO2(int *marco,int pid,int nroPagina){
 
 				if(preguntarDisponibilidadDeMarcos(pid)>0){
 
-					tablaPagina=NULL;
-					nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
+					nuevaPagina(mProc,nroPagina,pid,marco);
 
 				}else{
 
@@ -1031,7 +1043,9 @@ int FIFO2(int *marco,int pid,int nroPagina){
 							tablaPagina->bitPuntero=0;
 							tablaPagina->bitMP=0;
 							if(buscarPagina(mProc,nroPagina)==-1){
-								nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
+
+								nuevaPagina(mProc,nroPagina,pid,marco);
+
 							}
 
 
@@ -1101,7 +1115,7 @@ int primeraPasada(int pid,int nroPagina,int *marco){
 
 	int cantMarcosPorProceso=-1;
 	t_mProc *mProc;
-	t_pagina *pagina=malloc(sizeof(t_pagina));
+
 	t_lru *lru;
 	int i=0;
 
@@ -1114,7 +1128,7 @@ int primeraPasada(int pid,int nroPagina,int *marco){
 
 			mProc=buscarPidEnListaMproc(pid);
 			if(mProc!=NULL){
-				nuevaPagina(mProc,pagina,nroPagina,pid,marco);
+				nuevaPagina(mProc,nroPagina,pid,marco);
 				lru = malloc(sizeof(t_lru));
 				lru->pagina=nroPagina;
 				lru->pid=pid;
@@ -1663,6 +1677,9 @@ void implementoEscribirCpu(int socket,char *buffer){
 			if(buscarPaginaEnTLB(pid,nroPagina,&marco)){
 				//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 			}else{
+
+				//imprimirTablaDePaginas();
+
 				if(buscarEnTablaDePaginas(pid,nroPagina,&marco)){
 					//Encontro la pagina en la tabla de paginas
 				}else{
@@ -1700,7 +1717,9 @@ void implementoEscribirCpu(int socket,char *buffer){
 		EnviarDatos(socket,"0",strlen("0"));
 	}
 
+	printf("ANTES\n");
 	imprimirMemoria();
+	printf("DESUPUES\n");
 
 }
 
@@ -1795,7 +1814,9 @@ void implementoLeerCpu(int socket,char *buffer){
 		}
 	}
 
+	printf("ANTES\n");
 	imprimirMemoria();
+	printf("DESUPUES\n");
 
 		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
 }

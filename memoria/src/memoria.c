@@ -861,7 +861,6 @@ int contarMarcosPorProceso(int pid){
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 		if(mProc->pid==pid)
-
 			aux=mProc->cantMarcosPorProceso;
 
 
@@ -1031,7 +1030,10 @@ int FIFO2(int *marco,int pid,int nroPagina){
 
 							tablaPagina->bitPuntero=0;
 							tablaPagina->bitMP=0;
-							nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
+							if(buscarPagina(mProc,nroPagina)==-1){
+								nuevaPagina(mProc,tablaPagina,nroPagina,pid,marco);
+							}
+
 
 
 							if(k==list_size(mProc->paginas)-1){
@@ -1697,6 +1699,9 @@ void implementoEscribirCpu(int socket,char *buffer){
 		printf("Tamaño de Marco:%d Tamaño que envia CPU:%d\n",g_Tamanio_Marco,tamanioC);
 		EnviarDatos(socket,"0",strlen("0"));
 	}
+
+	imprimirMemoria();
+
 }
 
 
@@ -1944,6 +1949,7 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	}
 
 	EnviarDatos(socket,bufferACPU,strlen(bufferACPU));
+	imprimirMemoria();
 
 }
 

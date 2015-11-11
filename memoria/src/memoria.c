@@ -1113,13 +1113,16 @@ t_mProc * buscarPidEnListaMproc(int pid){
 int primeraPasada(int pid,int nroPagina,int *marco){
 
 
-	int cantMarcosPorProceso=-1;
+	int cantMarcosPorProceso=-1,resta=0;
 	t_mProc *mProc;
 
 	t_lru *lru;
 	int i=0;
 
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
+
+
+	i=0;
 
 	while(i<g_Cantidad_Marcos){
 
@@ -1129,6 +1132,7 @@ int primeraPasada(int pid,int nroPagina,int *marco){
 			mProc=buscarPidEnListaMproc(pid);
 			if(mProc!=NULL){
 				nuevaPagina(mProc,nroPagina,pid,marco);
+
 				lru = malloc(sizeof(t_lru));
 				lru->pagina=nroPagina;
 				lru->pid=pid;
@@ -1252,12 +1256,6 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 			i++;
 		}
 
-
-
-
-	//	printf("PID : %d ----- PAG: %d  ---   MARCO: %d\n",pid,pag,*marco);
-		//printf("LISTA LRU : %d\n",list_size(lista_lru));
-
 		pagina = malloc(sizeof(t_pagina));
 		pagina->bitMP=1;
 		pagina->bitPuntero=0;
@@ -1283,12 +1281,20 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 			lru=list_remove(lista_lru,0);
 			free(lru);
 
+			printf("ELIMINO Y AGREGO DE LA LISTA LRU\n");
+
 			lru = malloc(sizeof(t_lru));
 			lru->pagina=nroPagina;
 			lru->pid=pid;
 			list_add(lista_lru,lru);
 
 
+		}else{
+
+			lru = malloc(sizeof(t_lru));
+			lru->pagina=nroPagina;
+			lru->pid=pid;
+			list_add(lista_lru,lru);
 		}
 
 	}
@@ -1933,6 +1939,26 @@ void eliminarDeLaTlbEnFinalizar(int pid){
 }
 
 
+void eliminarDeListaLRU(int pid){
+
+	t_lru *lru;
+	int i=0;
+
+	while(i<list_size(lista_lru)){
+		lru=list_get(lista_lru,i);
+
+		if(lru->pid==pid){
+			lru=list_remove(lista_lru,i);
+			free(lru);
+			i--;
+		}
+
+
+		i++;
+	}
+
+}
+
 
 void implementoFinalizarCpu(int socket,char *buffer){
 
@@ -1956,6 +1982,8 @@ void implementoFinalizarCpu(int socket,char *buffer){
 	if(g_Entradas_TLB>0)
 		eliminarDeLaTlbEnFinalizar(pid);
 	//
+	if(!strcmp(g_Algoritmo,"LRU"))
+		eliminarDeListaLRU(pid);
 
 	if(eliminarProceso(pid)){
 		//Envio a CPU el OK de q se borro

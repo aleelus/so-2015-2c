@@ -73,6 +73,74 @@ int crearParticionSwap(){
 }
 
 
+
+
+void mostrarParticionSwap(){
+
+	int x=0;
+
+	//////////////////////////////////////////////////////////////////////
+	printf("**********\033[1mParticion Swap"DEFAULT"*********");
+
+	for(x=0;x<__sizePagina__-5;x++)
+		printf("*");
+	printf("\n");
+	///////////////////////////////////////////////////////////////////////////
+	printf("* \033[1m"COLOR_VERDE"Pid\t Pagina\t Contenido\t"DEFAULT"");
+
+	for(x=0;x<__sizePagina__-5;x++)
+			printf(" ");
+	printf("\n");
+	////////////////////////////////////////////////////////////////
+
+	printf("*********************************");
+	for(x=0;x<__sizePagina__-5;x++)
+		printf("*");
+	printf("\n");
+	////////////////////////////////////////////////////////////////
+
+
+	char * nombre=string_new();
+	int i=0,c=0;
+	string_append(&nombre,g_Nombre_Swap);
+	string_append(&nombre,".bin");
+	FILE *fd = fopen(nombre,"r+b");
+
+	char * contenido;
+
+	contenido = malloc (__sizePagina__+1);
+	memset(contenido,0,__sizePagina__+1);
+
+
+	t_block_used *bloque;
+
+	while(i<list_size(listaBloquesOcupados)){
+		bloque=list_get(listaBloquesOcupados,i);
+
+		for(c=0;c<bloque->cantPag;c++){
+			printf("* %li \t ",bloque->pid);
+			fseek(fd,bloque->ptrComienzo+c*__sizePagina__,SEEK_SET);
+			fread(contenido,1,__sizePagina__,fd);
+			printf("%d \t %s\t \n",c,contenido);
+			memset(contenido,0,__sizePagina__+1);
+		}
+
+
+		i++;
+	}
+
+
+	printf("*********************************");
+	for(x=0;x<__sizePagina__-5;x++)
+		printf("*");
+	printf("\n");
+
+	fclose(fd);
+
+
+}
+
+
 int ejecutarOrden(int orden, char* buffer){
 	switch(orden){
 	case CREA_PROCESO:

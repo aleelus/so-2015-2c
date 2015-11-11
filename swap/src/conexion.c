@@ -57,6 +57,10 @@ void HiloOrquestadorDeConexiones() {
 	CerrarSocket(socket_host);
 }
 
+
+
+
+
 int AtiendeCliente(void * arg) {
 	socket_Memoria = (int) arg;
 
@@ -97,9 +101,11 @@ int AtiendeCliente(void * arg) {
 			switch (emisor) {
 			case ADM_MEMORIA:
 			{
-					int orden;
-					orden = PosicionDeBufferAInt(buffer, 1);
-					ejecutarOrden(orden, buffer);
+				int orden;
+				orden = PosicionDeBufferAInt(buffer, 1);
+				ejecutarOrden(orden, buffer);
+
+				mostrarParticionSwap();
 //				printf("Hola Memoria\n");
 //				EnviarDatos(socket_Memoria,"Ok",strlen("Ok"), COD_ADM_SWAP);
 				break;

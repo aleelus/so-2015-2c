@@ -14,6 +14,7 @@
 #include "cpu.h"
 #include "interprete.h"
 
+
 //TODO int id;//lo pide el enunciado, es para diferenciar entre CPU en los logs
 
 //Socket de la Memoria
@@ -74,7 +75,7 @@ int main(void) {
 	sem_init(&semListaDeProcesos,0,1);
 
 	//Si el tercer parametro es true graba en archivo y muestra en pantalla sino solo graba en archivo
-	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", true, LOG_LEVEL_TRACE);
+	logger = log_create(NOMBRE_ARCHIVO_LOG, "cpu", false, LOG_LEVEL_TRACE);
 
 	sem_init(&semDormilon,0,0);
 
@@ -254,7 +255,9 @@ void escucharPlanificador(){
 	int cantInstr;
 	char* path;//No hay que hacer malloc aca, lo hace el strdup
 
+
 	RecibirDatos(socketPlanificador,&buffer);//lalalalalala, esperoooo esperoooo, wiiiiiiiiiiiiiiiiiiii :PPPPP
+
 
 	bufferRespuesta = DigitosNombreArchivo(buffer,&posActual);
 	pId = atoi(bufferRespuesta);
@@ -272,6 +275,17 @@ void escucharPlanificador(){
 
 	pthread_mutex_lock(&semaforoLog);
 	log_info(logger,"CONTEXTO DE EJECUCION RECIBIDO idCPU: %d PID: %d IP: %d QUANTUM: %d PATH: %s",idCPU, pId, ip, cantInstr, path);
+	printf("*"COLOR_AZUL"CONTEXTO DE EJECUCION RECIBIDO "DEFAULT);
+	printf("idCPU: ");
+	printf(COLOR_AZUL"%d"DEFAULT,idCPU);
+	printf(" PID: ");
+	printf(COLOR_AZUL"%d"DEFAULT,pId);
+	printf(" IP: ");
+	printf(COLOR_AZUL"%d"DEFAULT,ip);
+	printf(" QUANTUM: ");
+	printf(COLOR_AZUL"%d"DEFAULT,cantInstr);
+	printf(" PATH: ");
+	printf(COLOR_AZUL"%s \n"DEFAULT,path);
 	pthread_mutex_unlock(&semaforoLog);
 
 	free(bufferRespuesta);

@@ -303,6 +303,11 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: iniciar EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			printf("Instruccion: ");
+			printf("*"COLOR_MAGENTA"iniciar"DEFAULT);
+			printf(" ejecutada ");
+			printf("Parametros: ");
+			printf("*"COLOR_MAGENTA"PID: %d PARAMETRO %s \n"DEFAULT,procesoAEjecutar->pid,instruccion->parametro);
 			pthread_mutex_unlock(&semaforoLog);
 
 			free(buffer);
@@ -313,7 +318,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				char* respuestaParaElPlanificador = string_new();
 
 				string_append(&respuestaParaElPlanificador, YO);//ID
-				string_append(&respuestaParaElPlanificador,"4");//Tipo de operacion 1- Enstrada Salida (CNumero de la ultima linea ejecutada, Tiempo de E/S, Resultados con barra n)
+				string_append(&respuestaParaElPlanificador,"4");//Tipo de operacion 4
 				string_append(&respuestaParaElPlanificador, obtenerSubBuffer(string_itoa(procesoAEjecutar->pid)));
 
 				pthread_mutex_lock(&semaforoLog);
@@ -406,6 +411,11 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: leer EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			printf("Instruccion: ");
+			printf("*"COLOR_MAGENTA"leer"DEFAULT);
+			printf(" ejecutada ");
+			printf("Parametros: ");
+			printf("*"COLOR_MAGENTA"PID: %d PARAMETRO %s \n"DEFAULT,procesoAEjecutar->pid,contenidoLeidoConBarraCerosChar);
 			pthread_mutex_unlock(&semaforoLog);
 
 			free(contenidoLeidoConBarraCerosChar);
@@ -483,7 +493,12 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				pthread_mutex_unlock(&semaforoLog);
 
 				pthread_mutex_lock(&semaforoLog);
-				log_info(logger,"INSTRUCCION: escribir FALLO PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro);
+				log_info(logger,"INSTRUCCION: escribir FALLO PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+				printf("Instruccion: ");
+				printf("*"COLOR_MAGENTA"escribir"DEFAULT);
+				printf(" ejecutada ");
+				printf("Parametros: ");
+				printf("*"COLOR_MAGENTA"PID: %d PARAMETROS: pagina escrita: %s contenido: %s \n"DEFAULT,procesoAEjecutar->pid,instruccion->parametro, instruccion->otroParametro);
 				pthread_mutex_unlock(&semaforoLog);
 
 				free(subBuffer);
@@ -532,6 +547,11 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: escribir EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			printf("Instruccion: ");
+			printf("*"COLOR_MAGENTA"escribir"DEFAULT);
+			printf(" ejecutada ");
+			printf("Parametros: ");
+			printf("*"COLOR_MAGENTA"PID: %d PARAMETROS: pagina escrita: %s contenido: %s \n"DEFAULT,procesoAEjecutar->pid,instruccion->parametro, instruccion->otroParametro);
 			pthread_mutex_unlock(&semaforoLog);
 
 			free(bufferMasSubBuffer);
@@ -605,6 +625,11 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: entrada-salida EJECUTADA PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
+			printf("Instruccion: ");
+			printf("*"COLOR_MAGENTA"entrada-salida"DEFAULT);
+			printf(" ejecutada ");
+			printf("Parametros: ");
+			printf("*"COLOR_MAGENTA"PID: %d PARAMETRO %s \n"DEFAULT,procesoAEjecutar->pid,instruccion->parametro);
 			pthread_mutex_unlock(&semaforoLog);
 
 			free(resultados);
@@ -675,6 +700,11 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			log_info(logger,"INSTRUCCION: finalizar EJECUTADA PID: %d RESULTADO: %s",procesoAEjecutar->pid,instruccion->resultado);
+			printf("Instruccion: ");
+			printf("*"COLOR_MAGENTA"finalizar"DEFAULT);
+			printf(" ejecutada ");
+			printf("Parametros: ");
+			printf("*"COLOR_MAGENTA"PID: %d PARAMETRO %s \n"DEFAULT,procesoAEjecutar->pid,instruccion->resultado);
 			pthread_mutex_unlock(&semaforoLog);
 
 			free(resultados);

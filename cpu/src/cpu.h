@@ -22,6 +22,8 @@
 
 #define COLOR_VERDE   "\x1b[32m"
 #define DEFAULT   "\x1b[0m"
+#define COLOR_MAGENTA "\x1b[35m"
+#define COLOR_AZUL    "\x1b[34m"
 #define YO	"2"
 
 

@@ -1692,6 +1692,14 @@ void implementoEscribirCpu(int socket,char *buffer){
 					//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
 					// hacemos boleta a alguien
 					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina,contenido);
+
+					if(marco == -1){
+						printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
+						EnviarDatos(socket,"0",strlen("0"));
+						return;
+					}
+
+
 				}
 				//sleep(g_Retardo_Memoria);
 			}
@@ -1786,6 +1794,13 @@ void implementoLeerCpu(int socket,char *buffer){
 				contenido=pedirContenidoASwap(pid,nroPagina);
 				if(contenido!=NULL){
 					hayLugarEnMPSinoLoHago(&marco,pid,nroPagina,contenido);
+
+					if(marco == -1){
+						printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
+						EnviarDatos(socket,"0",strlen("0"));
+						return;
+					}
+
 					actualizarMemoriaPrincipal(pid,nroPagina,contenido,g_Tamanio_Marco,marco);
 				} else {
 					printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");

@@ -87,8 +87,8 @@ void bajarMarcosASwapYLimpiarMP(){
 	t_pagina *pagina;
 
 
-	pthread_mutex_lock(&semMemPrincipal);
-	pthread_mutex_lock(&semListaMproc);
+
+
 
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
@@ -116,8 +116,8 @@ void bajarMarcosASwapYLimpiarMP(){
 	}
 
 
-	pthread_mutex_unlock(&semListaMproc);
-	pthread_mutex_unlock(&semMemPrincipal);
+
+
 }
 
 int Dump()
@@ -125,8 +125,44 @@ int Dump()
 
 	int status;
 
-	char* cabecera = "-----------Volcado de memoria INICIO-----------\n";
-	char* pie = "-----------Volcado de memoria FIN-----------\n";
+	char* cabecera = string_new();
+	char* pie = string_new();
+
+	int x=0;
+
+	//////////////////////////////////////////////////////////////////////
+	string_append(&cabecera,"\n*********"NEGRITA"Memoria Principal"DEFAULT"*******");
+
+	for(x=0;x<g_Tamanio_Marco-5;x++)
+		string_append(&cabecera,"*");
+
+	string_append(&cabecera,"\n");
+	///////////////////////////////////////////////////////////////////////////
+
+	string_append(&cabecera,"* "NEGRITA""COLOR_VERDE"Marco\t Pid\t Contenido\t"DEFAULT"");
+
+	for(x=0;x<g_Tamanio_Marco-5;x++)
+		string_append(&cabecera," ");
+
+	string_append(&cabecera,"\n");
+	////////////////////////////////////////////////////////////////
+
+	string_append(&cabecera,"*********************************");
+	for(x=0;x<g_Tamanio_Marco-5;x++)
+		string_append(&cabecera,"*");
+	string_append(&cabecera,"\n");
+	////////////////////////////////////////////////////////////////
+
+
+	string_append(&pie,"*********************************");
+
+
+	for(x=0;x<g_Tamanio_Marco-5;x++)
+		string_append(&pie,"*");
+	string_append(&pie,"\n");
+
+
+
 
 
     if(!fork()) {
@@ -138,10 +174,18 @@ int Dump()
 
     	for(j=0;j<g_Cantidad_Marcos;j++){
 
-    		string_append(&contenido,"Marco: ");
+    		string_append(&contenido,"* ");
     		string_append(&contenido,string_itoa(j));
-    		string_append(&contenido," Contenido: ");
-    		string_append(&contenido,a_Memoria[j].contenido);
+    		string_append(&contenido,"\t ");
+    		if(a_Memoria[j].pid<0)
+    			string_append(&contenido,"-");
+    		else
+    			string_append(&contenido,string_itoa(a_Memoria[j].pid));
+    		string_append(&contenido,"\t ");
+    		if(a_Memoria[j].pid<0)
+    			string_append(&contenido,"-");
+    		else
+    			string_append(&contenido,a_Memoria[j].contenido);
     		string_append(&contenido,"\n");
     	}
 
@@ -170,17 +214,26 @@ int Dump()
 void Manejador(int signum){
 	switch (signum){
 	case SIGUSR1:
-	   	printf("He recibido la señal SIGUSR1\n");
+	   	printf("* He recibido la señal "COLOR_VERDE""NEGRITA"SIGUSR1\n"DEFAULT);
+	   	pthread_mutex_lock(&semMemPrincipal);
 	   	vaciarTLB();
+	   	pthread_mutex_unlock(&semMemPrincipal);
 	   	break;
     case SIGUSR2:
-	    printf("He recibido la señal SIGUSR2\n");
+	    printf("* He recibido la señal "COLOR_VERDE""NEGRITA"SIGUSR2\n"DEFAULT);
+	    pthread_mutex_lock(&semMemPrincipal);
 	    bajarMarcosASwapYLimpiarMP();
 	    funcionLimpiarTablasPaginas();
+	    pthread_mutex_unlock(&semMemPrincipal);
 	    break;
     case SIGPOLL:
-	    printf("He recibido la señal SIGPOLL");
+	    printf("* He recibido la señal "COLOR_VERDE""NEGRITA"SIGPOLL\n"DEFAULT);
+
 	    //Crear un hijo, pasarle por pipe al hijo la MP y el hijo guarda el contenido de toda la memoria a disco
+	    pthread_mutex_lock(&semMemPrincipal);
+	    Dump();
+	    pthread_mutex_unlock(&semMemPrincipal);
+
 	    break;
     default:
     	printf("Fin de ejecucion\n");
@@ -769,7 +822,7 @@ void funcionLimpiarTablasPaginas(){
 	t_pagina* unaPagina;
 	int i=0,j;
 
-	pthread_mutex_lock(&semListaMproc);
+
 
 	while(i<list_size(lista_mProc)){
 		mProc = list_get(lista_mProc,i);
@@ -783,7 +836,7 @@ void funcionLimpiarTablasPaginas(){
 		i++;
 	}
 
-	pthread_mutex_unlock(&semListaMproc);
+
 
 }
 
@@ -1113,14 +1166,17 @@ t_mProc * buscarPidEnListaMproc(int pid){
 int primeraPasada(int pid,int nroPagina,int *marco){
 
 
-	int cantMarcosPorProceso=-1,resta=0;
+	int cantMarcosPorProceso=-1;
 	t_mProc *mProc;
 
 	t_lru *lru;
-	int i=0;
+	int i=0,bandera=0;
 
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
 
+	if(cantMarcosPorProceso>=g_Maximo_Marcos_Por_Proceso){
+		bandera=1;
+	}
 
 	i=0;
 
@@ -1148,8 +1204,18 @@ int primeraPasada(int pid,int nroPagina,int *marco){
 		i++;
 	}
 
+	if(bandera == 1){
 
-	return -1;
+		return -1;
+
+	}else{
+
+		return -2;
+
+	}
+
+
+
 
 }
 
@@ -1208,7 +1274,7 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 
 //	printf("MARQUITO : %d \n",marquito);
 
-	if(marquito==-1){
+	if(marquito==-2){
 
 		while(i<list_size(lista_mProc)){
 			mProc = list_get(lista_mProc,i);
@@ -1296,6 +1362,10 @@ void LRU(int *marco, int pid,int nroPagina,char *contenido){
 			lru->pid=pid;
 			list_add(lista_lru,lru);
 		}
+
+	}else if(marquito==-1){
+
+		*marco=-1;
 
 	}
 

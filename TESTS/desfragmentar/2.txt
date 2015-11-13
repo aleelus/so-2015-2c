@@ -1,0 +1,5 @@
+iniciar 2;
+escribir 0 "dsak";
+escribir 1 "bob";
+entrada-salida 5;
+finalizar;

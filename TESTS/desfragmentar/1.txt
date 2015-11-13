@@ -1,0 +1,7 @@
+iniciar 5;
+escribir 0 "yoQueEstoyReLoco";
+escribir 1 "baby";
+escribir 2 "lalalal";
+leer 0;
+entrada-salida 100;
+finalizar;

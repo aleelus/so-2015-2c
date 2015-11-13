@@ -1,0 +1,5 @@
+iniciar 3;
+escribir 0 "lalalallalalala";
+escribir 1 "yidsiadsa";
+entrada-salida 10;
+finalizar;

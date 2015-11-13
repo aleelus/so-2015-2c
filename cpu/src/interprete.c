@@ -378,7 +378,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			int z = 0;
 			int cantidadDeBarraCeros = 0;
-
+			//TODO validar error con 0
 			for(z=0;z<sizeDeLaRespuesta;z++){
 				if(contenidoLeido[z] == '\0'){
 					cantidadDeBarraCeros++;
@@ -496,7 +496,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 				log_info(logger,"INSTRUCCION: escribir FALLO PID: %d PARAMETROS: %s RESULTADO: %s",procesoAEjecutar->pid,instruccion->parametro,instruccion->resultado);
 				printf("Instruccion: ");
 				printf("*"COLOR_MAGENTA"escribir"DEFAULT);
-				printf(" ejecutada ");
+				printf(" fallo ");
 				printf("Parametros: ");
 				printf("*"COLOR_MAGENTA"PID: %d PARAMETROS: pagina escrita: %s contenido: %s \n"DEFAULT,procesoAEjecutar->pid,instruccion->parametro, instruccion->otroParametro);
 				pthread_mutex_unlock(&semaforoLog);

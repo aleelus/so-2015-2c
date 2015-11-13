@@ -1968,6 +1968,7 @@ int eliminarProceso(int pid){
 
 
 					a_Memoria[pagina->marco].marcoEnUso=0;
+					a_Memoria[pagina->marco].pid=-1;
 					a_Memoria[pagina->marco].pag = -1;
 					memset(a_Memoria[pagina->marco].contenido,0,g_Tamanio_Marco);
 

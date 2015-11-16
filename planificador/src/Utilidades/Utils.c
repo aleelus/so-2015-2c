@@ -205,6 +205,8 @@ void procesarBuffer(t_cpu *cpu, char* buffer, long unsigned tamanioBuffer){
 			break;
 		case FALLO:
 			// TODO: Si hay que hacer otra cosa mas es aca
+			pasarAReady(cpu, -1);
+			break;
 		case FINALIZADO:
 			terminarProceso(cpu);
 			break;

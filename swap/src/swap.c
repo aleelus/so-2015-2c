@@ -440,7 +440,7 @@ int desfragmentar(){
 	for(i=0 ; i < listaBloquesOcupados->elements_count; i++){
 		bloqueAct = (t_block_used*)list_get(listaBloquesOcupados, i);
 		ptrAnt = bloqueAct->ptrComienzo;
-		if(ptrBloque != ptrAnt){
+		//if(ptrBloque != ptrAnt){
 
 			memcpy(swap+ptrBloque, aux+ptrAnt, (size_t) __sizePagina__ * bloqueAct->cantPag);
 			bloqueAct->ptrComienzo = ptrBloque;
@@ -463,7 +463,7 @@ int desfragmentar(){
 				ErrorFatal("Error al desfragmentar (msync interno)");
 			}
 
-		}
+		//}
 		ptrBloque += bloqueAct->cantPag * __sizePagina__ ;
 	}
 	if( munmap(swap, g_Cantidad_Paginas * __sizePagina__)<0){

@@ -579,14 +579,14 @@ char* getContenido(int ptr)
 }
 
 
-size_t getTamanioPagina(int posicion){
-	return (size_t) __sizePagina__ + (posicion%4096);
-}
-
-off_t getOffset(int posicion){
+off_t getOffset(int posicion){ //Obtiene la posicion inicial de la pagina del disco
 	return (off_t) (posicion/4096)*4096;
 }
 
-int getCorrimiento(int posicion){
+size_t getTamanioPagina(int posicion){ //Devuelve el tamaño de paginas que hay que leer mas el espacio extra de la pagina inicial
+	return (size_t) __sizePagina__ + getCorrimiento(posicion);
+}
+
+int getCorrimiento(int posicion){ //Devuelve la cantidad de bytes que hay que adelantar para grabar en la pagina de swap
 	return posicion%4096;
 }

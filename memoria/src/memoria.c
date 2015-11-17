@@ -1046,7 +1046,7 @@ void nuevaPagina(t_mProc *mProc,int nroPagina,int pid,int *marco){
 
 int FIFO2(int *marco,int pid,int nroPagina){
 
-	int i=0,k=0;
+	int i=0,k=0,j=0,bandera=0;
 	t_mProc *mProc;
 	t_pagina *tablaPagina,*auxPagina;
 
@@ -1104,15 +1104,44 @@ int FIFO2(int *marco,int pid,int nroPagina){
 
 
 							if(k==list_size(mProc->paginas)-1){
-								auxPagina=list_get(mProc->paginas,0);
-								auxPagina->bitMP=1;
-								auxPagina->bitPuntero=1;
+								j=0;
+								while(j<list_size(mProc->paginas)){
+									auxPagina=list_get(mProc->paginas,j);
+									if(auxPagina->bitMP==1){
+
+										auxPagina->bitPuntero=1;
+										j=list_size(mProc->paginas);
+									}
+
+									j++;
+								}
+
+
 							}else{
-								auxPagina=list_get(mProc->paginas,k+1);
-								auxPagina->bitMP=1;
-								auxPagina->bitPuntero=1;
+
+								j=k+1;
+								while(j<list_size(mProc->paginas)){
+									auxPagina=list_get(mProc->paginas,j);
+									if(auxPagina->bitMP==1){
+
+										auxPagina->bitPuntero=1;
+										bandera=1;
+										j=list_size(mProc->paginas);
+									}
+
+									j++;
+
+									if(j==list_size(mProc->paginas) && bandera==0){
+										j=0;
+										bandera=1;
+									}
+
+								}
+
 
 							}
+
+
 
 							pagina=a_Memoria[tablaPagina->marco].pag;
 							*marco=tablaPagina->marco;
@@ -1905,9 +1934,9 @@ void implementoLeerCpu(int socket,char *buffer){
 		}
 	}
 
-	printf("ANTES\n");
+
 	imprimirMemoria();
-	printf("DESUPUES\n");
+
 
 		//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,g_Tamanio_Marco);
 }

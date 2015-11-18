@@ -1432,6 +1432,108 @@ t_pagina* buscarDatosEnTP(int marco){
 
 }
 
+int damePuntero(t_list* paginas){
+	int j=0;
+	t_pagina *pagina;
+	while(j<list_size(paginas)){
+		pagina = list_get(paginas,j);
+		if(pagina->bitPuntero==1) return j;
+		j++;
+	}
+	return -1;
+}
+
+
+int damePaginaVictimaClockMejorado(int pid,int* marco){
+	t_mProc *mProc;
+	t_pagina *pagina;
+	int i=0,j=0,cantPag,encontrado=0,victima;
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid){
+			cantPag = list_size(mProc->paginas);
+
+			j=damePuntero(mProc->paginas);
+			if(j>-1){
+				while(j<cantPag && !encontrado){
+					pagina = list_get(mProc->paginas,j);
+					if(pagina->bitUso == 0 && pagina->bitModificado == 0 ){
+						encontrado=1;
+						victima = pagina->pagina;
+						*marco = pagina->marco;
+					}
+					j++;
+				}
+
+				if(encontrado){
+					pagina->bitPuntero = 0;
+					j++;
+					if(j<cantPag){
+						pagina = list_get(mProc->paginas,j);
+						pagina->bitPuntero = 1;
+					} else {
+						pagina = list_get(mProc->paginas,0);
+						pagina->bitPuntero = 1;
+					}
+					return victima;
+				} else {
+					j=0;
+					while(j<cantPag && !encontrado){
+						pagina = list_get(mProc->paginas,j);
+						if(pagina->bitUso == 0 && pagina->bitModificado == 1 ){
+							encontrado=1;
+							victima = pagina->pagina;
+							*marco = pagina->marco;
+						}
+						j++;
+					}
+					if(encontrado){
+						pagina->bitPuntero = 0;
+						j++;
+						if(j<cantPag){
+							pagina = list_get(mProc->paginas,j);
+							pagina->bitPuntero = 1;
+						} else {
+							pagina = list_get(mProc->paginas,0);
+							pagina->bitPuntero = 1;
+						}
+						return victima;
+					} else {
+						while(j<cantPag && !encontrado){
+							pagina = list_get(mProc->paginas,j);
+							if(pagina->bitUso == 0 && pagina->bitModificado == 0 ){
+								encontrado=1;
+								victima = pagina->pagina;
+								*marco = pagina->marco;
+							}
+							j++;
+						}
+						pagina->bitPuntero = 0;
+						j++;
+						if(j<cantPag){
+							pagina = list_get(mProc->paginas,j);
+							pagina->bitPuntero = 1;
+						} else {
+							pagina = list_get(mProc->paginas,0);
+							pagina->bitPuntero = 1;
+						}
+						return victima;
+					}
+				}
+			} else {
+				printf("NO HAY PUNTERO MAL:%d\n",pid);
+				abort();
+			}
+		}
+		i++;
+	}
+
+	return -1;
+
+}
+
+
 void imprimirMemoria(){
 	int i=0;
 	t_pagina *pagina;
@@ -1472,6 +1574,22 @@ void imprimirMemoria(){
 		}
 		printf("\n");*/
 	}
+
+	if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+			printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|BITMODIFICADO|\n");
+			while(i<g_Cantidad_Marcos){
+
+				if(a_Memoria[i].pag>=0){
+					pagina = buscarDatosEnTP(i);
+					if(pagina!=NULL)
+						printf("|%d-%d-%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero,pagina->bitUso,pagina->bitModificado);
+					}
+
+				i++;
+					}
+			printf("\n");
+	}
+
 
 	if(!strcmp(g_Algoritmo,"CLOCK")){
 		printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|\n");
@@ -1554,17 +1672,6 @@ void asignarMarco(int pid,int pag,int *marco,int mOcup){
 
 }
 
-int damePuntero(t_list* paginas){
-	int j=0;
-	t_pagina *pagina;
-	while(j<list_size(paginas)){
-		pagina = list_get(paginas,j);
-		if(pagina->bitPuntero==1) return j;
-		j++;
-	}
-	return -1;
-}
-
 int damePaginaVictima(int pid,int* marco){
 	t_mProc *mProc;
 	t_pagina *pagina;
@@ -1632,6 +1739,14 @@ int recorrerYDarmeMarco(int pid){
 		actualizarTablaPagina(pid,pagina);
 		memset(a_Memoria[marco].contenido,0,g_Tamanio_Marco);
 	}
+	if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+			pagina=damePaginaVictima(pid,&marco);
+			printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n",pagina,marco);
+			grabarContenidoASwap(pid,pagina,a_Memoria[marco].contenido);
+			actualizarTablaPagina(pid,pagina);
+			memset(a_Memoria[marco].contenido,0,g_Tamanio_Marco);
+		}
+
 	return marco;
 }
 
@@ -1696,7 +1811,7 @@ void hayLugarEnMPSinoLoHago(int* marco,int pid,int nroPagina,char *contenido){
 	}else if (!strcmp(g_Algoritmo,"CLOCK")){
 		CLOCK(marco,nroPagina,pid);
 	} else if (!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
-		//CLOCKMEJORADO(marco,&pagina,&pidi,&contenido);
+		CLOCK(marco,nroPagina,pid);
 	}
 }
 

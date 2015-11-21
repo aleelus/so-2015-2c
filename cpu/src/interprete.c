@@ -312,7 +312,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			free(buffer);
 			free(bufferRespuesta);
-			sleep(g_Retardo);//lo pide el enunciado u_u
+			usleep(g_Retardo);//lo pide el enunciado u_u
 
 			if(boom){
 				char* respuestaParaElPlanificador = string_new();
@@ -422,7 +422,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(buffer);
 			free(contenidoLeido);
 			free(bufferRespuesta);
-			sleep(g_Retardo);//lo pide el enunciado u_u
+			usleep(g_Retardo);//lo pide el enunciado u_u
 
 			if(esRR && quantum == i - ip + 1){
 				//3- Quantum (Resultados con barra n)
@@ -558,7 +558,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(subBuffer);
 			free(buffer);
 			free(contenidoEscrito);
-			sleep(g_Retardo);//lo pide el enunciado u_u
+			usleep(g_Retardo);//lo pide el enunciado u_u
 
 			if(esRR && quantum == i - ip + 1){
 				//3- Quantum (Resultados con barra n)
@@ -634,7 +634,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
-			sleep(g_Retardo);//lo pide el enunciado u_u
+			usleep(g_Retardo);//lo pide el enunciado u_u
 
 			break;//Para de ejecutar!!!!!!!! xD
 		}
@@ -710,7 +710,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			free(resultados);
 			free(respuestaParaElLogDelPlanificador);
 			free(bufferRespuesta);
-			sleep(g_Retardo);//lo pide el enunciado u_u
+			usleep(g_Retardo);//lo pide el enunciado u_u
 			break;//Harakiri TODO paro de ejecutar y a donde voy??, tendria que poner a la CPU a la escucha...
 		}
 

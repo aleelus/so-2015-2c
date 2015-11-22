@@ -149,25 +149,7 @@ void enviarArchivo(){
 	fclose(archivo);
 }
 
-char* obtenerRspLog(char* rsp) {
-	int cantidadDeBarraCeros = 0;
-	int c = 0;
-	for (c = 0; c < __sizePagina__; c++) {
-		if (rsp[c] == '\0')
-			cantidadDeBarraCeros++;
-	}
-	char* rspLog = calloc(__sizePagina__ + cantidadDeBarraCeros + 1, sizeof(char));
 
-	int z = 0;
-	for (z = 0; z < __sizePagina__; z++) {
-		if (rsp[z] != '\0')
-			strncat(rspLog, &rsp[z], 1);
-		else
-			strncat(rspLog, "\\0", 2);
-	}
-
-	return rspLog;
-}
 
 void EnviarRespuesta(operacion, fallo, pid){
 	char* rsp = string_new();

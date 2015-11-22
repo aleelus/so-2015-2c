@@ -270,20 +270,24 @@ int reemplazarMarco(char* buffer){
 		if (datos == MAP_FAILED) {
 				perror("mmap");
 				Error("Error al obtener datos contenidos en la pagina");
-				return NULL;
+				return -1;
 		}
 
 		memcpy(datos+getCorrimiento(pos), DigitosNombreArchivo(buffer, &posActual), __sizePagina__); //TODO Crear funcion para esto
+
+		char* rspLog = obtenerRspLog(datos+getCorrimiento(pos));
+
 		int ret = msync(datos, __sizePagina__, MS_INVALIDATE);
 		if(ret < 0){
 			Error("Error al intentar sincronizar datos de pagina %d", pid);
 			return -1;
 		}
-		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %d, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, datos+getCorrimiento(pos) );
+		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %d, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, rspLog);
 		ret = munmap( datos , getTamanioPagina(pos) );
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
 		}
+		free(rspLog);
 		usleep(__retardoSwap__);
 		return 1;
 	}
@@ -526,4 +530,24 @@ size_t getTamanioPagina(int posicion){ //Devuelve el tamaño de paginas que hay 
 
 int getCorrimiento(int posicion){ //Devuelve la cantidad de bytes que hay que adelantar para grabar en la pagina de swap
 	return posicion%4096;
+}
+
+char* obtenerRspLog(char* rsp) {
+	int cantidadDeBarraCeros = 0;
+	int c = 0;
+	for (c = 0; c < __sizePagina__; c++) {
+		if (rsp[c] == '\0')
+			cantidadDeBarraCeros++;
+	}
+	char* rspLog = calloc(__sizePagina__ + cantidadDeBarraCeros + 1, sizeof(char));
+
+	int z = 0;
+	for (z = 0; z < __sizePagina__; z++) {
+		if (rsp[z] != '\0')
+			strncat(rspLog, &rsp[z], 1);
+		else
+			strncat(rspLog, "\\0", 2);
+	}
+
+	return rspLog;
 }

@@ -123,3 +123,9 @@ size_t getTamanioPagina(int posicion);
 off_t getOffset(int posicion);
 
 int getCorrimiento(int posicion);
+
+/*
+ * @NAME obtenerRspLog
+ * @DESC devuelve el contenido almacenado en forma de string (incluyendo los '/0')
+ */
+char* obtenerRspLog(char* rsp);

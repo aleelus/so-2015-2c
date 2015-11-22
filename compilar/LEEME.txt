@@ -1,0 +1,12 @@
+El ejecutable de la api tiene que estar en la biblioteca del sistema.
+Hay que ir hasta libapi.so y tipear:
+- sudo cp ./libapi.so /lib
+
+
+Para poder ejecutar el makefile hay q posicionarse en la carpeta compilar y tipear:
+- make compilaGuacho
+
+
+
+PD: Si les parece muy ofensivo el comando se puede cambiar (?
+

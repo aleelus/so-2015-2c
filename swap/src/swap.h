@@ -36,7 +36,8 @@
 #define FINALIZAR_PROCESO 4
 #define __FALLO__ 1
 #define __PROC_OK__ 0
-
+#define READ 1
+#define WRITE 2
 /*Lista de bloques globales*/
 t_list* listaBloquesLibres;
 t_list* listaBloquesOcupados;
@@ -129,3 +130,6 @@ int getCorrimiento(int posicion);
  * @DESC devuelve el contenido almacenado en forma de string (incluyendo los '/0')
  */
 char* obtenerRspLog(char* rsp);
+
+
+void contabilizarReadWritePagina(int pid, int OP);

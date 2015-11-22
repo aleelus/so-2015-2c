@@ -149,10 +149,9 @@ int ejecutarOrden(int orden, char* buffer){
 		int paginasSolicitadas = strtol(DigitosNombreArchivo(buffer, &posActual), NULL, 10);
 		int res = crearProceso(pid, paginasSolicitadas);
 		EnviarRespuesta(CREA_PROCESO, (res < 0) ? __FALLO__ : guardarEnBloque(paginasSolicitadas, pid), NULL);
-
-	}
 		break;
-	case SOLICITA_MARCO:
+	}
+	case SOLICITA_MARCO: //READ
 	{
 		int posActual = 2;
 		int pid = strtol(DigitosNombreArchivo(buffer,&posActual), NULL, 10);
@@ -160,10 +159,10 @@ int ejecutarOrden(int orden, char* buffer){
 		EnviarRespuesta(SOLICITA_MARCO, paginaSolicitada, pid);
 		break;
 	}
-	case REEMPLAZA_MARCO:{
+	case REEMPLAZA_MARCO: //WRITE
+	{
 		int res = reemplazarMarco(buffer) ;
 		EnviarRespuesta(REEMPLAZA_MARCO, (res < 0) ? __FALLO__ : __PROC_OK__, NULL);
-
 		break;
 	}
 	case FINALIZAR_PROCESO:{
@@ -211,8 +210,8 @@ int finalizarProceso(char* buffer){
 
 			list_add(listaBloquesLibres, t_block_free_create(bloque->ptrComienzo, bloque->cantPag));
 
-
 			log_info(logger,"Proceso mProc liberado. PID: %d ; Byte Inicial: %d ; Tamaño Liberado(en bytes): %d ;", bloque->pid, bloque->ptrComienzo, bloque->cantPag );
+			log_info(logger,"(Proceso PID:%d) ->Cantidad total de páginas leidas: %d ; -> Cantidad total de paginas escritas: %d", bloque->pid, bloque->reads, bloque->writes);
 			t_block_used_destroy(bloque);
 			return 1;
 		}
@@ -283,6 +282,7 @@ int reemplazarMarco(char* buffer){
 			return -1;
 		}
 		log_info(logger, "Escritura de contenido mProc. PID: %d, Byte Inicial: %d, Tamaño del contenido: %d, Contenido: %s", pid, pos, __sizePagina__, rspLog);
+		contabilizarReadWritePagina(pid, WRITE);
 		ret = munmap( datos , getTamanioPagina(pos) );
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
@@ -550,4 +550,29 @@ char* obtenerRspLog(char* rsp) {
 	}
 
 	return rspLog;
+}
+
+void contabilizarReadWritePagina(int pid, int OP){
+
+	bool _es_proceso(t_block_used* bloque)
+	{
+		return(bloque->pid == pid);
+	}
+	//Obtengo el nodo que corresponde al proceso
+	t_block_used *bloque = list_find(listaBloquesOcupados, (void*) _es_proceso );
+
+	if(bloque!=NULL){
+		switch(OP){
+			case READ:
+				bloque->reads += 1;
+				break;
+			case WRITE:
+				bloque->writes += 1;
+				break;
+			default:
+				Error("No se encuentra PID %d para contabilizar la escritura/lectura", pid);
+				break;
+		}
+	}
+
 }

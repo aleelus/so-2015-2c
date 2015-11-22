@@ -17,6 +17,8 @@ typedef struct t_block_used
 	long pid;
 	int ptrComienzo;
 	int cantPag;
+	int reads;
+	int writes; //spanglish vieja, no me importa nada
 	struct t_block_used* ptrNext;
 }t_block_used;
 

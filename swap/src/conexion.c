@@ -181,8 +181,8 @@ void EnviarRespuesta(operacion, fallo, pid){
 				if(contenido != NULL){
 
 					char* rspLog = obtenerRspLog(rsp);
-
 					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %d, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rspLog);
+					contabilizarReadWritePagina(pid, READ);
 					munmap(contenido, getTamanioPagina(ptr));
 					EnviarDatos(socket_Memoria, rsp, __sizePagina__, COD_ADM_SWAP);
 					free(rsp);

@@ -5,6 +5,8 @@ t_block_used *t_block_used_create(long pid, int ptrComienzo, int cantPag) {
     new->pid = pid;
     new->ptrComienzo = ptrComienzo;
     new->cantPag = cantPag;
+    new->reads = 0;
+    new->writes = 0;
     return new;
 }
 

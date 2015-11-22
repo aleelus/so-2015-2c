@@ -637,7 +637,7 @@ int grabarContenidoASwap(int pid, int nroPagina, char* contenido) {
 	imprimirContenido(buffer, tamanio + g_Tamanio_Marco);
 	printf("\n");
 	pthread_mutex_lock(&semSwap);
-	EnviarDatos(socket_Swap, buffer, strlen(buffer));
+	EnviarDatos(socket_Swap, buffer, tamanio+g_Tamanio_Marco);
 
 	// Aca cuando reciba el buffer con el Contenido me va a venir con el protocolo, tengo q trabajarlo y solo retornar el contenido
 	RecibirDatos(socket_Swap, &bufferRespuesta);
@@ -1270,7 +1270,7 @@ void LRU(int *marco, int pid, int nroPagina, char *contenido) {
 							pag = pagina->pagina;
 							*marco = pagina->marco;
 
-							printf("cantidad: %d  pag: %d\n",maximo,pag);
+
 
 						}
 					}
@@ -1755,6 +1755,7 @@ char* obtenerSubBufferDeContenido(char *nombre, int tamanio) {
 
 	float tam = tamanio;
 	int cont = 0;
+
 	char *aux;
 
 	while (tam >= 1) {
@@ -1890,9 +1891,9 @@ void implementoEscribirCpu(int socket, char *buffer) {
 		EnviarDatos(socket, "0", strlen("0"));
 	}
 
-	printf("ANTES\n");
+
 	imprimirMemoria();
-	printf("DESUPUES\n");
+
 
 }
 
@@ -2392,6 +2393,7 @@ void ErrorFatal(const char* mensaje, ...) {
 	nuevo = string_from_vformat(mensaje, arguments);
 	printf("\nERROR FATAL--> %s \n", nuevo);
 	sem_wait(&semLog);
+
 	log_error(logger, "\nERROR FATAL--> %s \n", nuevo);
 	sem_post(&semLog);
 	char fin;

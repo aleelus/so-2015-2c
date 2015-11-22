@@ -329,7 +329,7 @@ int reemplazarMarco(char* buffer){
 		if (ret < 0){
 			ErrorFatal("Error al ejecutar munmap");
 		}
-		sleep(__retardoSwap__);
+		usleep(__retardoSwap__);
 		return 1;
 	}
 	else{
@@ -480,7 +480,7 @@ int desfragmentar(){
 	int cantPaginasLibres = g_Cantidad_Paginas - getCantidadPaginasOcupadas();
 	if(cantPaginasLibres > 0)
 		list_add(listaBloquesLibres, t_block_free_create((int*)ptrBloque, cantPaginasLibres));
-	sleep(__retardoCompactacion__);
+	usleep(__retardoCompactacion__);
 	log_info(logger, "Gracias por desfragmentar con nosotros :) Vuelvas Prontos");
 	return 1;
 	//}
@@ -574,7 +574,7 @@ char* getContenido(int ptr)
 	}
 
 	close(fd);
-	sleep(__retardoSwap__);
+	usleep(__retardoSwap__);
 	return datos;
 }
 

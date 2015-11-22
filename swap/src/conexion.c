@@ -30,7 +30,6 @@ void HiloOrquestadorDeConexiones() {
 		ErrorFatal(
 				"Error al hacer el Listen. No se pudo escuchar en el puerto especificado");
 
-	//Traza("El socket está listo para recibir conexiones. Numero de socket: %d, puerto: %d", socket_host, g_Puerto);
 	log_trace(logger,
 			"SOCKET LISTO PARA RECIBIR CONEXIONES. Numero de socket: %d, puerto: %d",
 			socket_host, g_Puerto);
@@ -94,7 +93,7 @@ int AtiendeCliente(void * arg) {
 		bytesRecibidos = RecibirDatos(socket_Memoria,&buffer);
 
 		if (bytesRecibidos > 0) {
-			//Analisamos que peticion nos está haciendo (obtenemos el comando)
+			//obtenemos el comando
 			emisor = ObtenerComandoMSJ(buffer);
 
 			//Evaluamos los comandos
@@ -106,8 +105,6 @@ int AtiendeCliente(void * arg) {
 				ejecutarOrden(orden, buffer);
 
 				mostrarParticionSwap();
-//				printf("Hola Memoria\n");
-//				EnviarDatos(socket_Memoria,"Ok",strlen("Ok"), COD_ADM_SWAP);
 				break;
 			}
 			case COMANDO:
@@ -116,8 +113,6 @@ int AtiendeCliente(void * arg) {
 				break;
 			default:
 				procesarBuffer(buffer,bytesRecibidos);
-				//free(buffer);
-				//buffer = string_new();
 				enviarArchivo();
 				break;
 			}
@@ -154,13 +149,31 @@ void enviarArchivo(){
 	fclose(archivo);
 }
 
+char* obtenerRspLog(char* rsp) {
+	int cantidadDeBarraCeros = 0;
+	int c = 0;
+	for (c = 0; c < __sizePagina__; c++) {
+		if (rsp[c] == '\0')
+			cantidadDeBarraCeros++;
+	}
+	char* rspLog = calloc(__sizePagina__ + cantidadDeBarraCeros + 1, sizeof(char));
+
+	int z = 0;
+	for (z = 0; z < __sizePagina__; z++) {
+		if (rsp[z] != '\0')
+			strncat(rspLog, &rsp[z], 1);
+		else
+			strncat(rspLog, "\\0", 2);
+	}
+
+	return rspLog;
+}
 
 void EnviarRespuesta(operacion, fallo, pid){
 	char* rsp = string_new();
 		switch(operacion){
 			case CREA_PROCESO:
 			{
-				//string_append(&rsp,"4111");
 				char *aux = malloc(2);
 				sprintf(aux,"%d",(fallo ? INIT_FAIL : INIT_OK));
 				string_append(&rsp, aux);
@@ -169,11 +182,7 @@ void EnviarRespuesta(operacion, fallo, pid){
 			}
 			case SOLICITA_MARCO:
 			{//OJO. en este caso el "fallo" es en realidad el numero de pagina que quier
-				//char* fail = string_new();
-				//string_append(&fail, "11");
-				//string_append(&fail,READ_FAIL );
 
-				//string_append(&rsp,"42");
 				char *aux = realloc(rsp, __sizePagina__+1);
 				if (aux == NULL){
 					ErrorFatal("No se puede reallocar esta bosta");
@@ -184,30 +193,12 @@ void EnviarRespuesta(operacion, fallo, pid){
 				char* contenido = getContenido(ptr);
 				aux = malloc(__sizePagina__+1);
 				sprintf(aux, "%d",READ_FAIL );
-				//string_append(&rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux);
+
 				memcpy(rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux, __sizePagina__ );
 				free(aux);
 				if(contenido != NULL){
 
-					int cantidadDeBarraCeros = 0;
-
-					int c = 0;
-					for(c=0;c<__sizePagina__;c++){
-						if(rsp[c] == '\0')
-							cantidadDeBarraCeros++;
-					}
-
-					char* rspLog = calloc(__sizePagina__ + cantidadDeBarraCeros + 1,sizeof(char));
-
-					int z =0;
-
-					for(z=0; z<__sizePagina__ ;z++){//lo hago para escribirlo en el log, TODO hacer lo de contar barra ceros para que el calloc sea el correcto
-							if(rsp[z]!='\0')
-								strncat(rspLog,&rsp[z],1);
-							else
-								strncat(rspLog,"\\0",2);
-					}
-
+					char* rspLog = obtenerRspLog(rsp);
 
 					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %d, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rspLog);
 					munmap(contenido, getTamanioPagina(ptr));
@@ -222,7 +213,6 @@ void EnviarRespuesta(operacion, fallo, pid){
 			}
 			case REEMPLAZA_MARCO:
 			{
-			//	string_append(&rsp,"4311");
 				char *aux = malloc(2);
 				sprintf(aux, "%d", fallo ?  WRITE_FAIL : WRITE_OK );
 				string_append(&rsp, aux);
@@ -231,7 +221,6 @@ void EnviarRespuesta(operacion, fallo, pid){
 			}
 			case FINALIZAR_PROCESO:
 			{
-				//string_append(&rsp,"4411");
 				char *aux = malloc(2);
 				sprintf(aux, "%d", fallo ? FIN_FAIL : FIN_OK);
 				string_append(&rsp, aux);

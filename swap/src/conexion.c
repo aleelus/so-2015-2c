@@ -188,10 +188,32 @@ void EnviarRespuesta(operacion, fallo, pid){
 				memcpy(rsp, contenido != NULL ? contenido+getCorrimiento(ptr) : aux, __sizePagina__ );
 				free(aux);
 				if(contenido != NULL){
-					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %p, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rsp);
+
+					int cantidadDeBarraCeros = 0;
+
+					int c = 0;
+					for(c=0;c<__sizePagina__;c++){
+						if(rsp[c] == '\0')
+							cantidadDeBarraCeros++;
+					}
+
+					char* rspLog = calloc(__sizePagina__ + cantidadDeBarraCeros + 1,sizeof(char));
+
+					int z =0;
+
+					for(z=0; z<__sizePagina__ ;z++){//lo hago para escribirlo en el log, TODO hacer lo de contar barra ceros para que el calloc sea el correcto
+							if(rsp[z]!='\0')
+								strncat(rspLog,&rsp[z],1);
+							else
+								strncat(rspLog,"\\0",2);
+					}
+
+
+					log_info(logger, "Lectura de contenido mProc. PID: %d, Byte Inicial: %d, Tamaño del contenido: %d, Contenido: %s", pid, ptr , __sizePagina__, rspLog);
 					munmap(contenido, getTamanioPagina(ptr));
 					EnviarDatos(socket_Memoria, rsp, __sizePagina__, COD_ADM_SWAP);
 					free(rsp);
+					free(rspLog);
 					return;
 				}
 				else

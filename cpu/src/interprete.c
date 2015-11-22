@@ -222,14 +222,20 @@ void ejecutarMProc(char* pathDelArchivoDeInstrucciones, int pid,
 		return p->pid == pid;
 	}
 
-	if (!list_any_satisfy(procesos, (void*) _esElProceso)) {
+	sem_wait(&semListaDeProcesos);
+	int existeElProceso = list_any_satisfy(procesos, (void*) _esElProceso);
+	sem_post(&semListaDeProcesos);
+
+	if (!existeElProceso) {
 		//Proceso nuevo
 		recolectarInstrucciones(pathDelArchivoDeInstrucciones, pid);
 	} else {
 		//El proceso ya fue ejecutado antes
 	}
 
+	sem_wait(&semListaDeProcesos);
 	t_proceso* procesoAEjecutar = list_find(procesos, (void*) _esElProceso);
+	sem_post(&semListaDeProcesos);
 
 	if(ip == -1){
 		//Es la ultima linea
@@ -268,9 +274,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);//TODO comentar el log del enviar datos o poner un semaforo aca... :/
-			pthread_mutex_unlock(&semaforoLog);
 
-			pthread_mutex_lock(&semaforoLog);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 			pthread_mutex_unlock(&semaforoLog);
 
@@ -364,9 +368,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
-			pthread_mutex_unlock(&semaforoLog);
 
-			pthread_mutex_lock(&semaforoLog);
 			int sizeDeLaRespuesta = RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 			pthread_mutex_unlock(&semaforoLog);
 
@@ -474,9 +476,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socket_Memoria_Local, bufferMasSubBuffer, size, YO);
-			pthread_mutex_unlock(&semaforoLog);
 
-			pthread_mutex_lock(&semaforoLog);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 			pthread_mutex_unlock(&semaforoLog);
 
@@ -656,9 +656,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 
 			pthread_mutex_lock(&semaforoLog);
 			EnviarDatos(socket_Memoria_Local, buffer, size, YO);
-			pthread_mutex_unlock(&semaforoLog);
 
-			pthread_mutex_lock(&semaforoLog);
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 			pthread_mutex_unlock(&semaforoLog);
 

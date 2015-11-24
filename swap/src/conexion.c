@@ -97,25 +97,15 @@ int AtiendeCliente(void * arg) {
 			emisor = ObtenerComandoMSJ(buffer);
 
 			//Evaluamos los comandos
-			switch (emisor) {
-			case ADM_MEMORIA:
-			{
+			if(emisor == ADM_MEMORIA){
+
 				int orden;
 				orden = PosicionDeBufferAInt(buffer, 1);
 				ejecutarOrden(orden, buffer);
 
 				mostrarParticionSwap();
-				break;
 			}
-			case COMANDO:
-				printf("Ejecutado por telnet");
-				EnviarDatos(socket_Memoria,"Ok",strlen("Ok"), COD_ADM_SWAP);
-				break;
-			default:
-				procesarBuffer(buffer,bytesRecibidos);
-				enviarArchivo();
-				break;
-			}
+
 		}
 		else {
 			desconexionCliente = 1;

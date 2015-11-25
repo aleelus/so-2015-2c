@@ -79,20 +79,20 @@ void mostrarParticionSwap(){
 	int x=0;
 
 	//////////////////////////////////////////////////////////////////////
-	printf("**********\033[1mParticion Swap"DEFAULT"*********");
+	printf("***************\033[1mParticion Swap"DEFAULT"**************");
 
 	for(x=0;x<__sizePagina__-5;x++)
 		printf("*");
 	printf("\n");
 	///////////////////////////////////////////////////////////////////////////
-	printf("* \033[1m"COLOR_VERDE"Pid\t Pagina\t Contenido\t"DEFAULT"");
+	printf("* \033[1m"COLOR_VERDE"PagSwap\t Pid\t PaginaProceso\t Contenido\t"DEFAULT"");
 
 	for(x=0;x<__sizePagina__-5;x++)
 			printf(" ");
 	printf("\n");
 	////////////////////////////////////////////////////////////////
 
-	printf("*********************************");
+	printf("*******************************************");
 	for(x=0;x<__sizePagina__-5;x++)
 		printf("*");
 	printf("\n");
@@ -100,7 +100,7 @@ void mostrarParticionSwap(){
 
 
 	char * nombre=string_new();
-	int i=0,c=0;
+	int i=0,c=0,nroPaginaSwap=-1;
 	string_append(&nombre,g_Nombre_Swap);
 	string_append(&nombre,".bin");
 	FILE *fd = fopen(nombre,"r+b");
@@ -115,12 +115,17 @@ void mostrarParticionSwap(){
 
 	while(i<list_size(listaBloquesOcupados)){
 		bloque=list_get(listaBloquesOcupados,i);
-
 		for(c=0;c<bloque->cantPag;c++){
-			printf("* %li \t ",bloque->pid);
+			nroPaginaSwap=((bloque->ptrComienzo+(c*__sizePagina__))*g_Cantidad_Paginas)/(__sizePagina__*g_Cantidad_Paginas);
+			printf("*    %d",nroPaginaSwap);
+			if(nroPaginaSwap>9)
+				printf(" \t ");
+			else
+				printf(" \t \t");
+			printf("  %li \t ",bloque->pid);
 			fseek(fd,bloque->ptrComienzo+c*__sizePagina__,SEEK_SET);
 			fread(contenido,1,__sizePagina__,fd);
-			printf("%d \t %s\t \n",c,contenido);
+			printf("  %d \t\t %s\t \n",c,contenido);
 			memset(contenido,0,__sizePagina__+1);
 		}
 
@@ -129,7 +134,7 @@ void mostrarParticionSwap(){
 	}
 
 
-	printf("*********************************");
+	printf("*******************************************");
 	for(x=0;x<__sizePagina__-5;x++)
 		printf("*");
 	printf("\n");

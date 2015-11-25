@@ -92,15 +92,17 @@ void bajarMarcosASwapYLimpiarMP() {
 		while (k < list_size(mProc->paginas)) {
 			pagina = list_get(mProc->paginas, k);
 
-			if (pagina->bitModificado == 1) {
 
-				grabarContenidoASwap(mProc->pid, pagina->pagina,
-						a_Memoria[pagina->marco].contenido);
+			// VER ESTOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+			if (pagina->bitMP==1 || pagina->bitModificado == 1) {
+
+				grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
 
 			}
 			memset(a_Memoria[pagina->marco].contenido, 0, g_Tamanio_Marco);
 			a_Memoria[pagina->marco].pag = -1;
 			a_Memoria[pagina->marco].pid = -1;
+
 			pagina->bitModificado = 0;
 			pagina->bitPuntero = 0;
 			pagina->bitUso = 0;
@@ -799,6 +801,7 @@ void funcionLimpiarTablasPaginas() {
 	t_pagina* unaPagina;
 	int i = 0, j;
 
+	// VER QUE PASA CUANDO MANDO ESTA SEÑAL Y QUEDAN TODOS LOS bitPuntero EN CERO
 	while (i < list_size(lista_mProc)) {
 		mProc = list_get(lista_mProc, i);
 		j = 0;
@@ -806,6 +809,10 @@ void funcionLimpiarTablasPaginas() {
 			unaPagina = list_get(mProc->paginas, j);
 			unaPagina->marco = -1;
 			unaPagina->bitMP = 0;
+			unaPagina->bitModificado=0;
+			unaPagina->bitPuntero=0;
+			unaPagina->bitUso=0;
+
 			j++;
 		}
 		i++;

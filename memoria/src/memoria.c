@@ -22,6 +22,7 @@ int main(void) {
 	sem_init(&semLog, 0, 1);
 	cantAciertos = 0;
 	cantTotalAciertos = 0;
+	cantFallos=0;
 	//pthread_mutex_unlock(&semSwap);
 	//pthread_mutex_lock(&sem);
 
@@ -998,7 +999,7 @@ void nuevaPagina(t_mProc *mProc, int nroPagina, int pid, int *marco) {
 
 int FIFO2(int *marco, int pid, int nroPagina) {
 
-	int i = 0, k = 0, j = 0, bandera = 0;
+	int i = 0, k = 0, j = 0, bandera = 0,pos=-1;
 	t_mProc *mProc;
 	t_pagina *tablaPagina, *auxPagina;
 
@@ -1021,6 +1022,7 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 					tablaPagina->marco = *marco;
 					list_add(mProc->paginas, tablaPagina);
 					actualizarCantidadMarcosPorProceso(pid);
+
 				} else {
 					printf("NO HAY ESPACIO EN LA MP\n");
 				}
@@ -1037,17 +1039,40 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 					while (k < list_size(mProc->paginas)) {
 						tablaPagina = list_get(mProc->paginas, k);
 
-						if (tablaPagina->bitPuntero == 1
-								&& tablaPagina->bitMP == 1) {
+						if (tablaPagina->bitPuntero == 1 && tablaPagina->bitMP == 1) {
 
 							tablaPagina->bitPuntero = 0;
 							tablaPagina->bitMP = 0;
+
 							if (buscarPagina(mProc, nroPagina) == -1) {
 
 								nuevaPagina(mProc, nroPagina, pid, marco);
 
 							}
 
+							j=tablaPagina->marco;
+							bandera=0;
+							while(j<g_Cantidad_Marcos){
+
+								if(a_Memoria[j].pid==pid && a_Memoria[j].pag!=tablaPagina->pagina){
+
+									pos=buscarPagina(mProc,a_Memoria[j].pag);
+
+									auxPagina=list_get(mProc->paginas,pos);
+									auxPagina->bitPuntero=1;
+									bandera=1;
+									j=g_Cantidad_Marcos;
+
+								}
+								j++;
+
+								if (j == g_Cantidad_Marcos && bandera == 0) {
+									j = 0;
+									bandera = 1;
+								}
+							}
+
+							/*
 							if (k == list_size(mProc->paginas) - 1) {
 								j = 0;
 								while (j < list_size(mProc->paginas)) {
@@ -1084,7 +1109,7 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 								}
 
 							}
-
+							*/
 							pagina = a_Memoria[tablaPagina->marco].pag;
 							*marco = tablaPagina->marco;
 							valido = grabarContenidoASwap(pid, pagina,
@@ -1723,6 +1748,8 @@ int CLOCK(int *marco, int pagina, int pid) {
 
 void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido) {
 
+
+
 	//char* contenido;
 	if (!strcmp(g_Algoritmo, "FIFO")) {
 		FIFO2(marco, pid, nroPagina);
@@ -1735,6 +1762,9 @@ void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido)
 	} else if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
 		CLOCK(marco, nroPagina, pid);
 	}
+
+	if(*marco>=0)
+		cantFallos++;
 }
 
 int cuentaDigitos(int valor) {
@@ -1845,6 +1875,7 @@ void implementoEscribirCpu(int socket, char *buffer) {
 					// hacemos boleta a alguien
 					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido);
 
+
 					if (marco == -1) {
 						printf(
 								"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
@@ -1855,9 +1886,12 @@ void implementoEscribirCpu(int socket, char *buffer) {
 				}
 				//sleep(g_Retardo_Memoria);
 			}
+
 			actualizarMemoriaPrincipal(pid, nroPagina, contenido, tamanioC,
 					marco);
 			actualizarTLB(pid, nroPagina);
+			imprimirTLB();
+			printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
 
 			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:");
 			imprimirContenido(a_Memoria[marco].contenido, g_Tamanio_Marco);
@@ -1971,6 +2005,7 @@ void implementoLeerCpu(int socket, char *buffer) {
 				if (contenido != NULL) {
 					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido);
 
+
 					if (marco == -1) {
 						printf(
 								"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
@@ -1993,6 +2028,7 @@ void implementoLeerCpu(int socket, char *buffer) {
 			//sleep(g_Retardo_Memoria);
 		}
 		imprimirTLB();
+		printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
 		printf(
 				"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido, g_Tamanio_Marco);

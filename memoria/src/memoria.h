@@ -139,6 +139,7 @@ typedef struct {
 } t_tlb;
 
 int cantAciertos,cantTotalAciertos;
+int cantFallos;
 
 t_list* lista_tlb;
 

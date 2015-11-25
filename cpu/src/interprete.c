@@ -480,7 +480,7 @@ void ejecutarMCod(t_proceso* procesoAEjecutar, int ip) {
 			RecibirDatos(socket_Memoria_Local, &bufferRespuesta);
 			pthread_mutex_unlock(&semaforoLog);
 
-			if(0 == strcmp(bufferRespuesta,"0")){
+			if(0 == strcmp(bufferRespuesta,"0errorAlEscribir0")){
 				//Fallo la escritura, esto puede pasar si el tamanio del texto, supera el del marco
 				char* respuestaParaElPlanificador = string_new();
 

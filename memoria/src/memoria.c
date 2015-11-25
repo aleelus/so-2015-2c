@@ -205,6 +205,7 @@ void Manejador(int signum) {
 		printf("* He recibido la señal "COLOR_VERDE""NEGRITA"SIGUSR1\n"DEFAULT);
 		pthread_mutex_lock(&semMemPrincipal);
 		vaciarTLB();
+		imprimirTLB();
 		pthread_mutex_unlock(&semMemPrincipal);
 		break;
 	case SIGUSR2:
@@ -212,6 +213,7 @@ void Manejador(int signum) {
 		pthread_mutex_lock(&semMemPrincipal);
 		bajarMarcosASwapYLimpiarMP();
 		funcionLimpiarTablasPaginas();
+		imprimirMemoria();
 		pthread_mutex_unlock(&semMemPrincipal);
 		break;
 	case SIGPOLL:
@@ -573,9 +575,7 @@ char* buscarEnMemoriaPrincipal(int marco) {
 
 void enviarContenidoACpu(int socket, int pid, int nroPagina, char* contenido,
 		int tamanioC) {
-	// No se bien por ahora si hace falta el nroPagina pero por las dudas lo mando
-	//contenido = cicilianiYeta    pid = 4 nroPagina=3
-	//3 2 114 113 213cicilianiYeta
+
 
 	char *bufferACpu = string_new();
 
@@ -1786,9 +1786,6 @@ int cuentaDigitos(int valor) {
 
 char* obtenerSubBufferDeContenido(char *nombre, int tamanio) {
 
-	//Le tengo q pasar un string y un tamanio,
-	//El nombre debe tener el resto del contenido con \0, Ej: nombre="hola\0\0\0....\0" la cantidad de \0 son (tamanio-strlen(hola)) PD: Puse el strlen como ejemplo pero no se puede usar xDXDXDXDxXxXdXXdXDXd
-	//Ej: nombre= AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos  tamanio=256  ==> salida= 3256AhiEstaElYetaDeCici\0,\0aTocarMaderaTodos\0\0\0\0...\0
 
 	float tam = tamanio;
 	int cont = 0;
@@ -1886,12 +1883,12 @@ void implementoEscribirCpu(int socket, char *buffer) {
 					if (marco == -1) {
 						printf(
 								"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
-						EnviarDatos(socket, "0", strlen("0"));
+						EnviarDatos(socket, "0ErrorAlEscribir0", strlen("0ErrorAlEscribir0"));
 						return;
 					}
 
 				}
-				//sleep(g_Retardo_Memoria);
+				sleep(g_Retardo_Memoria);
 			}
 
 			actualizarMemoriaPrincipal(pid, nroPagina, contenido, tamanioC,
@@ -2016,7 +2013,7 @@ void implementoLeerCpu(int socket, char *buffer) {
 					if (marco == -1) {
 						printf(
 								"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
-						EnviarDatos(socket, "0", strlen("0"));
+						EnviarDatos(socket, "0ErrorAlEscribir0", strlen("0ErrorAlEscribir0"));
 						return;
 					}
 
@@ -2032,7 +2029,7 @@ void implementoLeerCpu(int socket, char *buffer) {
 				//	imprimirTLB();
 			}
 
-			//sleep(g_Retardo_Memoria);
+			sleep(g_Retardo_Memoria);
 		}
 		imprimirTLB();
 		printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);

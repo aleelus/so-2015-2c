@@ -94,6 +94,8 @@ typedef struct {
 	t_estado estado;
 	time_t horaCreacion;
 	char* path;
+	long long tiempoEspera;
+	long long tiempoEjecucion;
 } t_PCB;
 
 
@@ -115,7 +117,7 @@ typedef struct {
 
 /***************GLOBALES************************/
 sem_t semListaCpu;
-
+sem_t semPCB, semReady, semLock, semIO;
 
 t_list *lista_cpu;
 

@@ -21,7 +21,7 @@
 
 /*************************ESTRUCTURAS**************************/
 
-
+extern sem_t semPCB, semReady, semLock, semIO;
 
 
 typedef struct {

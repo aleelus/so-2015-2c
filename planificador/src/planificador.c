@@ -23,7 +23,7 @@ int cantHilos=0;
 //int PID=0; // Contador de ID Procesos mProc (semaforo)
 t_pid PID; // Contador ID Procesos + semaforo ;)
 
-sem_t semPCB, semReady, semLock, semIO;
+
 
 
 
@@ -79,6 +79,8 @@ int crearProceso(char* path) {
 	strcpy(nuevoPCB->path, path);
 	nuevoPCB->pid = nuevoPid();
 	nuevoPCB->quantum = g_Quantum;
+	nuevoPCB->tiempoEjecucion = 0;
+	nuevoPCB->tiempoEspera = 0;
 
 	sem_wait(&semPCB);
 	sem_wait(&semReady);

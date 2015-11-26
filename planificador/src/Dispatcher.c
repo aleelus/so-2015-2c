@@ -76,6 +76,7 @@ void Dispatcher(void *args){
 			//TODO Devolver a la cola de ready
 		}
 		marcarEntradaCpu(cpuLibre);
+
 		sem_post(&cpuLibre->semaforoMensaje); //Ya le envie lo que tenia que enviarle, entonces espero su respuesta
 	}
 	sem_post(&(cpuLibre->semaforoProceso));
@@ -98,6 +99,7 @@ void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
 	list_add(colaBloqueados, pcb);
 	noni->pid = cpu->procesoAsignado->pid;
 	noni->tiempo = tiempo;
+	time(&noni->tiempoInicio);
 	cpu->procesoAsignado = NULL;
 	pthread_create(&hDormirProceso, NULL, (void*)dormirProceso, noni);
 
@@ -149,7 +151,7 @@ void dormirProceso(t_noni* noni){
 	pcb = list_remove_by_condition(colaBloqueados, (void*) _mismoProceso);
 	pcb->estado = LISTO;
 	list_add(colaReady, pcb);
-
+	pcb->tiempoEspera += time(NULL)-noni->tiempoInicio;
 	sem_post(&semPCB);
 	sem_post(&semReady);
 	sem_post(&semLock);
@@ -166,6 +168,11 @@ void terminarProceso(t_cpu* cpu){
 	sem_wait(&semPCB);
 
 	t_PCB *pcb = list_remove_by_condition(PCBs, (void*) _mismoProceso);
+
+	pthread_mutex_lock(&lockLogger);
+	log_info(logger, "Proceso %d finalizado.\n\tTiempo total en el sistema: %ld segundos.\n\tTiempo de espera: %lld segundos.\n\tTiempo de ejecucion: %lld segundos.\n", pcb->pid, time(NULL)-pcb->horaCreacion, pcb->tiempoEspera, pcb->tiempoEjecucion);
+	pthread_mutex_unlock(&lockLogger);
+
 	cpu->procesoAsignado = NULL;
 	sem_post(&cpu->semaforoProceso);
 	sem_post(&semPCB);

@@ -17,6 +17,7 @@ extern t_list *PCBs, *colaReady, *colaBloqueados;
 typedef struct {
 	int pid;
 	int tiempo;
+	time_t tiempoInicio;
 }t_noni;
 
 

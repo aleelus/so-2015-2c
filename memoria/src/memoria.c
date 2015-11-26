@@ -1004,6 +1004,30 @@ void nuevaPagina(t_mProc *mProc, int nroPagina, int pid, int *marco) {
 
 }
 
+int contarMarcosDeEsePidEnMemoria(int pid){
+
+	int i=0;
+	int cont=0;
+
+	while(i<g_Cantidad_Marcos){
+
+		if(a_Memoria[i].pid==pid){
+
+			cont++;
+
+		}
+
+		i++;
+	}
+
+	if(cont==1)
+		return 1;
+	else
+		return 0;
+
+
+}
+
 int FIFO2(int *marco, int pid, int nroPagina) {
 
 	int i = 0, k = 0, j = 0, bandera = 0,pos=-1;
@@ -1042,95 +1066,110 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 
 				} else {
 
-					k = 0;
-					while (k < list_size(mProc->paginas)) {
-						tablaPagina = list_get(mProc->paginas, k);
+					k=0;
+					if(contarMarcosDeEsePidEnMemoria(pid)==1){
 
-						if (tablaPagina->bitPuntero == 1 && tablaPagina->bitMP == 1) {
+						while (k < list_size(mProc->paginas)) {
+							tablaPagina = list_get(mProc->paginas, k);
 
-							tablaPagina->bitPuntero = 0;
-							tablaPagina->bitMP = 0;
+							if (tablaPagina->bitPuntero == 1 && tablaPagina->bitMP == 1) {
 
-							if (buscarPagina(mProc, nroPagina) == -1) {
+								tablaPagina->bitPuntero = 0;
+								tablaPagina->bitMP = 0;
 
-								nuevaPagina(mProc, nroPagina, pid, marco);
+
+								if (buscarPagina(mProc, nroPagina) == -1) {
+
+									t_pagina *auxPagina;
+
+									auxPagina = malloc(sizeof(t_pagina));
+									auxPagina->bitMP = 1;
+									auxPagina->bitPuntero = 1;
+									auxPagina->pagina = nroPagina;
+									*marco = tablaPagina->marco;
+									auxPagina->marco = *marco;
+
+									list_add(mProc->paginas, auxPagina);
+									actualizarCantidadMarcosPorProceso(pid);
+
+								}
+
+
+								pagina = a_Memoria[tablaPagina->marco].pag;
+								*marco = tablaPagina->marco;
+								valido = grabarContenidoASwap(pid, pagina,a_Memoria[*marco].contenido);
+								if (valido)
+									actualizarTablaPagina(pid, pagina);
+								memset(a_Memoria[*marco].contenido, 0,g_Tamanio_Marco);
+
+								break;
 
 							}
+							k++;
+						}
 
-							j=tablaPagina->marco;
-							bandera=0;
-							while(j<g_Cantidad_Marcos){
 
-								if(a_Memoria[j].pid==pid && a_Memoria[j].pag!=tablaPagina->pagina){
+					}else{
 
-									pos=buscarPagina(mProc,a_Memoria[j].pag);
+						k = 0;
+						while (k < list_size(mProc->paginas)) {
+							tablaPagina = list_get(mProc->paginas, k);
 
-									auxPagina=list_get(mProc->paginas,pos);
-									auxPagina->bitPuntero=1;
-									bandera=1;
-									j=g_Cantidad_Marcos;
+							if (tablaPagina->bitPuntero == 1 && tablaPagina->bitMP == 1) {
+
+								tablaPagina->bitPuntero = 0;
+								tablaPagina->bitMP = 0;
+
+								if (buscarPagina(mProc, nroPagina) == -1) {
+
+									nuevaPagina(mProc, nroPagina, pid, marco);
 
 								}
-								j++;
 
-								if (j == g_Cantidad_Marcos && bandera == 0) {
-									j = 0;
-									bandera = 1;
-								}
-							}
+								j=tablaPagina->marco;
+								bandera=0;
+								while(j<g_Cantidad_Marcos){
 
-							/*
-							if (k == list_size(mProc->paginas) - 1) {
-								j = 0;
-								while (j < list_size(mProc->paginas)) {
-									auxPagina = list_get(mProc->paginas, j);
-									if (auxPagina->bitMP == 1) {
+									if(a_Memoria[j].pid==pid && a_Memoria[j].pag!=tablaPagina->pagina){
 
-										auxPagina->bitPuntero = 1;
-										j = list_size(mProc->paginas);
+										pos=buscarPagina(mProc,a_Memoria[j].pag);
+
+										auxPagina=list_get(mProc->paginas,pos);
+										auxPagina->bitPuntero=1;
+										bandera=1;
+										j=g_Cantidad_Marcos;
+
 									}
-
-									j++;
-								}
-
-							} else {
-
-								j = k + 1;
-								while (j < list_size(mProc->paginas)) {
-									auxPagina = list_get(mProc->paginas, j);
-									if (auxPagina->bitMP == 1) {
-
-										auxPagina->bitPuntero = 1;
-										bandera = 1;
-										j = list_size(mProc->paginas);
-									}
-
 									j++;
 
-									if (j == list_size(mProc->paginas)
-											&& bandera == 0) {
+									if (j == g_Cantidad_Marcos && bandera == 0) {
 										j = 0;
 										bandera = 1;
 									}
-
 								}
 
-							}
-							*/
-							pagina = a_Memoria[tablaPagina->marco].pag;
-							*marco = tablaPagina->marco;
-							valido = grabarContenidoASwap(pid, pagina,
-									a_Memoria[*marco].contenido);
-							if (valido)
-								actualizarTablaPagina(pid, pagina);
-							memset(a_Memoria[*marco].contenido, 0,
-									g_Tamanio_Marco);
 
-							break;
+								pagina = a_Memoria[tablaPagina->marco].pag;
+								*marco = tablaPagina->marco;
+								valido = grabarContenidoASwap(pid, pagina,
+										a_Memoria[*marco].contenido);
+								if (valido)
+									actualizarTablaPagina(pid, pagina);
+								memset(a_Memoria[*marco].contenido, 0,
+										g_Tamanio_Marco);
+
+								break;
+							}
+
+							k++;
 						}
 
-						k++;
+
 					}
+
+
+
+
 
 				}
 			}

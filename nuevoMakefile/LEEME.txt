@@ -1,0 +1,12 @@
+Ahora este makefile compila tambien la api.
+
+
+Para poder ejecutar el makefile hay q posicionarse en la carpeta nuevoMakefile y tipear:
+- make compilaGuacho
+
+les va a pedir la password de usuario (utnso) porque copio el libapi.so a la carpeta del sistema operativo
+
+
+
+PD: Si les parece muy ofensivo el comando se puede cambiar (?
+

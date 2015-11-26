@@ -1202,7 +1202,6 @@ int primeraPasada(int pid, int nroPagina, int *marco) {
 	int cantMarcosPorProceso = -1;
 	t_mProc *mProc;
 
-	t_lru *lru;
 	int i = 0, bandera = 0,cont=0;
 
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
@@ -1573,22 +1572,29 @@ void imprimirMemoria() {
 		 printf("\n");*/
 	}
 
-	if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|BITMODIFICADO|\n");
-		while (i < g_Cantidad_Marcos) {
+	if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
 
-			if (a_Memoria[i].pag >= 0) {
-				pagina = buscarDatosEnTP(i);
-				if (pagina != NULL)
-					printf("|%d-%d-%d-%d-%d-%d|", i, a_Memoria[i].pid,
-							a_Memoria[i].pag, pagina->bitPuntero,
-							pagina->bitUso, pagina->bitModificado);
-			}
+			printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO-BITMODIF|\n");
 
-			i++;
+				printf("************"NEGRITA"Memoria Principal"DEFAULT"**************\n");
+				printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Punt"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitUso"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitModif"DEFAULT"\t*\n");
+				printf("*******************************************\n");
+
+
+
+				while(i<g_Cantidad_Marcos){
+
+					if(a_Memoria[i].pag>=0){
+						pagina = buscarDatosEnTP(i);
+						if(pagina!=NULL)
+							printf("*  %d\t%d\t%d\t%d\t%d\t%d\t*\n",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero,pagina->bitUso,pagina->bitModificado);
+					}
+
+					i++;
+				}
+				printf("\n");
 		}
-		printf("\n");
-	}
+
 
 	if (!strcmp(g_Algoritmo, "CLOCK")) {
 		printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|\n");

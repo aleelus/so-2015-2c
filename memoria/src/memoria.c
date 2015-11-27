@@ -449,17 +449,18 @@ int envioDeInfoIniciarASwap(int pid, int cantidadPaginas) {
 	string_append(&bufferASwap, obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferASwap, obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
-	printf(
-			"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",
-			bufferASwap);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s",bufferASwap);
+
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
 	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap, bufferASwap, strlen(bufferASwap));
 
 	RecibirDatos(socket_Swap, &bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
 
-	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s\n",
-			bufferRespuesta);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s",bufferRespuesta);
+
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
 
 	if (strcmp(bufferRespuesta, "1") == 0) {
 
@@ -492,8 +493,8 @@ void implementoIniciarCpu(int socket, char *buffer) {
 	cantidadPaginas = atoi(bufferAux);
 
 	if (cantidadPaginas <= 0) {
-		printf(
-				"* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
+		log_info(logger,"* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
+		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
 		string_append(&bufferRespuestaCPU, "0");
 		EnviarDatos(socket, bufferRespuestaCPU, strlen(bufferRespuestaCPU));
 
@@ -505,10 +506,11 @@ void implementoIniciarCpu(int socket, char *buffer) {
 	mProc->cantMarcosPorProceso = 0;
 	mProc->totalPaginas = cantidadPaginas;
 
-	printf(
-			"********************"NEGRITA"INICIAR"DEFAULT"**************************************\n");
-	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n", pid,
-			cantidadPaginas);
+
+	log_info(logger,"* CPU solicita ("COLOR_VERDE"Iniciar"DEFAULT") Pid:%d Cantidad de Paginas:%d", pid,cantidadPaginas);
+
+	printf("********************"NEGRITA"INICIAR"DEFAULT"**************************************\n");
+	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n", pid,cantidadPaginas);
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if (envioDeInfoIniciarASwap(pid, cantidadPaginas)) {
 		//Agrego nuevo proceso a la lista
@@ -516,15 +518,17 @@ void implementoIniciarCpu(int socket, char *buffer) {
 		list_add(lista_mProc, mProc);
 
 		string_append(&bufferRespuestaCPU, "1");
-		printf(
-				"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",
-				mProc->pid, cantidadPaginas);
+
+		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.",mProc->pid, cantidadPaginas);
+
+		printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid, cantidadPaginas);
 
 	} else {
 
+		log_info(logger,"* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO");
+
 		//NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA PODER INICIAR ESE PROCESO
-		printf(
-				"* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
+		printf("* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
 		string_append(&bufferRespuestaCPU, "0");
 
 	}
@@ -547,16 +551,20 @@ int buscarPaginaEnTLB(int pid, int nroPagina, int *marco) {
 			if (telebe->pid == pid && telebe->pagina == nroPagina) {
 				*marco = telebe->marco;
 				cantAciertos++;
-				printf(
-						"* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
+				log_info(logger,"* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT,
+						pid, nroPagina, cantAciertos, cantTotalAciertos);
+				printf("* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
 						pid, nroPagina, cantAciertos, cantTotalAciertos);
 				pthread_mutex_unlock(&semTELEBE);
 				return 1;
 			}
 		}
 	}
-	printf(
-			"* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
+
+	log_info(logger,"* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT,
+			pid, nroPagina, cantAciertos, cantTotalAciertos);
+
+	printf("* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
 			pid, nroPagina, cantAciertos, cantTotalAciertos);
 	pthread_mutex_unlock(&semTELEBE);
 	return 0;
@@ -669,8 +677,8 @@ char * pedirContenidoASwap(int pid, int nroPagina) {
 	string_append(&buffer, obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer, obtenerSubBuffer(string_itoa(nroPagina)));
 
-	printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s\n",
-			buffer);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s",buffer);
+	printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
 
 	pthread_mutex_lock(&semSwap);
 
@@ -1884,13 +1892,16 @@ void implementoEscribirCpu(int socket, char *buffer) {
 		bufferAux = DigitosNombreArchivo(buffer, &posActual);
 		memcpy(contenido, bufferAux, tamanioC);
 
-		printf(
-				"***********************"NEGRITA"ESCRIBIR"DEFAULT"**********************************\n");
-		printf(
-				"* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:",
+		printf("***********************"NEGRITA"ESCRIBIR"DEFAULT"**********************************\n");
+
+		log_info(logger,"* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:%s",
+				pid, nroPagina,contenido);
+
+		printf("* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:",
 				pid, nroPagina);
 		imprimirContenido(contenido, tamanioC);
 		printf("\n");
+		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") ");
 		printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") ");
 		if (g_Cantidad_Marcos > 0) {
 			if (buscarPaginaEnTLB(pid, nroPagina, &marco)) {
@@ -1920,49 +1931,55 @@ void implementoEscribirCpu(int socket, char *buffer) {
 
 
 					if (marco == -1) {
-						printf(
-								"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
+						log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena");
+						printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
 						EnviarDatos(socket, "0ErrorAlEscribir0", strlen("0ErrorAlEscribir0"));
 						return;
 					}
 
 				}
-				sleep(g_Retardo_Memoria);
+				usleep(g_Retardo_Memoria);
 			}
 
 			actualizarMemoriaPrincipal(pid, nroPagina, contenido, tamanioC,
 					marco);
 			actualizarTLB(pid, nroPagina);
 			imprimirTLB();
+
+			log_info(logger,"* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT,cantFallos);
+
 			printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
 
+			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:%s",a_Memoria[marco].contenido);
 			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:");
 			imprimirContenido(a_Memoria[marco].contenido, g_Tamanio_Marco);
 			printf("\n");
-			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",
-					marco);
+			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",marco);
+			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",marco);
 			EnviarDatos(socket, a_Memoria[marco].contenido, g_Tamanio_Marco);
 			//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 		} else {
 			valido = grabarContenidoASwap(pid, nroPagina, contenido);
 			if (valido) {
-				printf("* Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",
-						pid, nroPagina);
+				log_info(logger,"* Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:%s",pid, nroPagina,contenido);
+				printf("* Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",pid, nroPagina);
 				imprimirContenido(contenido, g_Tamanio_Marco);
 				printf("\n");
 				EnviarDatos(socket, contenido, g_Tamanio_Marco);
 			} else {
-				printf(
-						"No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",
+				log_info(logger,"No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s",
+						pid, nroPagina, contenido);
+				printf("No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",
 						pid, nroPagina, contenido);
 				EnviarDatos(socket, "0", strlen("0"));
 			}
 		}
 	} else {
-		printf(
-				"***********************ESCRIBIR-ERROR****************************\n");
-		printf(
-				"CPU solicita escribir pero envia algo mas grande que el tamaño de marco\n");
+		printf("***********************ESCRIBIR-ERROR****************************\n");
+
+		log_info(logger,"ERROR - CPU solicita escribir pero envia algo mas grande que el tamaño de marco");
+		printf("CPU solicita escribir pero envia algo mas grande que el tamaño de marco\n");
+		log_info(logger,"Tamaño de Marco:%d Tamaño que envia CPU:%d\n", g_Tamanio_Marco,tamanioC);
 		printf("Tamaño de Marco:%d Tamaño que envia CPU:%d\n", g_Tamanio_Marco,
 				tamanioC);
 		EnviarDatos(socket, "0", strlen("0"));
@@ -2011,10 +2028,11 @@ void implementoLeerCpu(int socket, char *buffer) {
 	bufferAux = DigitosNombreArchivo(buffer, &posActual);
 	nroPagina = atoi(bufferAux);
 
-	printf(
-			"**************************"NEGRITA"LEER"DEFAULT"***********************************\n");
-	printf(
-			"* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT"\n",
+	printf("**************************"NEGRITA"LEER"DEFAULT"***********************************\n");
+
+	log_info(logger,"* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT,pid, nroPagina);
+
+	printf("* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT"\n",
 			pid, nroPagina);
 	//printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if (g_Cantidad_Marcos > 0) {
@@ -2050,8 +2068,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 
 
 					if (marco == -1) {
-						printf(
-								"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
+						log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena");
+						printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
 						EnviarDatos(socket, "0ErrorAlEscribir0", strlen("0ErrorAlEscribir0"));
 						return;
 					}
@@ -2059,8 +2077,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 					actualizarMemoriaPrincipal(pid, nroPagina, contenido,
 							g_Tamanio_Marco, marco);
 				} else {
-					printf(
-							"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+					log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA");
+					printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
 				}
 			}
 			if (contenido != NULL) {
@@ -2068,12 +2086,15 @@ void implementoLeerCpu(int socket, char *buffer) {
 				//	imprimirTLB();
 			}
 
-			sleep(g_Retardo_Memoria);
+			usleep(g_Retardo_Memoria);
+
 		}
 		imprimirTLB();
+
+		log_info(logger,"* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT,cantFallos);
 		printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
-		printf(
-				"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
+		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:%s",a_Memoria[marco].contenido);
+		printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido, g_Tamanio_Marco);
 		printf("\n");
 
@@ -2085,8 +2106,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 	} else {
 		contenido = pedirContenidoASwap(pid, nroPagina);
 		if (contenido != NULL) {
-			printf(
-					"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:");
+			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:%s",contenido);
+			printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:");
 			imprimirContenido(contenido, g_Tamanio_Marco);
 			printf("\n");
 			EnviarDatos(socket, contenido, g_Tamanio_Marco);
@@ -2114,9 +2135,8 @@ int eliminarDeSwap(int pid) {
 	RecibirDatos(socket_Swap, &bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
 
-	printf(
-			"* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",
-			bufferRespuesta);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s",bufferRespuesta);
+	printf("* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
 
 	if (strcmp(bufferRespuesta, "1") == 0) {
 
@@ -2238,10 +2258,9 @@ void implementoFinalizarCpu(int socket, char *buffer) {
 	pid = atoi(bufferAux);
 	free(bufferAux);
 
-	printf(
-			"***************************"NEGRITA"FINALIZAR"DEFAULT"*****************************\n");
-	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
-			pid);
+	printf("***************************"NEGRITA"FINALIZAR"DEFAULT"*****************************\n");
+	log_info(logger,"* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT,pid);
+	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
 	if (g_Entradas_TLB > 0)

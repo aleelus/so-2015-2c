@@ -2542,120 +2542,112 @@ int ChartToInt(char x) {
 }
 
 long unsigned RecibirDatos(int socket, char **buffer) {
-	long bytesRecibidos = 0, tamanioBuffer = 0, bytesEnviados;
-	char *bufferAux = malloc(1);
-	int posicion = 1;
-	memset(bufferAux, 0, 1);
+	long bytesRecibidos = 0,tamanioBuffer=0,bytesEnviados;
+	char *bufferAux= malloc(1);
+	int posicion=1;
+	memset(bufferAux,0,1);
 
-	bufferAux = realloc(bufferAux, BUFFERSIZE * sizeof(char) + 1);
+	bufferAux = realloc(bufferAux,BUFFERSIZE * sizeof(char)+1);
 
-	memset(bufferAux, 0, BUFFERSIZE * sizeof(char) + 1); //-> llenamos el bufferAux con barras ceros.
+	memset(bufferAux, 0, BUFFERSIZE * sizeof(char)+1); //-> llenamos el bufferAux con barras ceros.
 
-	if ((bytesRecibidos = bytesRecibidos
-			+ recv(socket, bufferAux, BUFFERSIZE, 0)) == -1) {
-		Error(
-				"Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",
-				socket);
+	if ((bytesRecibidos = bytesRecibidos+recv(socket, bufferAux, BUFFERSIZE, 0)) == -1) {
+		Error("Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",socket);
 	}
 
-	if (bytesRecibidos > 0) {
+	if(bytesRecibidos>0) {
 		bytesEnviados = send(socket, "Ok", strlen("Ok"), 0);
-		if (bytesEnviados <= 0)
-			return 0;
-	} else
-		return 0;
+		if(bytesEnviados<=0) return 0;
+	} else return 0;
 
-	tamanioBuffer = atoi(DigitosNombreArchivo(bufferAux, &posicion));
+	tamanioBuffer = atoi(DigitosNombreArchivo(bufferAux,&posicion));
 
 	free(bufferAux);
 
-	bufferAux = malloc(tamanioBuffer + 1);
-	*buffer = malloc(tamanioBuffer + 10);
-	memset(bufferAux, 0, tamanioBuffer + 1);
-	memset(*buffer, 0, tamanioBuffer + 10);
+	bufferAux = malloc(tamanioBuffer+1);
+	*buffer = malloc(tamanioBuffer+10);
+	memset(bufferAux,0,tamanioBuffer+1);
+	memset(*buffer,0,tamanioBuffer+10);
 
 	ssize_t numBytesRecv = 0;
 
-	long unsigned pos = 0;
-	do {
+	long unsigned pos=0;
+	do{
 		numBytesRecv = recv(socket, bufferAux, tamanioBuffer, 0);
-		if (numBytesRecv < 0)
+		if ( numBytesRecv < 0)
 			printf("ERROR\n");
 		//printf("Recibido:%lu\n",pos);
-		memcpy((*buffer + pos), bufferAux, numBytesRecv);
-		memset(bufferAux, 0, tamanioBuffer + 1);
+		memcpy((*buffer+pos),bufferAux,numBytesRecv);
+		memset(bufferAux,0,tamanioBuffer+1);
 		pos = pos + numBytesRecv;
-	} while (pos < tamanioBuffer);
+	}while (pos < tamanioBuffer);
 
-	sem_wait(&semLog);
-	log_trace(logger, "RECIBO DATOS. socket: %d. tamanio buffer:%lu", socket,
-			tamanioBuffer);
-	sem_post(&semLog);
+	log_trace(logger, "RECIBO DATOS. socket: %d. tamanio buffer:%lu", socket,tamanioBuffer);
+
+	free(bufferAux);
 	return tamanioBuffer;
 }
 
-char* DigitosNombreArchivo(char *buffer, int *posicion) {
+char* DigitosNombreArchivo(char *buffer,int *posicion){
 
 	char *nombreArch;
-	int digito = 0, i = 0, j = 0, algo = 0, aux = 0, x = 0;
+	int digito=0,i=0,j=0,algo=0,aux=0,x=0;
 
-	digito = PosicionDeBufferAInt(buffer, *posicion);
-	for (i = 1; i <= digito; i++) {
-		algo = PosicionDeBufferAInt(buffer, *posicion + i);
-		aux = aux * 10 + algo;
+	digito=PosicionDeBufferAInt(buffer,*posicion);
+	for(i=1;i<=digito;i++){
+		algo=PosicionDeBufferAInt(buffer,*posicion+i);
+		aux=aux*10+algo;
 	}
-	nombreArch = malloc(aux + 1);
-	for (j = *posicion + i; j < *posicion + i + aux; j++) {
-		nombreArch[x] = buffer[j];
+	nombreArch = malloc(aux+1);
+	for(j=*posicion+i;j<*posicion+i+aux;j++){
+		nombreArch[x]=buffer[j];
 		x++;
 	}
-	nombreArch[x] = '\0';
-	*posicion = *posicion + i + aux;
+	nombreArch[x]='\0';
+	*posicion=*posicion+i+aux;
 	return nombreArch;
 }
 
 long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer) {
+	//Tenia que agregarle el parametro porque en api.h no puedo poner muchos #defines :P
 
-	//printf("ENVIO DATOS:%s\n",buffer);
+	int bytecount,bytesRecibidos;
+	long unsigned cantEnviados=0;
+	char * bufferE = string_new(),*bufferR=malloc(BUFFERSIZE);
+	memset(bufferR,0,BUFFERSIZE);
 
-	int bytecount, bytesRecibidos;
-	long unsigned cantEnviados = 0;
-	char * bufferE = string_new(), *bufferR = malloc(BUFFERSIZE);
-	memset(bufferR, 0, BUFFERSIZE);
+	string_append(&bufferE,YO);
 
-	string_append(&bufferE, YO);
+	string_append(&bufferE,obtenerSubBuffer(string_itoa(tamanioBuffer)));
 
-	string_append(&bufferE, obtenerSubBuffer(string_itoa(tamanioBuffer)));
-
-	if ((bytecount = send(socket, bufferE, strlen(bufferE), 0)) == -1) {
+	if ((bytecount = send(socket,bufferE,strlen(bufferE), 0)) == -1){
 		Error("No puedo enviar información a al cliente. Socket: %d", socket);
 		return 0;
 	}
 
 	if ((bytesRecibidos = recv(socket, bufferR, BUFFERSIZE, 0)) == -1) {
-		Error(
-				"Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",
-				socket);
+		Error("Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",socket);
 	}
 
-	long unsigned n, bytesleft = tamanioBuffer;
+	long unsigned n,bytesleft=tamanioBuffer;
 
-	while (cantEnviados < tamanioBuffer) {
-		n = send(socket, buffer + cantEnviados, bytesleft, 0);
-		if (n == -1) {
-			Error("Fallo al enviar a Socket: %d,", socket);
+	while(cantEnviados < tamanioBuffer) {
+		n = send(socket, buffer+cantEnviados, bytesleft, 0);
+		if (n == -1){
+			Error("Fallo al enviar a Socket: %d,",socket);
 			return 0;
 		}
 		cantEnviados += n;
 		bytesleft -= n;
 		//printf("Cantidad Enviada :%lu\n",n);
 	}
-	if (cantEnviados != tamanioBuffer)
+	if(cantEnviados!=tamanioBuffer){
 		return 0;
-	sem_wait(&semLog);
-	log_info(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ", socket,
-			tamanioBuffer);
-	sem_post(&semLog);
+	}
+	log_trace(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ",socket,tamanioBuffer);
+
+	free(bufferE);
+	free(bufferR);
 	return tamanioBuffer;
 }
 

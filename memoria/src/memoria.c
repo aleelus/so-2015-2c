@@ -945,33 +945,7 @@ void actualizarCantidadMarcosPorProceso(int pid) {
 	}
 
 }
-/*
- void actualizarPunteroFIFO(int pid,int i){
- int k = 0,entro=0;
- k=i-1;
- while(k>=0 && k<i){
- if(a_Memoria[k].pid==pid){
- a_Memoria[k].bitPuntero=0;
- printf("CAMBIO PUNTERO A 0  ----- PID: %d   MARCO: %d\n",a_Memoria[k].pid,k);
- break;
 
- }
- k--;
- }
-
- k=i+1;
- while(k<g_Cantidad_Marcos){
- if(a_Memoria[k].pid==pid){
- a_Memoria[k].bitPuntero = 1;
- printf("CAMBIO PUNTERO A 1  ----- PID: %d   MARCO: %d\n",a_Memoria[k].pid,k);
- entro=1;
-
- }
- if(!entro) k=0;
- else k++;
- }
-
- }*/
 
 int preguntarDisponibilidadDeMarcos(int pid) {
 
@@ -1427,7 +1401,6 @@ void LRU(int *marco, int pid, int nroPagina, char *contenido,int operacion) {
 			lru = list_remove(lista_lru, 0);
 			free(lru);
 
-			printf("ELIMINO Y AGREGO DE LA LISTA LRU\n");
 
 
 		}
@@ -1605,16 +1578,12 @@ int damePaginaVictimaClockMejorado(int pid,int* marco,int* posicion,int *modific
 	while(i<list_size(lista_mProc)){
 		mProc=list_get(lista_mProc,i);
 		if(mProc->pid==pid){
-			printf("Primer Pasada\n");
 			encontrado = primerPasada(mProc,marco,posicion,modificado);
 			if(encontrado==-1){
-				printf("Segunda Pasada\n");
 				encontrado = segundaPasada(mProc,marco,posicion,modificado);
 				if(encontrado==-1){
-					printf("Tercera Pasada\n");
 					encontrado = primerPasada(mProc,marco,posicion,modificado);
 					if(encontrado==-1){
-						printf("Cuarta Pasada\n");
 						encontrado = segundaPasada(mProc,marco,posicion,modificado);
 					}
 				}
@@ -1649,19 +1618,7 @@ void imprimirMemoria() {
 		}
 		printf("*********************************\n");
 
-		/*
-		 printf("|MARCO-PID-PAGINA-PUNTERO|\n");
-		 while(i<g_Cantidad_Marcos){
 
-		 if(a_Memoria[i].pag>=0){
-		 pagina = buscarDatosEnTP(i);
-		 if(pagina!=NULL)
-		 printf("|%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero);
-		 }
-
-		 i++;
-		 }
-		 printf("\n");*/
 	}
 
 	if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
@@ -1705,7 +1662,7 @@ void imprimirMemoria() {
 
 	}
 
-	if (!strcmp(g_Algoritmo, "LRU")) {
+	/*if (!strcmp(g_Algoritmo, "LRU")) {
 		printf("|LISTA LRU|\n");
 		i = 0;
 		while (i < list_size(lista_lru)) {
@@ -1716,7 +1673,7 @@ void imprimirMemoria() {
 			i++;
 		}
 		printf("\n");
-	}
+	}*/
 
 }
 

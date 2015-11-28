@@ -1499,7 +1499,7 @@ void asignarPaginaPos(t_mProc* mProc,int posicion){
 	}
 }
 
-int primerPasada(t_mProc* mProc,int *marco,int *pos){
+int primerPasada(t_mProc* mProc,int *marco,int *pos,int *modificada){
 	int i=0,posPagPuntero,posicion;
 	t_pagina* pagina,*pag;
 	posPagPuntero = damePuntero(mProc->paginas);
@@ -1515,6 +1515,7 @@ int primerPasada(t_mProc* mProc,int *marco,int *pos){
 				pagina->bitPuntero = 0;
 				*pos = posicion;
 				asignarPaginaPos(mProc,posicion+1);
+				*modificada = pagina->bitModificado;
 				return pagina->pagina;
 			}
 		}
@@ -1533,6 +1534,7 @@ int primerPasada(t_mProc* mProc,int *marco,int *pos){
 					pagina->bitPuntero = 0;
 					*pos = posicion;
 					asignarPaginaPos(mProc,posicion+1);
+					*modificada = pagina->bitModificado;
 					return pagina->pagina;
 				}
 			}
@@ -1542,7 +1544,7 @@ int primerPasada(t_mProc* mProc,int *marco,int *pos){
 	return -1;
 }
 
-int segundaPasada(t_mProc* mProc,int *marco,int *pos){
+int segundaPasada(t_mProc* mProc,int *marco,int *pos,int *modificado){
 	int i=0,posPagPuntero,posicion;
 	t_pagina* pagina,*pag;
 	posPagPuntero = damePuntero(mProc->paginas);
@@ -1558,6 +1560,7 @@ int segundaPasada(t_mProc* mProc,int *marco,int *pos){
 				pagina->bitPuntero = 0;
 				*pos = posicion;
 				asignarPaginaPos(mProc,posicion+1);
+				*modificado = pagina->bitModificado;
 				return pagina->pagina;
 			} else {
 				pagina->bitUso = 0;
@@ -1578,6 +1581,7 @@ int segundaPasada(t_mProc* mProc,int *marco,int *pos){
 					pagina->bitPuntero = 0;
 					*pos = posicion;
 					asignarPaginaPos(mProc,posicion+1);
+					*modificado = pagina->bitModificado;
 					return pagina->pagina;
 				} else {
 					pagina->bitUso = 0;
@@ -1589,7 +1593,7 @@ int segundaPasada(t_mProc* mProc,int *marco,int *pos){
 	return -1;
 }
 
-int damePaginaVictimaClockMejorado(int pid,int* marco,int* posicion){
+int damePaginaVictimaClockMejorado(int pid,int* marco,int* posicion,int *modificado){
 	t_mProc *mProc;
 	int i=0,encontrado=-1;
 
@@ -1597,16 +1601,16 @@ int damePaginaVictimaClockMejorado(int pid,int* marco,int* posicion){
 		mProc=list_get(lista_mProc,i);
 		if(mProc->pid==pid){
 			printf("Primer Pasada\n");
-			encontrado = primerPasada(mProc,marco,posicion);
+			encontrado = primerPasada(mProc,marco,posicion,modificado);
 			if(encontrado==-1){
 				printf("Segunda Pasada\n");
-				encontrado = segundaPasada(mProc,marco,posicion);
+				encontrado = segundaPasada(mProc,marco,posicion,modificado);
 				if(encontrado==-1){
 					printf("Tercera Pasada\n");
-					encontrado = primerPasada(mProc,marco,posicion);
+					encontrado = primerPasada(mProc,marco,posicion,modificado);
 					if(encontrado==-1){
 						printf("Cuarta Pasada\n");
-						encontrado = segundaPasada(mProc,marco,posicion);
+						encontrado = segundaPasada(mProc,marco,posicion,modificado);
 					}
 				}
 			}
@@ -1752,6 +1756,7 @@ void asignarMarco(int pid, int pag, int *marco, int mOcup, int posicion) {
 					pagina->bitPuntero = 1;
 
 				list_add(mProc->paginas, pagina);
+				actualizarCantidadMarcosPorProceso(pid);
 			} else {
 				pagina = list_get(mProc->paginas,nroPos);
 				pagina->bitMP = 1;
@@ -1825,8 +1830,9 @@ int damePaginaVictima(int pid, int* marco) {
 
 }
 
-int recorrerYDarmeMarco(int pid,int* posicion) {
+int recorrerYDarmeMarco(int pid,int* posicion,int operacion) {
 	int pagina, marco = -1;
+	int modificado = 0;
 	if (!strcmp(g_Algoritmo, "CLOCK")) {
 		pagina = damePaginaVictima(pid, &marco);
 		printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n", pagina, marco);
@@ -1835,9 +1841,15 @@ int recorrerYDarmeMarco(int pid,int* posicion) {
 		memset(a_Memoria[marco].contenido, 0, g_Tamanio_Marco);
 	}
 	if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		pagina = damePaginaVictimaClockMejorado(pid, &marco,posicion);
+		pagina = damePaginaVictimaClockMejorado(pid, &marco,posicion,&modificado);
 		printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n", pagina, marco);
-		grabarContenidoASwap(pid, pagina, a_Memoria[marco].contenido);
+
+		if(operacion == 2)
+			contAccesoSwap++;
+
+
+		if(modificado==1)
+			grabarContenidoASwap(pid, pagina, a_Memoria[marco].contenido);
 		actualizarTablaPagina(pid, pagina);
 		memset(a_Memoria[marco].contenido, 0, g_Tamanio_Marco);
 	}
@@ -1869,7 +1881,7 @@ void poneElBitUso(int pid, int pag) {
 	}
 }
 
-int CLOCK(int *marco, int pagina, int pid) {
+int CLOCK(int *marco, int pagina, int pid,int operacion) {
 	int mOcup = -1,posicion=-1;
 
 	*marco = dameMarco();
@@ -1878,11 +1890,11 @@ int CLOCK(int *marco, int pagina, int pid) {
 		if (mOcup < g_Maximo_Marcos_Por_Proceso) {
 			asignarMarco(pid, pagina, marco, mOcup,posicion);
 		} else {
-			*marco = recorrerYDarmeMarco(pid,&posicion);
+			*marco = recorrerYDarmeMarco(pid,&posicion,operacion);
 			asignarMarco(pid, pagina, marco, mOcup,posicion);
 		}
 	} else {
-		*marco = recorrerYDarmeMarco(pid,&posicion);
+		*marco = recorrerYDarmeMarco(pid,&posicion,operacion);
 
 		asignarMarco(pid, pagina, marco, mOcup,posicion);
 
@@ -1903,9 +1915,9 @@ void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido,
 		LRU(marco, pid, nroPagina, contenido,operacion);
 
 	} else if (!strcmp(g_Algoritmo, "CLOCK")) {
-		CLOCK(marco, nroPagina, pid);
+		CLOCK(marco, nroPagina, pid,operacion);
 	} else if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		CLOCK(marco, nroPagina, pid);
+		CLOCK(marco, nroPagina, pid,operacion);
 	}
 
 	if(*marco>=0)
@@ -2024,7 +2036,6 @@ void implementoEscribirCpu(int socket, char *buffer) {
 					// hacemos boleta a alguien
 					if(preguntarDisponibilidadDeMarcos(pid)>0){
 
-						printf("ACA CONTACCESOSWAP\n");
 						contAccesoSwap++;
 
 					}

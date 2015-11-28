@@ -59,6 +59,7 @@ int procesarComando(char *comando, char *argumento){
 				return 1;
 				break;
 			}
+			log_info(logger, "El proceso %d se ha finalizado con exito\n", pid );
 			fprintf(stdout, "El proceso %d se ha finalizado con exito\n", pid);
 			ejecutarDispatcher();
 			break;

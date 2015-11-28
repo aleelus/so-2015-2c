@@ -122,6 +122,10 @@ int AtiendeCliente(void * arg) {
 		}
 		long unsigned bytesRecibidos = RecibirDatos(cpu->socket_Cpu,&bufferR);
 		marcarSalidaCpu(cpu);
+
+		sumarTiempoEjecucion(cpu);
+
+
 		procesarBuffer(cpu, bufferR,bytesRecibidos);
 		free(bufferR);
 		//Aca se define el envio de mCod a la cpu para que la procese
@@ -311,4 +315,15 @@ int sumarBits(bit_array ba){
     return 0;
 }
 
+void sumarTiempoEjecucion(t_cpu* cpu){
+	sem_wait(&cpu->semUso);
+	sem_wait(&semPCB);
+	sem_wait(&semReady);
+	sem_wait(&semLock);
+	cpu->procesoAsignado->tiempoEjecucion += cpu->horaSalida - cpu->horaEntrada;
+	sem_post(&semLock);
+	sem_post(&semReady);
+	sem_post(&semPCB);
+	sem_post(&cpu->semUso);
+}
 

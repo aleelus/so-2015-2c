@@ -23,7 +23,7 @@ int cantHilos=0;
 //int PID=0; // Contador de ID Procesos mProc (semaforo)
 t_pid PID; // Contador ID Procesos + semaforo ;)
 
-sem_t semPCB, semReady, semLock, semIO;
+
 
 
 
@@ -79,6 +79,8 @@ int crearProceso(char* path) {
 	strcpy(nuevoPCB->path, path);
 	nuevoPCB->pid = nuevoPid();
 	nuevoPCB->quantum = g_Quantum;
+	nuevoPCB->tiempoEjecucion = 0;
+	nuevoPCB->tiempoEspera = 0;
 
 	sem_wait(&semPCB);
 	sem_wait(&semReady);
@@ -121,9 +123,15 @@ int finalizarProceso(int pid) {
 	if(proceso->estado == LISTO) {
 		aux = list_find(colaReady, (void*) _mismoPID);
 	}
-	if(proceso->estado == BLOQUEADO || proceso->estado == ESPERANDO_IO){
+	if(proceso->estado == BLOQUEADO){
 
 		aux = list_find(colaBloqueados, (void*) _mismoPID);
+	}
+	if(proceso->estado == ESPERANDO_IO){
+		aux = list_remove_by_condition(colaBloqueados, (void*) _mismoPID);
+		aux->estado = LISTO;
+		aux->tiempoEspera += time(NULL) - aux->tiempoInicioEspera;
+		list_add(colaReady, aux);
 	}
 	if (aux != proceso){
 		fprintf(stderr, "Error irrecuperable al finalizar el proceso %d\n", pid);

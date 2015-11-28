@@ -16,6 +16,7 @@ int main(void) {
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "Adm de Mem", false,
 			LOG_LEVEL_TRACE);
 
+	contAccesoSwap=0;
 	//Semaforos
 	sem_init(&semTLB, 0, 1);
 	sem_init(&semMP, 0, 1);
@@ -94,20 +95,25 @@ void bajarMarcosASwapYLimpiarMP() {
 
 
 			// VER ESTOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-			if (pagina->bitMP==1 || pagina->bitModificado == 1) {
-
-				grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
-
+			if(!strcmp("FIFO",g_Algoritmo)||!strcmp("LRU",g_Algoritmo)){
+				if (pagina->bitMP==1) {
+					grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
+				}
+			} else if(!strcmp("CLOCKMEJORADO",g_Algoritmo)){
+				if (pagina->bitMP==1 && pagina->bitModificado==1){
+					grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
+				}
 			}
-			memset(a_Memoria[pagina->marco].contenido, 0, g_Tamanio_Marco);
-			a_Memoria[pagina->marco].pag = -1;
-			a_Memoria[pagina->marco].pid = -1;
+			if(pagina->bitMP==1){
+				memset(a_Memoria[pagina->marco].contenido, 0, g_Tamanio_Marco);
+				a_Memoria[pagina->marco].pag = -1;
+				a_Memoria[pagina->marco].pid = -1;
 
-			pagina->bitModificado = 0;
-			pagina->bitPuntero = 0;
-			pagina->bitUso = 0;
-			pagina->bitMP = 0;
-
+				pagina->bitModificado = 0;
+				pagina->bitPuntero = 0;
+				pagina->bitUso = 0;
+				pagina->bitMP = 0;
+			}
 			k++;
 		}
 		i++;
@@ -449,17 +455,18 @@ int envioDeInfoIniciarASwap(int pid, int cantidadPaginas) {
 	string_append(&bufferASwap, obtenerSubBuffer(string_itoa(pid)));
 	string_append(&bufferASwap, obtenerSubBuffer(string_itoa(cantidadPaginas)));
 
-	printf(
-			"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",
-			bufferASwap);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s",bufferASwap);
+
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Buffer Enviado a SWAP: %s\n",bufferASwap);
 	pthread_mutex_lock(&semSwap);
 	EnviarDatos(socket_Swap, bufferASwap, strlen(bufferASwap));
 
 	RecibirDatos(socket_Swap, &bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
 
-	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s\n",
-			bufferRespuesta);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s",bufferRespuesta);
+
+	printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") Respuesta de swap: %s\n",bufferRespuesta);
 
 	if (strcmp(bufferRespuesta, "1") == 0) {
 
@@ -492,8 +499,8 @@ void implementoIniciarCpu(int socket, char *buffer) {
 	cantidadPaginas = atoi(bufferAux);
 
 	if (cantidadPaginas <= 0) {
-		printf(
-				"* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
+		log_info(logger,"* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
+		printf("* ("COLOR_VERDE"Iniciar"DEFAULT") Error en iniciar : cantidad de paginas invalido");
 		string_append(&bufferRespuestaCPU, "0");
 		EnviarDatos(socket, bufferRespuestaCPU, strlen(bufferRespuestaCPU));
 
@@ -505,10 +512,11 @@ void implementoIniciarCpu(int socket, char *buffer) {
 	mProc->cantMarcosPorProceso = 0;
 	mProc->totalPaginas = cantidadPaginas;
 
-	printf(
-			"********************"NEGRITA"INICIAR"DEFAULT"**************************************\n");
-	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n", pid,
-			cantidadPaginas);
+
+	log_info(logger,"* CPU solicita ("COLOR_VERDE"Iniciar"DEFAULT") Pid:%d Cantidad de Paginas:%d", pid,cantidadPaginas);
+
+	printf("********************"NEGRITA"INICIAR"DEFAULT"**************************************\n");
+	printf("* CPU solicita iniciar Pid:%d Cantidad de Paginas:%d\n", pid,cantidadPaginas);
 	//Envio a Swap info necesaria para que reserve el espacio solicitado
 	if (envioDeInfoIniciarASwap(pid, cantidadPaginas)) {
 		//Agrego nuevo proceso a la lista
@@ -516,15 +524,17 @@ void implementoIniciarCpu(int socket, char *buffer) {
 		list_add(lista_mProc, mProc);
 
 		string_append(&bufferRespuestaCPU, "1");
-		printf(
-				"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",
-				mProc->pid, cantidadPaginas);
+
+		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.",mProc->pid, cantidadPaginas);
+
+		printf("* ("COLOR_VERDE""NEGRITA"Iniciar"DEFAULT") PID:%d y se le reservo en SWAP:%d paginas.\n",mProc->pid, cantidadPaginas);
 
 	} else {
 
+		log_info(logger,"* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO");
+
 		//NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA PODER INICIAR ESE PROCESO
-		printf(
-				"* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
+		printf("* NO HAY ESPACIO SUFICIENTE EN EL SWAP PARA INICIAR ESE PROCESO\n");
 		string_append(&bufferRespuestaCPU, "0");
 
 	}
@@ -547,16 +557,20 @@ int buscarPaginaEnTLB(int pid, int nroPagina, int *marco) {
 			if (telebe->pid == pid && telebe->pagina == nroPagina) {
 				*marco = telebe->marco;
 				cantAciertos++;
-				printf(
-						"* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
+				log_info(logger,"* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT,
+						pid, nroPagina, cantAciertos, cantTotalAciertos);
+				printf("* Pid:%d  -  Pagina:%d se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
 						pid, nroPagina, cantAciertos, cantTotalAciertos);
 				pthread_mutex_unlock(&semTELEBE);
 				return 1;
 			}
 		}
 	}
-	printf(
-			"* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
+
+	log_info(logger,"* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT,
+			pid, nroPagina, cantAciertos, cantTotalAciertos);
+
+	printf("* Pid:%d Pagina:%d No se encuentra en TLB  -  Aciertos de la TLB: "COLOR_VERDE""NEGRITA"%d"DEFAULT"/"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
 			pid, nroPagina, cantAciertos, cantTotalAciertos);
 	pthread_mutex_unlock(&semTELEBE);
 	return 0;
@@ -622,6 +636,8 @@ int grabarContenidoASwap(int pid, int nroPagina, char* contenido) {
 
 	//3 3 111 112 14hola
 
+	contAccesoSwap++;
+
 	char * buffer = string_new();
 	char * bufferRespuesta = string_new();
 
@@ -662,6 +678,8 @@ char * pedirContenidoASwap(int pid, int nroPagina) {
 
 	//3 2 111 112
 
+	contAccesoSwap++;
+
 	char * buffer = string_new();
 	char * bufferRespuesta = string_new();
 
@@ -669,8 +687,8 @@ char * pedirContenidoASwap(int pid, int nroPagina) {
 	string_append(&buffer, obtenerSubBuffer(string_itoa(pid)));
 	string_append(&buffer, obtenerSubBuffer(string_itoa(nroPagina)));
 
-	printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s\n",
-			buffer);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s",buffer);
+	printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Buffer a Swap: %s\n",buffer);
 
 	pthread_mutex_lock(&semSwap);
 
@@ -746,6 +764,16 @@ void actualizarTLB(int pid, int nroPagina) {
 	t_tlb *telebe;
 	int i = 0, totalPaginas = 0, entradasTLB = g_Entradas_TLB, entro = 0;
 	int contAgrego = 0, posActual = 0, bandera = 0, contPag = 0;
+
+	while(i<list_size(lista_tlb)){
+		telebe = list_get(lista_tlb,i);
+		telebe->marco = -1;
+		telebe->pagina = -1;
+		telebe->pid = -1;
+		i++;
+	}
+
+	i=0;
 
 	while (i < list_size(lista_mProc)) {
 		mProc = list_get(lista_mProc, i);
@@ -866,6 +894,9 @@ void actualizarTablaPagina(int pid, int pagina) {
 				if (unaPagina->pagina == pagina) {
 					unaPagina->bitMP = 0;
 					unaPagina->marco = -1;
+					if(!strcmp("CLOCKMEJORADO",g_Algoritmo)){
+						unaPagina->posicion = -1;
+					}
 					j = list_size(mProc->paginas);
 					i = list_size(lista_mProc);
 				}
@@ -914,33 +945,7 @@ void actualizarCantidadMarcosPorProceso(int pid) {
 	}
 
 }
-/*
- void actualizarPunteroFIFO(int pid,int i){
- int k = 0,entro=0;
- k=i-1;
- while(k>=0 && k<i){
- if(a_Memoria[k].pid==pid){
- a_Memoria[k].bitPuntero=0;
- printf("CAMBIO PUNTERO A 0  ----- PID: %d   MARCO: %d\n",a_Memoria[k].pid,k);
- break;
 
- }
- k--;
- }
-
- k=i+1;
- while(k<g_Cantidad_Marcos){
- if(a_Memoria[k].pid==pid){
- a_Memoria[k].bitPuntero = 1;
- printf("CAMBIO PUNTERO A 1  ----- PID: %d   MARCO: %d\n",a_Memoria[k].pid,k);
- entro=1;
-
- }
- if(!entro) k=0;
- else k++;
- }
-
- }*/
 
 int preguntarDisponibilidadDeMarcos(int pid) {
 
@@ -961,8 +966,7 @@ int preguntarDisponibilidadDeMarcos(int pid) {
 	resta = mProc->totalPaginas - cantMarcosPorProceso;
 
 	i = 0;
-	while (i < g_Cantidad_Marcos && cont < resta
-			&& cantMarcosPorProceso < g_Maximo_Marcos_Por_Proceso) {
+	while (i < g_Cantidad_Marcos && cont < resta&& cantMarcosPorProceso < g_Maximo_Marcos_Por_Proceso) {
 
 		if (a_Memoria[i].pag < 0) {
 			cont++;
@@ -1023,12 +1027,10 @@ int contarMarcosDeEsePidEnMemoria(int pid){
 	if(cont==1)
 		return 1;
 	else
-		return 0;
-
-
+		return cont;
 }
 
-int FIFO2(int *marco, int pid, int nroPagina) {
+int FIFO2(int *marco, int pid, int nroPagina,int operacion) {
 
 	int i = 0, k = 0, j = 0, bandera = 0,pos=-1;
 	t_mProc *mProc;
@@ -1097,6 +1099,8 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 
 								pagina = a_Memoria[tablaPagina->marco].pag;
 								*marco = tablaPagina->marco;
+								if(operacion==2)
+									contAccesoSwap++;
 								valido = grabarContenidoASwap(pid, pagina,a_Memoria[*marco].contenido);
 								if (valido)
 									actualizarTablaPagina(pid, pagina);
@@ -1151,6 +1155,8 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 
 								pagina = a_Memoria[tablaPagina->marco].pag;
 								*marco = tablaPagina->marco;
+								if(operacion==2)
+									contAccesoSwap++;
 								valido = grabarContenidoASwap(pid, pagina,
 										a_Memoria[*marco].contenido);
 								if (valido)
@@ -1202,7 +1208,6 @@ int primeraPasada(int pid, int nroPagina, int *marco) {
 	int cantMarcosPorProceso = -1;
 	t_mProc *mProc;
 
-	t_lru *lru;
 	int i = 0, bandera = 0,cont=0;
 
 	cantMarcosPorProceso = contarMarcosPorProceso(pid);
@@ -1280,7 +1285,7 @@ void imprimirTablaDePaginas() {
 
 }
 
-void LRU(int *marco, int pid, int nroPagina, char *contenido) {
+void LRU(int *marco, int pid, int nroPagina, char *contenido,int operacion) {
 
 	//ASIGNACION FIJA Y REEMPLAZO LOCAL
 
@@ -1379,6 +1384,8 @@ void LRU(int *marco, int pid, int nroPagina, char *contenido) {
 			list_add(copiaMproc->paginas, pagina);
 			actualizarCantidadMarcosPorProceso(pid);
 		}
+		if(operacion == 2)
+			contAccesoSwap++;
 		valido = grabarContenidoASwap(pid, pag, a_Memoria[*marco].contenido);
 		if (valido)
 			actualizarTablaPagina(pid, pag);
@@ -1394,7 +1401,6 @@ void LRU(int *marco, int pid, int nroPagina, char *contenido) {
 			lru = list_remove(lista_lru, 0);
 			free(lru);
 
-			printf("ELIMINO Y AGREGO DE LA LISTA LRU\n");
 
 
 		}
@@ -1445,94 +1451,148 @@ int damePuntero(t_list* paginas) {
 	return -1;
 }
 
-int damePaginaVictimaClockMejorado(int pid, int* marco) {
-	t_mProc *mProc;
-	t_pagina *pagina;
-	int i = 0, j = 0, cantPag, encontrado = 0, victima;
+t_pagina* buscarPaginaPos(t_list* lista, int pos){
+	int i=0;
+	t_pagina* pag;
+	while(i<list_size(lista)){
+		pag = list_get(lista,i);
+		if(pag->posicion==pos){
+			return pag;
+		}
+		i++;
+	}
+	return NULL;
+}
 
-	while (i < list_size(lista_mProc)) {
-		mProc = list_get(lista_mProc, i);
-		if (mProc->pid == pid) {
-			cantPag = list_size(mProc->paginas);
+void asignarPaginaPos(t_mProc* mProc,int posicion){
+	int cantMarcos;
+	t_pagina* pagina;
+	cantMarcos = contarMarcosDeEsePidEnMemoria(mProc->pid);
+	if(posicion<cantMarcos){
+		pagina = buscarPaginaPos(mProc->paginas,posicion);
+		pagina->bitPuntero = 1;
+	} else {
+		pagina = buscarPaginaPos(mProc->paginas,0);
+		pagina->bitPuntero = 1;
+	}
+}
 
-			j = damePuntero(mProc->paginas);
-			if (j > -1) {
-				while (j < cantPag && !encontrado) {
-					pagina = list_get(mProc->paginas, j);
-					if (pagina->bitUso == 0 && pagina->bitModificado == 0) {
-						encontrado = 1;
-						victima = pagina->pagina;
-						*marco = pagina->marco;
-					}
-					j++;
-				}
-
-				if (encontrado) {
-					pagina->bitPuntero = 0;
-					j++;
-					if (j < cantPag) {
-						pagina = list_get(mProc->paginas, j);
-						pagina->bitPuntero = 1;
-					} else {
-						pagina = list_get(mProc->paginas, 0);
-						pagina->bitPuntero = 1;
-					}
-					return victima;
-				} else {
-					j = 0;
-					while (j < cantPag && !encontrado) {
-						pagina = list_get(mProc->paginas, j);
-						if (pagina->bitUso == 0 && pagina->bitModificado == 1) {
-							encontrado = 1;
-							victima = pagina->pagina;
-							*marco = pagina->marco;
-						}
-						j++;
-					}
-					if (encontrado) {
-						pagina->bitPuntero = 0;
-						j++;
-						if (j < cantPag) {
-							pagina = list_get(mProc->paginas, j);
-							pagina->bitPuntero = 1;
-						} else {
-							pagina = list_get(mProc->paginas, 0);
-							pagina->bitPuntero = 1;
-						}
-						return victima;
-					} else {
-						while (j < cantPag && !encontrado) {
-							pagina = list_get(mProc->paginas, j);
-							if (pagina->bitUso == 0
-									&& pagina->bitModificado == 0) {
-								encontrado = 1;
-								victima = pagina->pagina;
-								*marco = pagina->marco;
-							}
-							j++;
-						}
-						pagina->bitPuntero = 0;
-						j++;
-						if (j < cantPag) {
-							pagina = list_get(mProc->paginas, j);
-							pagina->bitPuntero = 1;
-						} else {
-							pagina = list_get(mProc->paginas, 0);
-							pagina->bitPuntero = 1;
-						}
-						return victima;
-					}
-				}
-			} else {
-				printf("NO HAY PUNTERO MAL:%d\n", pid);
-				abort();
+int primerPasada(t_mProc* mProc,int *marco,int *pos,int *modificada){
+	int i=0,posPagPuntero,posicion;
+	t_pagina* pagina,*pag;
+	posPagPuntero = damePuntero(mProc->paginas);
+	i = posPagPuntero;
+	while(i<list_size(mProc->paginas)){
+		pagina = list_get(mProc->paginas,i);
+		if(pagina->bitMP==1){
+			posicion = pagina->posicion;
+			if (pagina->bitUso==0 && pagina->bitModificado==0){
+				pag=list_get(mProc->paginas,posPagPuntero);
+				pag->bitPuntero = 0;
+				*marco = pagina->marco;
+				pagina->bitPuntero = 0;
+				*pos = posicion;
+				asignarPaginaPos(mProc,posicion+1);
+				*modificada = pagina->bitModificado;
+				return pagina->pagina;
 			}
 		}
 		i++;
 	}
-
+	if (i==list_size(mProc->paginas)){
+		i=0;
+		while(i<posPagPuntero){
+			pagina = list_get(mProc->paginas,i);
+			if(pagina->bitMP==1){
+				posicion = pagina->posicion;
+				if (pagina->bitUso==0 && pagina->bitModificado==0){
+					pag=list_get(mProc->paginas,posPagPuntero);
+					pag->bitPuntero = 0;
+					*marco = pagina->marco;
+					pagina->bitPuntero = 0;
+					*pos = posicion;
+					asignarPaginaPos(mProc,posicion+1);
+					*modificada = pagina->bitModificado;
+					return pagina->pagina;
+				}
+			}
+			i++;
+		}
+	}
 	return -1;
+}
 
+int segundaPasada(t_mProc* mProc,int *marco,int *pos,int *modificado){
+	int i=0,posPagPuntero,posicion;
+	t_pagina* pagina,*pag;
+	posPagPuntero = damePuntero(mProc->paginas);
+	i = posPagPuntero;
+	while(i<list_size(mProc->paginas)){
+		pagina = list_get(mProc->paginas,i);
+		if(pagina->bitMP==1){
+			posicion = pagina->posicion;
+			if (pagina->bitUso==0 && pagina->bitModificado==1){
+				pag=list_get(mProc->paginas,posPagPuntero);
+				pag->bitPuntero = 0;
+				*marco = pagina->marco;
+				pagina->bitPuntero = 0;
+				*pos = posicion;
+				asignarPaginaPos(mProc,posicion+1);
+				*modificado = pagina->bitModificado;
+				return pagina->pagina;
+			} else {
+				pagina->bitUso = 0;
+			}
+		}
+		i++;
+	}
+	if (i==list_size(mProc->paginas)){
+		i=0;
+		while(i<posPagPuntero){
+			pagina = list_get(mProc->paginas,i);
+			if(pagina->bitMP==1){
+				posicion = pagina->posicion;
+				if (pagina->bitUso==0 && pagina->bitModificado==0){
+					pag=list_get(mProc->paginas,posPagPuntero);
+					pag->bitPuntero = 0;
+					*marco = pagina->marco;
+					pagina->bitPuntero = 0;
+					*pos = posicion;
+					asignarPaginaPos(mProc,posicion+1);
+					*modificado = pagina->bitModificado;
+					return pagina->pagina;
+				} else {
+					pagina->bitUso = 0;
+				}
+			}
+			i++;
+		}
+	}
+	return -1;
+}
+
+int damePaginaVictimaClockMejorado(int pid,int* marco,int* posicion,int *modificado){
+	t_mProc *mProc;
+	int i=0,encontrado=-1;
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid){
+			encontrado = primerPasada(mProc,marco,posicion,modificado);
+			if(encontrado==-1){
+				encontrado = segundaPasada(mProc,marco,posicion,modificado);
+				if(encontrado==-1){
+					encontrado = primerPasada(mProc,marco,posicion,modificado);
+					if(encontrado==-1){
+						encontrado = segundaPasada(mProc,marco,posicion,modificado);
+					}
+				}
+			}
+			return encontrado;
+		}
+		i++;
+	}
+	return encontrado;
 }
 
 void imprimirMemoria() {
@@ -1558,37 +1618,31 @@ void imprimirMemoria() {
 		}
 		printf("*********************************\n");
 
-		/*
-		 printf("|MARCO-PID-PAGINA-PUNTERO|\n");
-		 while(i<g_Cantidad_Marcos){
 
-		 if(a_Memoria[i].pag>=0){
-		 pagina = buscarDatosEnTP(i);
-		 if(pagina!=NULL)
-		 printf("|%d-%d-%d-%d|",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero);
-		 }
-
-		 i++;
-		 }
-		 printf("\n");*/
 	}
 
-	if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|BITMODIFICADO|\n");
-		while (i < g_Cantidad_Marcos) {
+	if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
 
-			if (a_Memoria[i].pag >= 0) {
-				pagina = buscarDatosEnTP(i);
-				if (pagina != NULL)
-					printf("|%d-%d-%d-%d-%d-%d|", i, a_Memoria[i].pid,
-							a_Memoria[i].pag, pagina->bitPuntero,
-							pagina->bitUso, pagina->bitModificado);
-			}
 
-			i++;
+				printf("************"NEGRITA"Memoria Principal"DEFAULT"**************\n");
+				printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Punt"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitUso"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitModif"DEFAULT"\t"COLOR_VERDE""NEGRITA"Posicion"DEFAULT"\t*\n");
+				printf("*******************************************\n");
+
+
+
+				while(i<g_Cantidad_Marcos){
+
+					if(a_Memoria[i].pag>=0){
+						pagina = buscarDatosEnTP(i);
+						if(pagina!=NULL)
+							printf("*  %d\t%d\t%d\t%d\t%d\t%d\t%d\t*\n",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero,pagina->bitUso,pagina->bitModificado,pagina->posicion);
+					}
+
+					i++;
+				}
+				printf("\n");
 		}
-		printf("\n");
-	}
+
 
 	if (!strcmp(g_Algoritmo, "CLOCK")) {
 		printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO|\n");
@@ -1608,7 +1662,7 @@ void imprimirMemoria() {
 
 	}
 
-	if (!strcmp(g_Algoritmo, "LRU")) {
+	/*if (!strcmp(g_Algoritmo, "LRU")) {
 		printf("|LISTA LRU|\n");
 		i = 0;
 		while (i < list_size(lista_lru)) {
@@ -1619,7 +1673,7 @@ void imprimirMemoria() {
 			i++;
 		}
 		printf("\n");
-	}
+	}*/
 
 }
 
@@ -1636,31 +1690,43 @@ int marcosUsados(int pid) {
 	return contador;
 }
 
-void asignarMarco(int pid, int pag, int *marco, int mOcup) {
+void asignarMarco(int pid, int pag, int *marco, int mOcup, int posicion) {
 
 	a_Memoria[*marco].marcoEnUso = 1;
 	a_Memoria[*marco].pid = pid;
 	a_Memoria[*marco].pag = pag;
 	t_mProc *mProc;
 	t_pagina *pagina;
-	int i = 0;
+	int i = 0,nroPos;
 
 	while (i < list_size(lista_mProc)) {
 		mProc = list_get(lista_mProc, i);
 		if (mProc->pid == pid) {
 
-			pagina = malloc(sizeof(t_pagina));
-			pagina->pagina = pag;
-			pagina->bitMP = 1;
-			pagina->bitModificado = 1;
-			pagina->bitUso = 1;
-			pagina->marco = *marco;
-			pagina->bitPuntero = 0;
-			if (mOcup == 0)
-				pagina->bitPuntero = 1;
+			if((nroPos=buscarPagina(mProc,pag))==-1){
 
-			list_add(mProc->paginas, pagina);
+				pagina = malloc(sizeof(t_pagina));
+				pagina->pagina = pag;
+				pagina->bitMP = 1;
+				pagina->bitUso = 1;
+				pagina->bitModificado = 1;
+				pagina->marco = *marco;
+				pagina->bitPuntero = 0;
+				if(posicion==-1) pagina->posicion = contarMarcosDeEsePidEnMemoria(pid)-1;
+				else pagina->posicion = posicion;
+				if (mOcup == 0)
+					pagina->bitPuntero = 1;
 
+				list_add(mProc->paginas, pagina);
+				actualizarCantidadMarcosPorProceso(pid);
+			} else {
+				pagina = list_get(mProc->paginas,nroPos);
+				pagina->bitMP = 1;
+				pagina->marco = *marco;
+				pagina->bitUso = 1;
+				pagina->bitModificado = 1;
+				pagina->posicion = posicion;
+			}
 			break;
 
 		}
@@ -1726,8 +1792,9 @@ int damePaginaVictima(int pid, int* marco) {
 
 }
 
-int recorrerYDarmeMarco(int pid) {
+int recorrerYDarmeMarco(int pid,int* posicion,int operacion) {
 	int pagina, marco = -1;
+	int modificado = 0;
 	if (!strcmp(g_Algoritmo, "CLOCK")) {
 		pagina = damePaginaVictima(pid, &marco);
 		printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n", pagina, marco);
@@ -1736,9 +1803,15 @@ int recorrerYDarmeMarco(int pid) {
 		memset(a_Memoria[marco].contenido, 0, g_Tamanio_Marco);
 	}
 	if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		pagina = damePaginaVictima(pid, &marco);
+		pagina = damePaginaVictimaClockMejorado(pid, &marco,posicion,&modificado);
 		printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n", pagina, marco);
-		grabarContenidoASwap(pid, pagina, a_Memoria[marco].contenido);
+
+		if(operacion == 2)
+			contAccesoSwap++;
+
+
+		if(modificado==1)
+			grabarContenidoASwap(pid, pagina, a_Memoria[marco].contenido);
 		actualizarTablaPagina(pid, pagina);
 		memset(a_Memoria[marco].contenido, 0, g_Tamanio_Marco);
 	}
@@ -1770,43 +1843,43 @@ void poneElBitUso(int pid, int pag) {
 	}
 }
 
-int CLOCK(int *marco, int pagina, int pid) {
-	int mOcup = -1;
+int CLOCK(int *marco, int pagina, int pid,int operacion) {
+	int mOcup = -1,posicion=-1;
 
 	*marco = dameMarco();
 	if (*marco != -1) {
 		mOcup = marcosUsados(pid);
 		if (mOcup < g_Maximo_Marcos_Por_Proceso) {
-			asignarMarco(pid, pagina, marco, mOcup);
+			asignarMarco(pid, pagina, marco, mOcup,posicion);
 		} else {
-			*marco = recorrerYDarmeMarco(pid);
-			asignarMarco(pid, pagina, marco, mOcup);
+			*marco = recorrerYDarmeMarco(pid,&posicion,operacion);
+			asignarMarco(pid, pagina, marco, mOcup,posicion);
 		}
 	} else {
-		*marco = recorrerYDarmeMarco(pid);
+		*marco = recorrerYDarmeMarco(pid,&posicion,operacion);
 
-		asignarMarco(pid, pagina, marco, mOcup);
+		asignarMarco(pid, pagina, marco, mOcup,posicion);
 
 	}
 
 	return 1;
 }
 
-void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido) {
+void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido,int operacion) {
 
 
 
 	//char* contenido;
 	if (!strcmp(g_Algoritmo, "FIFO")) {
-		FIFO2(marco, pid, nroPagina);
+		FIFO2(marco, pid, nroPagina,operacion);
 
 	} else if (!strcmp(g_Algoritmo, "LRU")) {
-		LRU(marco, pid, nroPagina, contenido);
+		LRU(marco, pid, nroPagina, contenido,operacion);
 
 	} else if (!strcmp(g_Algoritmo, "CLOCK")) {
-		CLOCK(marco, nroPagina, pid);
+		CLOCK(marco, nroPagina, pid,operacion);
 	} else if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		CLOCK(marco, nroPagina, pid);
+		CLOCK(marco, nroPagina, pid,operacion);
 	}
 
 	if(*marco>=0)
@@ -1884,13 +1957,16 @@ void implementoEscribirCpu(int socket, char *buffer) {
 		bufferAux = DigitosNombreArchivo(buffer, &posActual);
 		memcpy(contenido, bufferAux, tamanioC);
 
-		printf(
-				"***********************"NEGRITA"ESCRIBIR"DEFAULT"**********************************\n");
-		printf(
-				"* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:",
+		printf("***********************"NEGRITA"ESCRIBIR"DEFAULT"**********************************\n");
+
+		log_info(logger,"* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:%s",
+				pid, nroPagina,contenido);
+
+		printf("* CPU solicita escribir Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE""NEGRITA"%d"DEFAULT" Contenido:",
 				pid, nroPagina);
 		imprimirContenido(contenido, tamanioC);
 		printf("\n");
+		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") ");
 		printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") ");
 		if (g_Cantidad_Marcos > 0) {
 			if (buscarPaginaEnTLB(pid, nroPagina, &marco)) {
@@ -1901,6 +1977,8 @@ void implementoEscribirCpu(int socket, char *buffer) {
 					lru->pagina = nroPagina;
 					lru->pid = pid;
 					list_add(lista_lru, lru);
+				} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+					actualizarBitModificado(pid,nroPagina);
 				}
 			} else {
 
@@ -1912,57 +1990,72 @@ void implementoEscribirCpu(int socket, char *buffer) {
 						lru->pagina = nroPagina;
 						lru->pid = pid;
 						list_add(lista_lru, lru);
+					} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+						actualizarBitModificado(pid,nroPagina);
 					}	//Encontro la pagina en la tabla de paginas
 				} else {
 					//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
 					// hacemos boleta a alguien
-					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido);
+					if(preguntarDisponibilidadDeMarcos(pid)>0){
+
+						contAccesoSwap++;
+
+					}
+					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido,2);
 
 
 					if (marco == -1) {
-						printf(
-								"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
+						log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena");
+						printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Memoria llena\n");
 						EnviarDatos(socket, "0ErrorAlEscribir0", strlen("0ErrorAlEscribir0"));
 						return;
 					}
 
 				}
-				sleep(g_Retardo_Memoria);
+				usleep(g_Retardo_Memoria);
 			}
 
 			actualizarMemoriaPrincipal(pid, nroPagina, contenido, tamanioC,
 					marco);
+			actualizarBitModificado(pid,nroPagina);
 			actualizarTLB(pid, nroPagina);
 			imprimirTLB();
-			printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
 
+			log_info(logger,"* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT,cantFallos);
+
+			printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
+			printf("* "NEGRITA"Cantidad Accesos a Swap "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",contAccesoSwap);
+
+			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:%s",a_Memoria[marco].contenido);
 			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:");
 			imprimirContenido(a_Memoria[marco].contenido, g_Tamanio_Marco);
 			printf("\n");
-			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",
-					marco);
+			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",marco);
+			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Marco:%d\n",marco);
 			EnviarDatos(socket, a_Memoria[marco].contenido, g_Tamanio_Marco);
 			//enviarContenidoACpu(socket,pid,nroPagina,a_Memoria[marco].contenido,tamanioC);
 		} else {
 			valido = grabarContenidoASwap(pid, nroPagina, contenido);
 			if (valido) {
-				printf("* Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",
-						pid, nroPagina);
+				log_info(logger,"* Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:%s",pid, nroPagina,contenido);
+				printf("* Se escribio en SWAP-> Pid:%d Pagina:%d Contenido:",pid, nroPagina);
 				imprimirContenido(contenido, g_Tamanio_Marco);
 				printf("\n");
 				EnviarDatos(socket, contenido, g_Tamanio_Marco);
 			} else {
-				printf(
-						"No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",
+				log_info(logger,"No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s",
+						pid, nroPagina, contenido);
+				printf("No se pudo escribir en Swap -> Pid:%d Pagina:%d Contenido:%s\n",
 						pid, nroPagina, contenido);
 				EnviarDatos(socket, "0", strlen("0"));
 			}
 		}
 	} else {
-		printf(
-				"***********************ESCRIBIR-ERROR****************************\n");
-		printf(
-				"CPU solicita escribir pero envia algo mas grande que el tamaño de marco\n");
+		printf("***********************ESCRIBIR-ERROR****************************\n");
+
+		log_info(logger,"ERROR - CPU solicita escribir pero envia algo mas grande que el tamaño de marco");
+		printf("CPU solicita escribir pero envia algo mas grande que el tamaño de marco\n");
+		log_info(logger,"Tamaño de Marco:%d Tamaño que envia CPU:%d\n", g_Tamanio_Marco,tamanioC);
 		printf("Tamaño de Marco:%d Tamaño que envia CPU:%d\n", g_Tamanio_Marco,
 				tamanioC);
 		EnviarDatos(socket, "0", strlen("0"));
@@ -1994,6 +2087,73 @@ void imprimirTLB() {
 	pthread_mutex_unlock(&semTELEBE);
 }
 
+void actualizarBitModificado(int pid,int nroPagina){
+	t_mProc* mProc;
+	t_pagina* pagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		if(pid == mProc->pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+				if(nroPagina == pagina->pagina){
+					pagina->bitModificado = 1;
+					pagina->bitUso = 1;
+					j=list_size(mProc->paginas);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
+void actualizarBitModificadoLeer(int pid,int nroPagina){
+	t_mProc* mProc;
+	t_pagina* pagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		if(pid == mProc->pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+				if(nroPagina == pagina->pagina){
+					pagina->bitUso = 1;
+					j=list_size(mProc->paginas);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
+void actualizarBitModificadoLeer2(int pid,int nroPagina){
+	t_mProc* mProc;
+	t_pagina* pagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		if(pid == mProc->pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+				if(nroPagina == pagina->pagina){
+					pagina->bitUso = 1;
+					pagina->bitModificado = 0;
+					j=list_size(mProc->paginas);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
+
+
 void implementoLeerCpu(int socket, char *buffer) {
 
 	//2 2 111 112
@@ -2011,10 +2171,11 @@ void implementoLeerCpu(int socket, char *buffer) {
 	bufferAux = DigitosNombreArchivo(buffer, &posActual);
 	nroPagina = atoi(bufferAux);
 
-	printf(
-			"**************************"NEGRITA"LEER"DEFAULT"***********************************\n");
-	printf(
-			"* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT"\n",
+	printf("**************************"NEGRITA"LEER"DEFAULT"***********************************\n");
+
+	log_info(logger,"* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT,pid, nroPagina);
+
+	printf("* CPU Solicita leer Pid:"COLOR_VERDE" "NEGRITA"%d"DEFAULT" Pagina:"COLOR_VERDE" "NEGRITA"%d"DEFAULT"\n",
 			pid, nroPagina);
 	//printf("* ("COLOR_VERDE"Leer"DEFAULT") ");
 	if (g_Cantidad_Marcos > 0) {
@@ -2024,6 +2185,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 				lru->pagina = nroPagina;
 				lru->pid = pid;
 				list_add(lista_lru, lru);
+			} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+				actualizarBitModificadoLeer(pid,nroPagina);
 			}
 			//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 			contenido = buscarEnMemoriaPrincipal(marco);
@@ -2038,6 +2201,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 					lru->pagina = nroPagina;
 					lru->pid = pid;
 					list_add(lista_lru, lru);
+				} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+					actualizarBitModificadoLeer(pid,nroPagina);
 				}
 
 				contenido = buscarEnMemoriaPrincipal(marco);
@@ -2045,22 +2210,30 @@ void implementoLeerCpu(int socket, char *buffer) {
 			} else {
 				//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 				contenido = pedirContenidoASwap(pid, nroPagina);
+				if(preguntarDisponibilidadDeMarcos(pid)>0){
+
+					contAccesoSwap++;
+
+				}
+
+
 				if (contenido != NULL) {
-					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido);
+					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido,1);
 
 
 					if (marco == -1) {
-						printf(
-								"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
+						log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena");
+						printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Memoria llena\n");
 						EnviarDatos(socket, "0ErrorAlEscribir0", strlen("0ErrorAlEscribir0"));
 						return;
 					}
 
 					actualizarMemoriaPrincipal(pid, nroPagina, contenido,
 							g_Tamanio_Marco, marco);
+					actualizarBitModificadoLeer2(pid,nroPagina);
 				} else {
-					printf(
-							"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
+					log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA");
+					printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
 				}
 			}
 			if (contenido != NULL) {
@@ -2068,12 +2241,16 @@ void implementoLeerCpu(int socket, char *buffer) {
 				//	imprimirTLB();
 			}
 
-			sleep(g_Retardo_Memoria);
+			usleep(g_Retardo_Memoria);
+
 		}
 		imprimirTLB();
+
+		log_info(logger,"* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT,cantFallos);
+		printf("* "NEGRITA"Cantidad Accesos a Swap "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",contAccesoSwap);
 		printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
-		printf(
-				"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
+		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:%s",a_Memoria[marco].contenido);
+		printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");
 		imprimirContenido(a_Memoria[marco].contenido, g_Tamanio_Marco);
 		printf("\n");
 
@@ -2085,8 +2262,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 	} else {
 		contenido = pedirContenidoASwap(pid, nroPagina);
 		if (contenido != NULL) {
-			printf(
-					"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:");
+			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:%s",contenido);
+			printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en SWAP Contenido:");
 			imprimirContenido(contenido, g_Tamanio_Marco);
 			printf("\n");
 			EnviarDatos(socket, contenido, g_Tamanio_Marco);
@@ -2114,9 +2291,8 @@ int eliminarDeSwap(int pid) {
 	RecibirDatos(socket_Swap, &bufferRespuesta);
 	pthread_mutex_unlock(&semSwap);
 
-	printf(
-			"* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",
-			bufferRespuesta);
+	log_info(logger,"* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s",bufferRespuesta);
+	printf("* ("COLOR_VERDE""NEGRITA"Finalizar"DEFAULT") Respuesta de SWAP: %s\n",bufferRespuesta);
 
 	if (strcmp(bufferRespuesta, "1") == 0) {
 
@@ -2142,6 +2318,8 @@ int eliminarProceso(int pid) {
 		mProc = list_get(lista_mProc, i);
 
 		if (mProc->pid == pid) {
+
+			printf("TAMAÑO DE TABLA DE PAGINAS:%d\n",list_size(mProc->paginas));
 
 			while (list_size(mProc->paginas) > 0) {
 
@@ -2238,10 +2416,9 @@ void implementoFinalizarCpu(int socket, char *buffer) {
 	pid = atoi(bufferAux);
 	free(bufferAux);
 
-	printf(
-			"***************************"NEGRITA"FINALIZAR"DEFAULT"*****************************\n");
-	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",
-			pid);
+	printf("***************************"NEGRITA"FINALIZAR"DEFAULT"*****************************\n");
+	log_info(logger,"* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT,pid);
+	printf("* CPU Solicita finalizar Pid:"COLOR_VERDE""NEGRITA"%d"DEFAULT"\n",pid);
 
 	//TODAVIA NO SE SI ACTUALIZAR TLB EN ESTE CASO
 	if (g_Entradas_TLB > 0)
@@ -2517,120 +2694,112 @@ int ChartToInt(char x) {
 }
 
 long unsigned RecibirDatos(int socket, char **buffer) {
-	long bytesRecibidos = 0, tamanioBuffer = 0, bytesEnviados;
-	char *bufferAux = malloc(1);
-	int posicion = 1;
-	memset(bufferAux, 0, 1);
+	long bytesRecibidos = 0,tamanioBuffer=0,bytesEnviados;
+	char *bufferAux= malloc(1);
+	int posicion=1;
+	memset(bufferAux,0,1);
 
-	bufferAux = realloc(bufferAux, BUFFERSIZE * sizeof(char) + 1);
+	bufferAux = realloc(bufferAux,BUFFERSIZE * sizeof(char)+1);
 
-	memset(bufferAux, 0, BUFFERSIZE * sizeof(char) + 1); //-> llenamos el bufferAux con barras ceros.
+	memset(bufferAux, 0, BUFFERSIZE * sizeof(char)+1); //-> llenamos el bufferAux con barras ceros.
 
-	if ((bytesRecibidos = bytesRecibidos
-			+ recv(socket, bufferAux, BUFFERSIZE, 0)) == -1) {
-		Error(
-				"Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",
-				socket);
+	if ((bytesRecibidos = bytesRecibidos+recv(socket, bufferAux, BUFFERSIZE, 0)) == -1) {
+		Error("Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",socket);
 	}
 
-	if (bytesRecibidos > 0) {
+	if(bytesRecibidos>0) {
 		bytesEnviados = send(socket, "Ok", strlen("Ok"), 0);
-		if (bytesEnviados <= 0)
-			return 0;
-	} else
-		return 0;
+		if(bytesEnviados<=0) return 0;
+	} else return 0;
 
-	tamanioBuffer = atoi(DigitosNombreArchivo(bufferAux, &posicion));
+	tamanioBuffer = atoi(DigitosNombreArchivo(bufferAux,&posicion));
 
 	free(bufferAux);
 
-	bufferAux = malloc(tamanioBuffer + 1);
-	*buffer = malloc(tamanioBuffer + 10);
-	memset(bufferAux, 0, tamanioBuffer + 1);
-	memset(*buffer, 0, tamanioBuffer + 10);
+	bufferAux = malloc(tamanioBuffer+1);
+	*buffer = malloc(tamanioBuffer+10);
+	memset(bufferAux,0,tamanioBuffer+1);
+	memset(*buffer,0,tamanioBuffer+10);
 
 	ssize_t numBytesRecv = 0;
 
-	long unsigned pos = 0;
-	do {
+	long unsigned pos=0;
+	do{
 		numBytesRecv = recv(socket, bufferAux, tamanioBuffer, 0);
-		if (numBytesRecv < 0)
+		if ( numBytesRecv < 0)
 			printf("ERROR\n");
 		//printf("Recibido:%lu\n",pos);
-		memcpy((*buffer + pos), bufferAux, numBytesRecv);
-		memset(bufferAux, 0, tamanioBuffer + 1);
+		memcpy((*buffer+pos),bufferAux,numBytesRecv);
+		memset(bufferAux,0,tamanioBuffer+1);
 		pos = pos + numBytesRecv;
-	} while (pos < tamanioBuffer);
+	}while (pos < tamanioBuffer);
 
-	sem_wait(&semLog);
-	log_trace(logger, "RECIBO DATOS. socket: %d. tamanio buffer:%lu", socket,
-			tamanioBuffer);
-	sem_post(&semLog);
+	log_trace(logger, "RECIBO DATOS. socket: %d. tamanio buffer:%lu", socket,tamanioBuffer);
+
+	free(bufferAux);
 	return tamanioBuffer;
 }
 
-char* DigitosNombreArchivo(char *buffer, int *posicion) {
+char* DigitosNombreArchivo(char *buffer,int *posicion){
 
 	char *nombreArch;
-	int digito = 0, i = 0, j = 0, algo = 0, aux = 0, x = 0;
+	int digito=0,i=0,j=0,algo=0,aux=0,x=0;
 
-	digito = PosicionDeBufferAInt(buffer, *posicion);
-	for (i = 1; i <= digito; i++) {
-		algo = PosicionDeBufferAInt(buffer, *posicion + i);
-		aux = aux * 10 + algo;
+	digito=PosicionDeBufferAInt(buffer,*posicion);
+	for(i=1;i<=digito;i++){
+		algo=PosicionDeBufferAInt(buffer,*posicion+i);
+		aux=aux*10+algo;
 	}
-	nombreArch = malloc(aux + 1);
-	for (j = *posicion + i; j < *posicion + i + aux; j++) {
-		nombreArch[x] = buffer[j];
+	nombreArch = malloc(aux+1);
+	for(j=*posicion+i;j<*posicion+i+aux;j++){
+		nombreArch[x]=buffer[j];
 		x++;
 	}
-	nombreArch[x] = '\0';
-	*posicion = *posicion + i + aux;
+	nombreArch[x]='\0';
+	*posicion=*posicion+i+aux;
 	return nombreArch;
 }
 
 long unsigned EnviarDatos(int socket, char *buffer, long unsigned tamanioBuffer) {
+	//Tenia que agregarle el parametro porque en api.h no puedo poner muchos #defines :P
 
-	//printf("ENVIO DATOS:%s\n",buffer);
+	int bytecount,bytesRecibidos;
+	long unsigned cantEnviados=0;
+	char * bufferE = string_new(),*bufferR=malloc(BUFFERSIZE);
+	memset(bufferR,0,BUFFERSIZE);
 
-	int bytecount, bytesRecibidos;
-	long unsigned cantEnviados = 0;
-	char * bufferE = string_new(), *bufferR = malloc(BUFFERSIZE);
-	memset(bufferR, 0, BUFFERSIZE);
+	string_append(&bufferE,YO);
 
-	string_append(&bufferE, YO);
+	string_append(&bufferE,obtenerSubBuffer(string_itoa(tamanioBuffer)));
 
-	string_append(&bufferE, obtenerSubBuffer(string_itoa(tamanioBuffer)));
-
-	if ((bytecount = send(socket, bufferE, strlen(bufferE), 0)) == -1) {
+	if ((bytecount = send(socket,bufferE,strlen(bufferE), 0)) == -1){
 		Error("No puedo enviar información a al cliente. Socket: %d", socket);
 		return 0;
 	}
 
 	if ((bytesRecibidos = recv(socket, bufferR, BUFFERSIZE, 0)) == -1) {
-		Error(
-				"Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",
-				socket);
+		Error("Ocurrio un error al intentar recibir datos desde uno de los clientes. Socket: %d",socket);
 	}
 
-	long unsigned n, bytesleft = tamanioBuffer;
+	long unsigned n,bytesleft=tamanioBuffer;
 
-	while (cantEnviados < tamanioBuffer) {
-		n = send(socket, buffer + cantEnviados, bytesleft, 0);
-		if (n == -1) {
-			Error("Fallo al enviar a Socket: %d,", socket);
+	while(cantEnviados < tamanioBuffer) {
+		n = send(socket, buffer+cantEnviados, bytesleft, 0);
+		if (n == -1){
+			Error("Fallo al enviar a Socket: %d,",socket);
 			return 0;
 		}
 		cantEnviados += n;
 		bytesleft -= n;
 		//printf("Cantidad Enviada :%lu\n",n);
 	}
-	if (cantEnviados != tamanioBuffer)
+	if(cantEnviados!=tamanioBuffer){
 		return 0;
-	sem_wait(&semLog);
-	log_info(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ", socket,
-			tamanioBuffer);
-	sem_post(&semLog);
+	}
+	log_trace(logger, "ENVIO DATOS. socket: %d. Cantidad Enviada:%lu ",socket,tamanioBuffer);
+
+	free(bufferE);
+	free(bufferR);
 	return tamanioBuffer;
 }
 

@@ -62,7 +62,7 @@ int g_Entradas_TLB;
 char* g_TLB_Habilitada;
 int g_Retardo_Memoria;
 char* g_Algoritmo;
-
+int contAccesoSwap;
 // METODOS CONFIGURACION //
 void LevantarConfig();
 
@@ -119,6 +119,8 @@ void funcionBuscarPidPagina(int marco,int * pid, int * pagina);
 int grabarContenidoASwap(int pid,int nroPagina,char* contenido);
 void imprimirContenido(char* contenido, long unsigned tamanio);
 void imprimirMemoria();
+void imprimirTLB();
+void actualizarBitModificado(int pid,int nroPagina);
 //Estructuras
 
 //Pagina
@@ -129,6 +131,7 @@ typedef struct {
 	int bitPuntero;
 	int bitModificado;
 	int bitUso;
+	int posicion;
 } t_pagina;
 
 //TLB
@@ -140,6 +143,7 @@ typedef struct {
 
 int cantAciertos,cantTotalAciertos;
 int cantFallos;
+
 
 t_list* lista_tlb;
 

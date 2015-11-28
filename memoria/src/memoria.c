@@ -16,6 +16,7 @@ int main(void) {
 	logger = log_create(NOMBRE_ARCHIVO_LOG, "Adm de Mem", false,
 			LOG_LEVEL_TRACE);
 
+	contAccesoSwap=0;
 	//Semaforos
 	sem_init(&semTLB, 0, 1);
 	sem_init(&semMP, 0, 1);
@@ -630,6 +631,8 @@ int grabarContenidoASwap(int pid, int nroPagina, char* contenido) {
 
 	//3 3 111 112 14hola
 
+	contAccesoSwap++;
+
 	char * buffer = string_new();
 	char * bufferRespuesta = string_new();
 
@@ -669,6 +672,8 @@ int grabarContenidoASwap(int pid, int nroPagina, char* contenido) {
 char * pedirContenidoASwap(int pid, int nroPagina) {
 
 	//3 2 111 112
+
+	contAccesoSwap++;
 
 	char * buffer = string_new();
 	char * bufferRespuesta = string_new();
@@ -982,8 +987,7 @@ int preguntarDisponibilidadDeMarcos(int pid) {
 	resta = mProc->totalPaginas - cantMarcosPorProceso;
 
 	i = 0;
-	while (i < g_Cantidad_Marcos && cont < resta
-			&& cantMarcosPorProceso < g_Maximo_Marcos_Por_Proceso) {
+	while (i < g_Cantidad_Marcos && cont < resta&& cantMarcosPorProceso < g_Maximo_Marcos_Por_Proceso) {
 
 		if (a_Memoria[i].pag < 0) {
 			cont++;
@@ -1047,7 +1051,7 @@ int contarMarcosDeEsePidEnMemoria(int pid){
 		return cont;
 }
 
-int FIFO2(int *marco, int pid, int nroPagina) {
+int FIFO2(int *marco, int pid, int nroPagina,int operacion) {
 
 	int i = 0, k = 0, j = 0, bandera = 0,pos=-1;
 	t_mProc *mProc;
@@ -1116,6 +1120,8 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 
 								pagina = a_Memoria[tablaPagina->marco].pag;
 								*marco = tablaPagina->marco;
+								if(operacion==2)
+									contAccesoSwap++;
 								valido = grabarContenidoASwap(pid, pagina,a_Memoria[*marco].contenido);
 								if (valido)
 									actualizarTablaPagina(pid, pagina);
@@ -1170,6 +1176,8 @@ int FIFO2(int *marco, int pid, int nroPagina) {
 
 								pagina = a_Memoria[tablaPagina->marco].pag;
 								*marco = tablaPagina->marco;
+								if(operacion==2)
+									contAccesoSwap++;
 								valido = grabarContenidoASwap(pid, pagina,
 										a_Memoria[*marco].contenido);
 								if (valido)
@@ -1298,7 +1306,7 @@ void imprimirTablaDePaginas() {
 
 }
 
-void LRU(int *marco, int pid, int nroPagina, char *contenido) {
+void LRU(int *marco, int pid, int nroPagina, char *contenido,int operacion) {
 
 	//ASIGNACION FIJA Y REEMPLAZO LOCAL
 
@@ -1397,6 +1405,8 @@ void LRU(int *marco, int pid, int nroPagina, char *contenido) {
 			list_add(copiaMproc->paginas, pagina);
 			actualizarCantidadMarcosPorProceso(pid);
 		}
+		if(operacion == 2)
+			contAccesoSwap++;
 		valido = grabarContenidoASwap(pid, pag, a_Memoria[*marco].contenido);
 		if (valido)
 			actualizarTablaPagina(pid, pag);
@@ -1881,16 +1891,16 @@ int CLOCK(int *marco, int pagina, int pid) {
 	return 1;
 }
 
-void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido) {
+void hayLugarEnMPSinoLoHago(int* marco, int pid, int nroPagina, char *contenido,int operacion) {
 
 
 
 	//char* contenido;
 	if (!strcmp(g_Algoritmo, "FIFO")) {
-		FIFO2(marco, pid, nroPagina);
+		FIFO2(marco, pid, nroPagina,operacion);
 
 	} else if (!strcmp(g_Algoritmo, "LRU")) {
-		LRU(marco, pid, nroPagina, contenido);
+		LRU(marco, pid, nroPagina, contenido,operacion);
 
 	} else if (!strcmp(g_Algoritmo, "CLOCK")) {
 		CLOCK(marco, nroPagina, pid);
@@ -2012,7 +2022,13 @@ void implementoEscribirCpu(int socket, char *buffer) {
 				} else {
 					//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
 					// hacemos boleta a alguien
-					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido);
+					if(preguntarDisponibilidadDeMarcos(pid)>0){
+
+						printf("ACA CONTACCESOSWAP\n");
+						contAccesoSwap++;
+
+					}
+					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido,2);
 
 
 					if (marco == -1) {
@@ -2035,6 +2051,7 @@ void implementoEscribirCpu(int socket, char *buffer) {
 			log_info(logger,"* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT,cantFallos);
 
 			printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
+			printf("* "NEGRITA"Cantidad Accesos a Swap "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",contAccesoSwap);
 
 			log_info(logger,"* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:%s",a_Memoria[marco].contenido);
 			printf("* ("COLOR_VERDE""NEGRITA"Escribir"DEFAULT") Contenido:");
@@ -2220,8 +2237,15 @@ void implementoLeerCpu(int socket, char *buffer) {
 			} else {
 				//No encontro la pagina en la Tabla, entonces debe pedirla al Swap (si o si va a devolver el contenido el Swap)
 				contenido = pedirContenidoASwap(pid, nroPagina);
+				if(preguntarDisponibilidadDeMarcos(pid)>0){
+
+					contAccesoSwap++;
+
+				}
+
+
 				if (contenido != NULL) {
-					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido);
+					hayLugarEnMPSinoLoHago(&marco, pid, nroPagina, contenido,1);
 
 
 					if (marco == -1) {
@@ -2250,6 +2274,7 @@ void implementoLeerCpu(int socket, char *buffer) {
 		imprimirTLB();
 
 		log_info(logger,"* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT,cantFallos);
+		printf("* "NEGRITA"Cantidad Accesos a Swap "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",contAccesoSwap);
 		printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
 		log_info(logger,"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:%s",a_Memoria[marco].contenido);
 		printf("* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") Busco en MP. Contenido:");

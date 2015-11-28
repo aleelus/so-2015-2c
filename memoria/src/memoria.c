@@ -747,6 +747,16 @@ void actualizarTLB(int pid, int nroPagina) {
 	int i = 0, totalPaginas = 0, entradasTLB = g_Entradas_TLB, entro = 0;
 	int contAgrego = 0, posActual = 0, bandera = 0, contPag = 0;
 
+	while(i<list_size(lista_tlb)){
+		telebe = list_get(lista_tlb,i);
+		telebe->marco = -1;
+		telebe->pagina = -1;
+		telebe->pid = -1;
+		i++;
+	}
+
+	i=0;
+
 	while (i < list_size(lista_mProc)) {
 		mProc = list_get(lista_mProc, i);
 		if (mProc->pid == pid) {
@@ -866,6 +876,9 @@ void actualizarTablaPagina(int pid, int pagina) {
 				if (unaPagina->pagina == pagina) {
 					unaPagina->bitMP = 0;
 					unaPagina->marco = -1;
+					if(!strcmp("CLOCKMEJORADO",g_Algoritmo)){
+						unaPagina->posicion = -1;
+					}
 					j = list_size(mProc->paginas);
 					i = list_size(lista_mProc);
 				}
@@ -1023,9 +1036,7 @@ int contarMarcosDeEsePidEnMemoria(int pid){
 	if(cont==1)
 		return 1;
 	else
-		return 0;
-
-
+		return cont;
 }
 
 int FIFO2(int *marco, int pid, int nroPagina) {
@@ -1444,94 +1455,148 @@ int damePuntero(t_list* paginas) {
 	return -1;
 }
 
-int damePaginaVictimaClockMejorado(int pid, int* marco) {
-	t_mProc *mProc;
-	t_pagina *pagina;
-	int i = 0, j = 0, cantPag, encontrado = 0, victima;
+t_pagina* buscarPaginaPos(t_list* lista, int pos){
+	int i=0;
+	t_pagina* pag;
+	while(i<list_size(lista)){
+		pag = list_get(lista,i);
+		if(pag->posicion==pos){
+			return pag;
+		}
+		i++;
+	}
+	return NULL;
+}
 
-	while (i < list_size(lista_mProc)) {
-		mProc = list_get(lista_mProc, i);
-		if (mProc->pid == pid) {
-			cantPag = list_size(mProc->paginas);
+void asignarPaginaPos(t_mProc* mProc,int posicion){
+	int cantMarcos;
+	t_pagina* pagina;
+	cantMarcos = contarMarcosDeEsePidEnMemoria(mProc->pid);
+	if(posicion<cantMarcos){
+		pagina = buscarPaginaPos(mProc->paginas,posicion);
+		pagina->bitPuntero = 1;
+	} else {
+		pagina = buscarPaginaPos(mProc->paginas,0);
+		pagina->bitPuntero = 1;
+	}
+}
 
-			j = damePuntero(mProc->paginas);
-			if (j > -1) {
-				while (j < cantPag && !encontrado) {
-					pagina = list_get(mProc->paginas, j);
-					if (pagina->bitUso == 0 && pagina->bitModificado == 0) {
-						encontrado = 1;
-						victima = pagina->pagina;
-						*marco = pagina->marco;
-					}
-					j++;
-				}
-
-				if (encontrado) {
-					pagina->bitPuntero = 0;
-					j++;
-					if (j < cantPag) {
-						pagina = list_get(mProc->paginas, j);
-						pagina->bitPuntero = 1;
-					} else {
-						pagina = list_get(mProc->paginas, 0);
-						pagina->bitPuntero = 1;
-					}
-					return victima;
-				} else {
-					j = 0;
-					while (j < cantPag && !encontrado) {
-						pagina = list_get(mProc->paginas, j);
-						if (pagina->bitUso == 0 && pagina->bitModificado == 1) {
-							encontrado = 1;
-							victima = pagina->pagina;
-							*marco = pagina->marco;
-						}
-						j++;
-					}
-					if (encontrado) {
-						pagina->bitPuntero = 0;
-						j++;
-						if (j < cantPag) {
-							pagina = list_get(mProc->paginas, j);
-							pagina->bitPuntero = 1;
-						} else {
-							pagina = list_get(mProc->paginas, 0);
-							pagina->bitPuntero = 1;
-						}
-						return victima;
-					} else {
-						while (j < cantPag && !encontrado) {
-							pagina = list_get(mProc->paginas, j);
-							if (pagina->bitUso == 0
-									&& pagina->bitModificado == 0) {
-								encontrado = 1;
-								victima = pagina->pagina;
-								*marco = pagina->marco;
-							}
-							j++;
-						}
-						pagina->bitPuntero = 0;
-						j++;
-						if (j < cantPag) {
-							pagina = list_get(mProc->paginas, j);
-							pagina->bitPuntero = 1;
-						} else {
-							pagina = list_get(mProc->paginas, 0);
-							pagina->bitPuntero = 1;
-						}
-						return victima;
-					}
-				}
-			} else {
-				printf("NO HAY PUNTERO MAL:%d\n", pid);
-				abort();
+int primerPasada(t_mProc* mProc,int *marco,int *pos){
+	int i=0,posPagPuntero,posicion;
+	t_pagina* pagina,*pag;
+	posPagPuntero = damePuntero(mProc->paginas);
+	i = posPagPuntero;
+	while(i<list_size(mProc->paginas)){
+		pagina = list_get(mProc->paginas,i);
+		if(pagina->bitMP==1){
+			posicion = pagina->posicion;
+			if (pagina->bitUso==0 && pagina->bitModificado==0){
+				pag=list_get(mProc->paginas,posPagPuntero);
+				pag->bitPuntero = 0;
+				*marco = pagina->marco;
+				pagina->bitPuntero = 0;
+				*pos = posicion;
+				asignarPaginaPos(mProc,posicion+1);
+				return pagina->pagina;
 			}
 		}
 		i++;
 	}
-
+	if (i==list_size(mProc->paginas)){
+		i=0;
+		while(i<posPagPuntero){
+			pagina = list_get(mProc->paginas,i);
+			if(pagina->bitMP==1){
+				posicion = pagina->posicion;
+				if (pagina->bitUso==0 && pagina->bitModificado==0){
+					pag=list_get(mProc->paginas,posPagPuntero);
+					pag->bitPuntero = 0;
+					*marco = pagina->marco;
+					pagina->bitPuntero = 0;
+					*pos = posicion;
+					asignarPaginaPos(mProc,posicion+1);
+					return pagina->pagina;
+				}
+			}
+			i++;
+		}
+	}
 	return -1;
+}
 
+int segundaPasada(t_mProc* mProc,int *marco,int *pos){
+	int i=0,posPagPuntero,posicion;
+	t_pagina* pagina,*pag;
+	posPagPuntero = damePuntero(mProc->paginas);
+	i = posPagPuntero;
+	while(i<list_size(mProc->paginas)){
+		pagina = list_get(mProc->paginas,i);
+		if(pagina->bitMP==1){
+			posicion = pagina->posicion;
+			if (pagina->bitUso==0 && pagina->bitModificado==1){
+				pag=list_get(mProc->paginas,posPagPuntero);
+				pag->bitPuntero = 0;
+				*marco = pagina->marco;
+				pagina->bitPuntero = 0;
+				*pos = posicion;
+				asignarPaginaPos(mProc,posicion+1);
+				return pagina->pagina;
+			} else {
+				pagina->bitUso = 0;
+			}
+		}
+		i++;
+	}
+	if (i==list_size(mProc->paginas)){
+		i=0;
+		while(i<posPagPuntero){
+			pagina = list_get(mProc->paginas,i);
+			if(pagina->bitMP==1){
+				posicion = pagina->posicion;
+				if (pagina->bitUso==0 && pagina->bitModificado==0){
+					pag=list_get(mProc->paginas,posPagPuntero);
+					pag->bitPuntero = 0;
+					*marco = pagina->marco;
+					pagina->bitPuntero = 0;
+					*pos = posicion;
+					asignarPaginaPos(mProc,posicion+1);
+					return pagina->pagina;
+				} else {
+					pagina->bitUso = 0;
+				}
+			}
+			i++;
+		}
+	}
+	return -1;
+}
+
+int damePaginaVictimaClockMejorado(int pid,int* marco,int* posicion){
+	t_mProc *mProc;
+	int i=0,encontrado=-1;
+
+	while(i<list_size(lista_mProc)){
+		mProc=list_get(lista_mProc,i);
+		if(mProc->pid==pid){
+			printf("Primer Pasada\n");
+			encontrado = primerPasada(mProc,marco,posicion);
+			if(encontrado==-1){
+				printf("Segunda Pasada\n");
+				encontrado = segundaPasada(mProc,marco,posicion);
+				if(encontrado==-1){
+					printf("Tercera Pasada\n");
+					encontrado = primerPasada(mProc,marco,posicion);
+					if(encontrado==-1){
+						printf("Cuarta Pasada\n");
+						encontrado = segundaPasada(mProc,marco,posicion);
+					}
+				}
+			}
+			return encontrado;
+		}
+		i++;
+	}
+	return encontrado;
 }
 
 void imprimirMemoria() {
@@ -1574,10 +1639,9 @@ void imprimirMemoria() {
 
 	if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
 
-			printf("|MARCO-PID-PAGINA-PUNTERO-BITUSO-BITMODIF|\n");
 
 				printf("************"NEGRITA"Memoria Principal"DEFAULT"**************\n");
-				printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Punt"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitUso"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitModif"DEFAULT"\t*\n");
+				printf("* "COLOR_VERDE""NEGRITA"Marco"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pid"DEFAULT"\t"COLOR_VERDE""NEGRITA"Pag"DEFAULT"\t"COLOR_VERDE""NEGRITA"Punt"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitUso"DEFAULT"\t"COLOR_VERDE""NEGRITA"BitModif"DEFAULT"\t"COLOR_VERDE""NEGRITA"Posicion"DEFAULT"\t*\n");
 				printf("*******************************************\n");
 
 
@@ -1587,7 +1651,7 @@ void imprimirMemoria() {
 					if(a_Memoria[i].pag>=0){
 						pagina = buscarDatosEnTP(i);
 						if(pagina!=NULL)
-							printf("*  %d\t%d\t%d\t%d\t%d\t%d\t*\n",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero,pagina->bitUso,pagina->bitModificado);
+							printf("*  %d\t%d\t%d\t%d\t%d\t%d\t%d\t*\n",i,a_Memoria[i].pid,a_Memoria[i].pag,pagina->bitPuntero,pagina->bitUso,pagina->bitModificado,pagina->posicion);
 					}
 
 					i++;
@@ -1642,31 +1706,42 @@ int marcosUsados(int pid) {
 	return contador;
 }
 
-void asignarMarco(int pid, int pag, int *marco, int mOcup) {
+void asignarMarco(int pid, int pag, int *marco, int mOcup, int posicion) {
 
 	a_Memoria[*marco].marcoEnUso = 1;
 	a_Memoria[*marco].pid = pid;
 	a_Memoria[*marco].pag = pag;
 	t_mProc *mProc;
 	t_pagina *pagina;
-	int i = 0;
+	int i = 0,nroPos;
 
 	while (i < list_size(lista_mProc)) {
 		mProc = list_get(lista_mProc, i);
 		if (mProc->pid == pid) {
 
-			pagina = malloc(sizeof(t_pagina));
-			pagina->pagina = pag;
-			pagina->bitMP = 1;
-			pagina->bitModificado = 1;
-			pagina->bitUso = 1;
-			pagina->marco = *marco;
-			pagina->bitPuntero = 0;
-			if (mOcup == 0)
-				pagina->bitPuntero = 1;
+			if((nroPos=buscarPagina(mProc,pag))==-1){
 
-			list_add(mProc->paginas, pagina);
+				pagina = malloc(sizeof(t_pagina));
+				pagina->pagina = pag;
+				pagina->bitMP = 1;
+				pagina->bitUso = 1;
+				pagina->bitModificado = 1;
+				pagina->marco = *marco;
+				pagina->bitPuntero = 0;
+				if(posicion==-1) pagina->posicion = contarMarcosDeEsePidEnMemoria(pid)-1;
+				else pagina->posicion = posicion;
+				if (mOcup == 0)
+					pagina->bitPuntero = 1;
 
+				list_add(mProc->paginas, pagina);
+			} else {
+				pagina = list_get(mProc->paginas,nroPos);
+				pagina->bitMP = 1;
+				pagina->marco = *marco;
+				pagina->bitUso = 1;
+				pagina->bitModificado = 1;
+				pagina->posicion = posicion;
+			}
 			break;
 
 		}
@@ -1732,7 +1807,7 @@ int damePaginaVictima(int pid, int* marco) {
 
 }
 
-int recorrerYDarmeMarco(int pid) {
+int recorrerYDarmeMarco(int pid,int* posicion) {
 	int pagina, marco = -1;
 	if (!strcmp(g_Algoritmo, "CLOCK")) {
 		pagina = damePaginaVictima(pid, &marco);
@@ -1742,7 +1817,7 @@ int recorrerYDarmeMarco(int pid) {
 		memset(a_Memoria[marco].contenido, 0, g_Tamanio_Marco);
 	}
 	if (!strcmp(g_Algoritmo, "CLOCKMEJORADO")) {
-		pagina = damePaginaVictima(pid, &marco);
+		pagina = damePaginaVictimaClockMejorado(pid, &marco,posicion);
 		printf("PAGINA VICTIMA: %d ---- MARCO VICTIMA: %d\n", pagina, marco);
 		grabarContenidoASwap(pid, pagina, a_Memoria[marco].contenido);
 		actualizarTablaPagina(pid, pagina);
@@ -1777,21 +1852,21 @@ void poneElBitUso(int pid, int pag) {
 }
 
 int CLOCK(int *marco, int pagina, int pid) {
-	int mOcup = -1;
+	int mOcup = -1,posicion=-1;
 
 	*marco = dameMarco();
 	if (*marco != -1) {
 		mOcup = marcosUsados(pid);
 		if (mOcup < g_Maximo_Marcos_Por_Proceso) {
-			asignarMarco(pid, pagina, marco, mOcup);
+			asignarMarco(pid, pagina, marco, mOcup,posicion);
 		} else {
-			*marco = recorrerYDarmeMarco(pid);
-			asignarMarco(pid, pagina, marco, mOcup);
+			*marco = recorrerYDarmeMarco(pid,&posicion);
+			asignarMarco(pid, pagina, marco, mOcup,posicion);
 		}
 	} else {
-		*marco = recorrerYDarmeMarco(pid);
+		*marco = recorrerYDarmeMarco(pid,&posicion);
 
-		asignarMarco(pid, pagina, marco, mOcup);
+		asignarMarco(pid, pagina, marco, mOcup,posicion);
 
 	}
 
@@ -1907,6 +1982,8 @@ void implementoEscribirCpu(int socket, char *buffer) {
 					lru->pagina = nroPagina;
 					lru->pid = pid;
 					list_add(lista_lru, lru);
+				} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+					actualizarBitModificado(pid,nroPagina);
 				}
 			} else {
 
@@ -1918,6 +1995,8 @@ void implementoEscribirCpu(int socket, char *buffer) {
 						lru->pagina = nroPagina;
 						lru->pid = pid;
 						list_add(lista_lru, lru);
+					} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+						actualizarBitModificado(pid,nroPagina);
 					}	//Encontro la pagina en la tabla de paginas
 				} else {
 					//No encontro la pagina en la Tabla, entonces graba el contenido en la memoria principal si no hay
@@ -1938,6 +2017,7 @@ void implementoEscribirCpu(int socket, char *buffer) {
 
 			actualizarMemoriaPrincipal(pid, nroPagina, contenido, tamanioC,
 					marco);
+			actualizarBitModificado(pid,nroPagina);
 			actualizarTLB(pid, nroPagina);
 			imprimirTLB();
 			printf("* "NEGRITA"Cantidad Fallos de Pagina "NEGRITA""COLOR_VERDE"%d"DEFAULT"\n",cantFallos);
@@ -2000,6 +2080,73 @@ void imprimirTLB() {
 	pthread_mutex_unlock(&semTELEBE);
 }
 
+void actualizarBitModificado(int pid,int nroPagina){
+	t_mProc* mProc;
+	t_pagina* pagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		if(pid == mProc->pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+				if(nroPagina == pagina->pagina){
+					pagina->bitModificado = 1;
+					pagina->bitUso = 1;
+					j=list_size(mProc->paginas);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
+void actualizarBitModificadoLeer(int pid,int nroPagina){
+	t_mProc* mProc;
+	t_pagina* pagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		if(pid == mProc->pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+				if(nroPagina == pagina->pagina){
+					pagina->bitUso = 1;
+					j=list_size(mProc->paginas);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
+void actualizarBitModificadoLeer2(int pid,int nroPagina){
+	t_mProc* mProc;
+	t_pagina* pagina;
+	int i=0,j;
+	while(i<list_size(lista_mProc)){
+		mProc = list_get(lista_mProc,i);
+		if(pid == mProc->pid){
+			j=0;
+			while(j<list_size(mProc->paginas)){
+				pagina = list_get(mProc->paginas,j);
+				if(nroPagina == pagina->pagina){
+					pagina->bitUso = 1;
+					pagina->bitModificado = 0;
+					j=list_size(mProc->paginas);
+				}
+				j++;
+			}
+		}
+		i++;
+	}
+}
+
+
+
 void implementoLeerCpu(int socket, char *buffer) {
 
 	//2 2 111 112
@@ -2030,6 +2177,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 				lru->pagina = nroPagina;
 				lru->pid = pid;
 				list_add(lista_lru, lru);
+			} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+				actualizarBitModificadoLeer(pid,nroPagina);
 			}
 			//Acierto de la TLB entonces quiere decir que si esta en la TLB esta si o si en la memoria princial
 			contenido = buscarEnMemoriaPrincipal(marco);
@@ -2044,6 +2193,8 @@ void implementoLeerCpu(int socket, char *buffer) {
 					lru->pagina = nroPagina;
 					lru->pid = pid;
 					list_add(lista_lru, lru);
+				} else if(!strcmp(g_Algoritmo,"CLOCKMEJORADO")){
+					actualizarBitModificadoLeer(pid,nroPagina);
 				}
 
 				contenido = buscarEnMemoriaPrincipal(marco);
@@ -2064,6 +2215,7 @@ void implementoLeerCpu(int socket, char *buffer) {
 
 					actualizarMemoriaPrincipal(pid, nroPagina, contenido,
 							g_Tamanio_Marco, marco);
+					actualizarBitModificadoLeer2(pid,nroPagina);
 				} else {
 					printf(
 							"* ("COLOR_VERDE""NEGRITA"Leer"DEFAULT") PUCHA!! SWAP NO PUDO LEER LA PAGINA\n");
@@ -2148,6 +2300,8 @@ int eliminarProceso(int pid) {
 		mProc = list_get(lista_mProc, i);
 
 		if (mProc->pid == pid) {
+
+			printf("TAMAÑO DE TABLA DE PAGINAS:%d\n",list_size(mProc->paginas));
 
 			while (list_size(mProc->paginas) > 0) {
 

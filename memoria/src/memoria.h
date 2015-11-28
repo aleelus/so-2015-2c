@@ -120,6 +120,7 @@ int grabarContenidoASwap(int pid,int nroPagina,char* contenido);
 void imprimirContenido(char* contenido, long unsigned tamanio);
 void imprimirMemoria();
 void imprimirTLB();
+void actualizarBitModificado(int pid,int nroPagina);
 //Estructuras
 
 //Pagina
@@ -130,6 +131,7 @@ typedef struct {
 	int bitPuntero;
 	int bitModificado;
 	int bitUso;
+	int posicion;
 } t_pagina;
 
 //TLB
@@ -149,7 +151,6 @@ typedef struct {
 	int pid;
 	int cantMarcosPorProceso;
 	int totalPaginas;
-
 	t_list* paginas;
 } t_mProc;
 

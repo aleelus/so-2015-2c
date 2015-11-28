@@ -94,6 +94,7 @@ typedef struct {
 	t_estado estado;
 	time_t horaCreacion;
 	char* path;
+	time_t tiempoInicioEspera;
 	long long tiempoEspera;
 	long long tiempoEjecucion;
 } t_PCB;

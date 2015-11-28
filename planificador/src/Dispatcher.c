@@ -99,7 +99,7 @@ void pasarABloqueados(t_cpu *cpu, int tiempo, int proximaInstruccion){
 	list_add(colaBloqueados, pcb);
 	noni->pid = cpu->procesoAsignado->pid;
 	noni->tiempo = tiempo;
-	time(&noni->tiempoInicio);
+	time(&pcb->tiempoInicioEspera);
 	cpu->procesoAsignado = NULL;
 	pthread_create(&hDormirProceso, NULL, (void*)dormirProceso, noni);
 
@@ -138,23 +138,27 @@ void dormirProceso(t_noni* noni){
 	sem_wait(&semPCB);
 	sem_wait(&semLock);
 	pcb = list_find(colaBloqueados, (void*)_mismoProceso);
-	pcb->estado = BLOQUEADO;
+	if ( pcb ) //Si se saco de la cola de bloqueados es porque se finalizo
+		pcb->estado = BLOQUEADO;
+
 	sem_post(&semPCB);
 	sem_post(&semLock);
-	sleep(noni->tiempo);
+	if (pcb) sleep(noni->tiempo);
 	sem_post(&semIO);
 
-	sem_wait(&semPCB);
-	sem_wait(&semReady);
-	sem_wait(&semLock);
+	if (pcb){
+		sem_wait(&semPCB);
+		sem_wait(&semReady);
+		sem_wait(&semLock);
 
-	pcb = list_remove_by_condition(colaBloqueados, (void*) _mismoProceso);
-	pcb->estado = LISTO;
-	list_add(colaReady, pcb);
-	pcb->tiempoEspera += time(NULL)-noni->tiempoInicio;
-	sem_post(&semPCB);
-	sem_post(&semReady);
-	sem_post(&semLock);
+		pcb = list_remove_by_condition(colaBloqueados, (void*) _mismoProceso);
+		pcb->estado = LISTO;
+		list_add(colaReady, pcb);
+		pcb->tiempoEspera += time(NULL)-pcb->tiempoInicioEspera;
+		sem_post(&semPCB);
+		sem_post(&semReady);
+		sem_post(&semLock);
+	}
 	free(noni);
 	ejecutarDispatcher();
 }

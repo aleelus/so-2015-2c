@@ -120,6 +120,7 @@ int grabarContenidoASwap(int pid,int nroPagina,char* contenido);
 void imprimirContenido(char* contenido, long unsigned tamanio);
 void imprimirMemoria();
 void imprimirTLB();
+void actualizarBitModificado(int pid,int nroPagina);
 //Estructuras
 
 //Pagina

@@ -95,20 +95,25 @@ void bajarMarcosASwapYLimpiarMP() {
 
 
 			// VER ESTOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-			if (pagina->bitMP==1 || pagina->bitModificado == 1) {
-
-				grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
-
+			if(!strcmp("FIFO",g_Algoritmo)||!strcmp("LRU",g_Algoritmo)){
+				if (pagina->bitMP==1) {
+					grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
+				}
+			} else if(!strcmp("CLOCKMEJORADO",g_Algoritmo)){
+				if (pagina->bitMP==1 && pagina->bitModificado==1){
+					grabarContenidoASwap(mProc->pid, pagina->pagina,a_Memoria[pagina->marco].contenido);
+				}
 			}
-			memset(a_Memoria[pagina->marco].contenido, 0, g_Tamanio_Marco);
-			a_Memoria[pagina->marco].pag = -1;
-			a_Memoria[pagina->marco].pid = -1;
+			if(pagina->bitMP==1){
+				memset(a_Memoria[pagina->marco].contenido, 0, g_Tamanio_Marco);
+				a_Memoria[pagina->marco].pag = -1;
+				a_Memoria[pagina->marco].pid = -1;
 
-			pagina->bitModificado = 0;
-			pagina->bitPuntero = 0;
-			pagina->bitUso = 0;
-			pagina->bitMP = 0;
-
+				pagina->bitModificado = 0;
+				pagina->bitPuntero = 0;
+				pagina->bitUso = 0;
+				pagina->bitMP = 0;
+			}
 			k++;
 		}
 		i++;
